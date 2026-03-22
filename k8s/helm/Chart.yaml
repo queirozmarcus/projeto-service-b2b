@@ -1,0 +1,28 @@
+apiVersion: v2
+name: scopeflow-backend
+description: ScopeFlow Backend - AI-powered B2B SaaS platform
+type: application
+version: 1.0.0-sprint1
+appVersion: "1.0.0-sprint1"
+
+keywords:
+  - scopeflow
+  - b2b
+  - saas
+  - ai
+  - kubernetes
+
+home: https://scopeflow.com
+sources:
+  - https://github.com/scopeflow/backend
+
+maintainers:
+  - name: ScopeFlow Team
+    email: support@scopeflow.com
+
+dependencies: []
+
+# Chart metadata
+chart:
+  name: scopeflow-backend
+  version: 1.0.0-sprint1

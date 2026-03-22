@@ -1,0 +1,126 @@
+# ScopeFlow Backend Helm Chart Values
+# Default values for scopeflow-backend deployment on Kubernetes
+
+# Global settings
+global:
+  environment: staging  # development, staging, production
+  domain: api.scopeflow.com
+
+# Deployment
+replicaCount: 2
+
+image:
+  repository: scopeflow/backend
+  tag: "1.0.0-sprint1"
+  pullPolicy: IfNotPresent
+
+# Service
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+  annotations: {}
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: api.scopeflow.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: scopeflow-api-tls
+      hosts:
+        - api.scopeflow.com
+
+# Resources
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Autoscaling
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget (for availability during updates)
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Environment variables
+env:
+  - name: JAVA_OPTS
+    value: "-XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+  - name: SPRING_PROFILES_ACTIVE
+    value: "kubernetes"
+
+# Secrets (mounted from ConfigMap/Secret)
+secrets:
+  database:
+    host: postgres.default.svc.cluster.local
+    port: 5432
+    name: scopeflow_prod
+  jwt:
+    secretKey: "" # Set via Sealed Secret or similar
+  openai:
+    apiKey: "" # Set via Sealed Secret or similar
+  aws:
+    region: sa-east-1
+    s3Bucket: scopeflow-prod
+
+# Probes
+livenessProbe:
+  httpGet:
+    path: /api/v1/health/live
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /api/v1/health/ready
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  failureThreshold: 3
+
+# Graceful shutdown
+terminationGracePeriodSeconds: 30
+
+# Node affinity (optional)
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - scopeflow-backend
+          topologyKey: kubernetes.io/hostname
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsReadOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL

@@ -1,0 +1,69 @@
+## Multi-stage Dockerfile for ScopeFlow Backend (Production)
+## Uses: Eclipse Temurin JDK 21 → JRE 21 Alpine
+## Image size: ~300MB (optimized)
+
+# Stage 1: Build with Maven
+FROM eclipse-temurin:21-jdk-alpine AS builder
+LABEL stage=builder
+
+WORKDIR /build
+
+# Copy Maven wrapper and pom.xml
+COPY .mvn .mvn
+COPY mvnw pom.xml ./
+
+# Download Maven dependencies (cached layer)
+RUN ./mvnw dependency:resolve-plugins dependency:resolve -q
+
+# Copy source code
+COPY src ./src
+
+# Build application (skip tests for faster build)
+RUN ./mvnw clean package -DskipTests -q && \
+    mv target/*.jar application.jar
+
+# Stage 2: Runtime with JRE only (minimal image)
+FROM eclipse-temurin:21-jre-alpine
+
+LABEL maintainer="ScopeFlow <support@scopeflow.com>" \
+      description="ScopeFlow API - AI-powered B2B SaaS" \
+      version="1.0.0-sprint1"
+
+# Install dumb-init (graceful shutdown handler)
+RUN apk add --no-cache dumb-init
+
+# Create non-root user for security
+RUN addgroup -g 1000 scopeflow && \
+    adduser -D -u 1000 -G scopeflow scopeflow
+
+WORKDIR /app
+
+# Copy JAR from builder
+COPY --from=builder /build/application.jar .
+RUN chown -R scopeflow:scopeflow /app
+
+# Switch to non-root user
+USER scopeflow:scopeflow
+
+# JVM tuning for virtual threads + low-latency
+ENV JAVA_OPTS="-XX:+UseG1GC \
+    -XX:G1NewCollectionHeapPercent=30 \
+    -XX:G1ReservePercent=20 \
+    -XX:InitiatingHeapOccupancyPercent=35 \
+    -XX:MaxGCPauseMillis=200 \
+    -XX:+HeapDumpOnOutOfMemoryError \
+    -XX:HeapDumpPath=/tmp/heapdump.hprof"
+
+# Expose ports
+EXPOSE 8080
+EXPOSE 9010
+
+# Health check (Kubernetes readiness probe)
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:8080/api/v1/health/ready || exit 1
+
+# Use dumb-init as entrypoint (handles signals properly)
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start application
+CMD ["java", "-jar", "application.jar"]
