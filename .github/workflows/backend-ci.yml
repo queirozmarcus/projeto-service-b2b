@@ -1,0 +1,184 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+      - 'pom.xml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-ci.yml'
+      - 'pom.xml'
+
+jobs:
+  build-and-test:
+    name: Build & Test (Java 21, Spring Boot 3.2)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: scopeflow_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: maven
+
+      - name: Build with Maven
+        run: |
+          cd backend
+          ./mvnw clean package -DskipTests
+
+      - name: Run Unit Tests
+        run: |
+          cd backend
+          ./mvnw test
+
+      - name: Run Integration Tests
+        run: |
+          cd backend
+          ./mvnw verify -P integration-tests
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/scopeflow_test
+          SPRING_DATASOURCE_USERNAME: postgres
+          SPRING_DATASOURCE_PASSWORD: postgres
+
+      - name: Generate Code Coverage Report
+        run: |
+          cd backend
+          ./mvnw jacoco:report
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./backend/target/site/jacoco/jacoco.xml
+          flags: backend
+          name: backend-coverage
+
+  code-quality:
+    name: Code Quality (Checkstyle, SonarQube)
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: maven
+
+      - name: Run Checkstyle
+        run: |
+          cd backend
+          ./mvnw checkstyle:check
+
+      - name: SonarQube Analysis (if token available)
+        if: secrets.SONAR_TOKEN != ''
+        run: |
+          cd backend
+          ./mvnw sonar:sonar \
+            -Dsonar.projectKey=scopeflow-api \
+            -Dsonar.sources=src/main/java \
+            -Dsonar.tests=src/test/java \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
+  security-scan:
+    name: Security Scan (Trivy, Dependency Check)
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: maven
+
+      - name: Run OWASP Dependency Check
+        run: |
+          cd backend
+          ./mvnw dependency-check:check
+
+      - name: Build Docker image for scanning
+        run: |
+          cd backend
+          docker build -t scopeflow-api:${{ github.sha }} -f Dockerfile .
+
+      - name: Run Trivy scan on Docker image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: scopeflow-api:${{ github.sha }}
+          format: sarif
+          output: trivy-results.sarif
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-results.sarif
+
+  docker-build:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: [build-and-test, code-quality, security-scan]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: secrets.DOCKER_USERNAME != ''
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: ${{ secrets.DOCKER_USERNAME != '' }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/scopeflow-api:latest
+            ${{ secrets.DOCKER_USERNAME }}/scopeflow-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

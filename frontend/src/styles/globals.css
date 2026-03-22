@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-secondary-50 text-secondary-900 antialiased;
+}
+
+/* Typography */
+h1 {
+  @apply scroll-m-20 text-4xl font-extrabold tracking-tight;
+}
+
+h2 {
+  @apply scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight;
+}
+
+h3 {
+  @apply scroll-m-20 text-2xl font-semibold tracking-tight;
+}
+
+h4 {
+  @apply scroll-m-20 text-xl font-semibold tracking-tight;
+}
+
+h5 {
+  @apply scroll-m-20 text-lg font-semibold tracking-tight;
+}
+
+h6 {
+  @apply scroll-m-20 text-base font-semibold tracking-tight;
+}
+
+p {
+  @apply leading-7 [&:not(:last-child)]:mb-2;
+}
+
+a {
+  @apply text-primary-600 hover:text-primary-700 transition-colors;
+}
+
+/* Form elements */
+input,
+textarea,
+select {
+  @apply rounded-md border border-secondary-200 bg-white px-3 py-2 placeholder-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20;
+}
+
+button {
+  @apply transition-all duration-200;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode utilities (if needed) */
+@media (prefers-color-scheme: dark) {
+  body {
+    @apply bg-secondary-900 text-secondary-100;
+  }
+}
