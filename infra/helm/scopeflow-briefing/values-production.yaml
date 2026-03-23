@@ -1,0 +1,155 @@
+# Production environment overrides
+replicaCount: 3
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+  targetMemoryUtilizationPercentage: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://app.scopeflow.com"
+  hosts:
+    - host: api.scopeflow.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: scopeflow-api-tls
+      hosts:
+        - api.scopeflow.com
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: "production"
+  - name: SERVER_PORT
+    value: "8080"
+  - name: SPRING_DATASOURCE_URL
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: database-url
+  - name: SPRING_DATASOURCE_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: database-username
+  - name: SPRING_DATASOURCE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: database-password
+  - name: JWT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: jwt-secret
+  - name: SPRING_RABBITMQ_HOST
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: rabbitmq-host
+  - name: SPRING_RABBITMQ_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: rabbitmq-username
+  - name: SPRING_RABBITMQ_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: rabbitmq-password
+  - name: SPRING_DATA_REDIS_HOST
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: redis-host
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: aws-access-key-id
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: aws-secret-access-key
+  - name: AWS_S3_BUCKET
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: aws-s3-bucket
+  - name: OPENAI_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: openai-api-key
+  - name: JAVA_OPTS
+    value: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heapdump.hprof -XX:+UseStringDeduplication"
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+                - scopeflow-briefing
+        topologyKey: kubernetes.io/hostname
+
+configMap:
+  data:
+    application.yaml: |
+      spring:
+        application:
+          name: scopeflow-briefing
+        jpa:
+          open-in-view: false
+          properties:
+            hibernate:
+              default_schema: public
+              generate_statistics: false
+        flyway:
+          enabled: true
+          baseline-on-migrate: true
+      management:
+        endpoints:
+          web:
+            exposure:
+              include: health,info,prometheus,metrics
+        endpoint:
+          health:
+            probes:
+              enabled: true
+            show-details: never
+        metrics:
+          tags:
+            application: scopeflow-briefing
+            environment: production
+      logging:
+        level:
+          com.scopeflow: INFO
+          org.springframework: WARN
+          org.hibernate: WARN

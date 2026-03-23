@@ -1,0 +1,27 @@
+apiVersion: v2
+name: scopeflow-briefing
+description: ScopeFlow Briefing Service - AI-powered briefing and scope alignment
+type: application
+version: 1.0.0
+appVersion: "1.0.0-sprint1"
+
+keywords:
+  - scopeflow
+  - briefing
+  - ai
+  - saas
+  - b2b
+
+maintainers:
+  - name: ScopeFlow DevOps Team
+    email: devops@scopeflow.com
+    url: https://scopeflow.com
+
+sources:
+  - https://github.com/scopeflow/projeto-service-b2b
+
+home: https://scopeflow.com
+
+annotations:
+  category: Application
+  licenses: Proprietary

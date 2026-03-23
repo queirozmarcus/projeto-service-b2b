@@ -233,7 +233,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             MaxFollowupExceededException ex,
             WebRequest request
     ) {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNPROCESSABLE_ENTITY);
         problemDetail.setType(URI.create(PROBLEM_BASE_URL + "max-followup-exceeded"));
         problemDetail.setTitle("Max Follow-up Exceeded");
         problemDetail.setDetail(ex.getMessage());
@@ -241,7 +241,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         addCustomProperties(problemDetail, ex.getErrorCode());
 
         return ResponseEntity
-                .status(HttpStatus.CONFLICT)
+                .status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(problemDetail);
     }
 
@@ -253,7 +253,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             IncompleteGapsException ex,
             WebRequest request
     ) {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNPROCESSABLE_ENTITY);
         problemDetail.setType(URI.create(PROBLEM_BASE_URL + "incomplete-gaps"));
         problemDetail.setTitle("Incomplete Briefing");
         problemDetail.setDetail(ex.getMessage());
@@ -261,7 +261,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         addCustomProperties(problemDetail, ex.getErrorCode());
 
         return ResponseEntity
-                .status(HttpStatus.CONFLICT)
+                .status(HttpStatus.UNPROCESSABLE_ENTITY)
                 .body(problemDetail);
     }
 
@@ -322,6 +322,49 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle authentication errors (missing or invalid JWT).
+     */
+    @ExceptionHandler(org.springframework.security.authentication.AuthenticationCredentialsNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleAuthenticationError(
+            org.springframework.security.authentication.AuthenticationCredentialsNotFoundException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "unauthorized"));
+        problemDetail.setTitle("Unauthorized");
+        problemDetail.setDetail("Authentication required");
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, "AUTH-401");
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle rate limit exceeded.
+     *
+     * Note: This is a placeholder. In production, use a proper rate limiting library
+     * (e.g., Bucket4j, Spring Cloud Gateway rate limiter, or Redis-based solution).
+     */
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ProblemDetail> handleRateLimitExceeded(
+            RateLimitExceededException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.TOO_MANY_REQUESTS);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "rate-limit-exceeded"));
+        problemDetail.setTitle("Rate Limit Exceeded");
+        problemDetail.setDetail("Too many requests. Please try again later.");
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, "RATE-429");
+
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(problemDetail);
     }
 
