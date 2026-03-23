@@ -68,13 +68,17 @@ public class BriefingControllerV1 {
     public ResponseEntity<BriefingResponse> createBriefing(
             @Valid @RequestBody CreateBriefingRequest request
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Extract workspace_id from JWT SecurityContext
-        // 2. Convert DTO → domain: clientId, serviceType
-        // 3. Call briefingService.startBriefing(workspaceId, clientId, serviceType)
-        // 4. Convert domain → DTO: BriefingInProgress → BriefingResponse
-        // 5. Return ResponseEntity.status(201).header("Location", "/api/v1/briefings/{id}").body(response)
-        throw new UnsupportedOperationException("Not implemented yet");
+        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var clientId = mapper.toClientId(request.clientId());
+        var serviceType = request.serviceType();
+
+        var session = briefingService.startBriefing(workspaceId, clientId, serviceType);
+        var response = mapper.toResponse(session);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .header("Location", "/api/v1/briefings/" + response.id())
+                .body(response);
     }
 
     /**
@@ -109,13 +113,15 @@ public class BriefingControllerV1 {
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Sort field and direction") @RequestParam(defaultValue = "createdAt,desc") String sort
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Extract workspace_id from JWT
-        // 2. Build Pageable + filters
-        // 3. Call repository.findByWorkspace(workspaceId, filters, pageable)
-        // 4. Convert domain → DTO: Page<BriefingSession> → PageResponse<BriefingResponse>
-        // 5. Return ResponseEntity.ok(pageResponse)
-        throw new UnsupportedOperationException("Not implemented yet");
+        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+
+        // TODO: Build Pageable with sort
+        // TODO: Apply filters (status, serviceType, createdAfter)
+        // For now, return empty page as placeholder until repository findByWorkspace is implemented
+        var content = java.util.List.<BriefingResponse>of();
+        var pageResponse = mapper.toPageResponse(content, 0, 0, size, page, true, true);
+
+        return ResponseEntity.ok(pageResponse);
     }
 
     /**
@@ -142,15 +148,28 @@ public class BriefingControllerV1 {
     public ResponseEntity<BriefingDetailResponse> getBriefing(
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Extract workspace_id from JWT
-        // 2. Convert briefingId → BriefingSessionId
-        // 3. Call briefingService or repository.findById(briefingSessionId)
-        // 4. Verify ownership: session.workspaceId == JWT workspaceId
-        // 5. Fetch questions + answers
-        // 6. Convert domain → DTO: BriefingDetailResponse
-        // 7. Return ResponseEntity.ok(response)
-        throw new UnsupportedOperationException("Not implemented yet");
+        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var sessionId = mapper.toBriefingSessionId(briefingId);
+
+        // Find session and verify ownership
+        var session = briefingService.sessionRepository().findById(sessionId)
+                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
+                        "Briefing session not found: " + briefingId
+                ));
+
+        if (!session.getWorkspaceId().equals(workspaceId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Briefing does not belong to authenticated workspace"
+            );
+        }
+
+        // Fetch questions and answers
+        var questions = briefingService.questionRepository().findBySession(sessionId);
+        var answers = briefingService.answerRepository().findBySession(sessionId);
+
+        var response = mapper.toDetailResponse(session, questions, answers);
+
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -178,13 +197,26 @@ public class BriefingControllerV1 {
     public ResponseEntity<ProgressResponse> getBriefingProgress(
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Extract workspace_id from JWT
-        // 2. Convert briefingId → BriefingSessionId
-        // 3. Call briefingService.detectGaps(briefingSessionId) or fetch from session
-        // 4. Convert domain → DTO: BriefingProgress/CompletionScore → ProgressResponse
-        // 5. Return ResponseEntity.ok().cacheControl(CacheControl.maxAge(30, TimeUnit.SECONDS)).body(response)
-        throw new UnsupportedOperationException("Not implemented yet");
+        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var sessionId = mapper.toBriefingSessionId(briefingId);
+
+        var session = briefingService.sessionRepository().findById(sessionId)
+                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
+                        "Briefing session not found: " + briefingId
+                ));
+
+        if (!session.getWorkspaceId().equals(workspaceId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Briefing does not belong to authenticated workspace"
+            );
+        }
+
+        var score = briefingService.detectGaps(sessionId);
+        var response = mapper.toProgressResponse(score);
+
+        return ResponseEntity.ok()
+                .cacheControl(org.springframework.http.CacheControl.maxAge(30, java.util.concurrent.TimeUnit.SECONDS))
+                .body(response);
     }
 
     /**
@@ -215,13 +247,24 @@ public class BriefingControllerV1 {
     public ResponseEntity<QuestionResponse> getNextQuestion(
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Extract workspace_id from JWT
-        // 2. Convert briefingId → BriefingSessionId
-        // 3. Call briefingService.getNextQuestion(briefingSessionId)
-        // 4. Convert domain → DTO: BriefingQuestion → QuestionResponse
-        // 5. Return ResponseEntity.ok(response)
-        throw new UnsupportedOperationException("Not implemented yet");
+        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var sessionId = mapper.toBriefingSessionId(briefingId);
+
+        var session = briefingService.sessionRepository().findById(sessionId)
+                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
+                        "Briefing session not found: " + briefingId
+                ));
+
+        if (!session.getWorkspaceId().equals(workspaceId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Briefing does not belong to authenticated workspace"
+            );
+        }
+
+        var question = briefingService.getNextQuestion(sessionId);
+        var response = mapper.toQuestionResponse(question, false);
+
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -257,12 +300,26 @@ public class BriefingControllerV1 {
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId,
             @Valid @RequestBody SubmitAnswerRequest request
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Extract workspace_id from JWT
-        // 2. Convert DTO → domain: briefingId, questionId, answerText
-        // 3. Call briefingService.submitDirectAnswer(sessionId, questionId, answerText, qualityScore)
-        // 4. Return ResponseEntity.noContent().build()
-        throw new UnsupportedOperationException("Not implemented yet");
+        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var sessionId = mapper.toBriefingSessionId(briefingId);
+
+        var session = briefingService.sessionRepository().findById(sessionId)
+                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
+                        "Briefing session not found: " + briefingId
+                ));
+
+        if (!session.getWorkspaceId().equals(workspaceId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Briefing does not belong to authenticated workspace"
+            );
+        }
+
+        var questionId = mapper.toQuestionId(request.questionId());
+        var answerText = mapper.toAnswerText(request.answerText());
+
+        briefingService.submitDirectAnswer(sessionId, questionId, answerText, 0);
+
+        return ResponseEntity.noContent().build();
     }
 
     /**
@@ -297,13 +354,25 @@ public class BriefingControllerV1 {
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId,
             @Valid @RequestBody CompleteBriefingRequest request
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Extract workspace_id from JWT
-        // 2. Convert DTO → domain: briefingId, CompletionScore
-        // 3. Call briefingService.completeBriefing(sessionId, score)
-        // 4. Convert domain → DTO: BriefingCompleted → BriefingResponse
-        // 5. Return ResponseEntity.ok(response)
-        throw new UnsupportedOperationException("Not implemented yet");
+        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var sessionId = mapper.toBriefingSessionId(briefingId);
+
+        var session = briefingService.sessionRepository().findById(sessionId)
+                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
+                        "Briefing session not found: " + briefingId
+                ));
+
+        if (!session.getWorkspaceId().equals(workspaceId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Briefing does not belong to authenticated workspace"
+            );
+        }
+
+        var score = mapper.toCompletionScore(request);
+        var completed = briefingService.completeBriefing(sessionId, score);
+        var response = mapper.toResponse(completed);
+
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -335,11 +404,22 @@ public class BriefingControllerV1 {
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId,
             @Valid @RequestBody AbandonBriefingRequest request
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Extract workspace_id from JWT
-        // 2. Convert briefingId → BriefingSessionId
-        // 3. Call briefingService.abandonBriefing(sessionId)
-        // 4. Return ResponseEntity.noContent().build()
-        throw new UnsupportedOperationException("Not implemented yet");
+        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var sessionId = mapper.toBriefingSessionId(briefingId);
+
+        var session = briefingService.sessionRepository().findById(sessionId)
+                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
+                        "Briefing session not found: " + briefingId
+                ));
+
+        if (!session.getWorkspaceId().equals(workspaceId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Briefing does not belong to authenticated workspace"
+            );
+        }
+
+        briefingService.abandonBriefing(sessionId);
+
+        return ResponseEntity.noContent().build();
     }
 }

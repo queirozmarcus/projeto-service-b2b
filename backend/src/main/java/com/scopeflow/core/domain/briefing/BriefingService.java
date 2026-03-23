@@ -271,4 +271,27 @@ public class BriefingService {
         Objects.requireNonNull(generation, "generation cannot be null");
         aiGenerationRepository.save(generation);
     }
+
+    // ============ Repository Access (for controllers) ============
+
+    /**
+     * Expose sessionRepository for direct queries in adapter layer.
+     */
+    public BriefingSessionRepository sessionRepository() {
+        return sessionRepository;
+    }
+
+    /**
+     * Expose questionRepository for direct queries in adapter layer.
+     */
+    public BriefingQuestionRepository questionRepository() {
+        return questionRepository;
+    }
+
+    /**
+     * Expose answerRepository for direct queries in adapter layer.
+     */
+    public BriefingAnswerRepository answerRepository() {
+        return answerRepository;
+    }
 }

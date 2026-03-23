@@ -306,6 +306,57 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * Handle access denied (workspace ownership violation).
+     */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "access-denied"));
+        problemDetail.setTitle("Access Denied");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, "AUTH-403");
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle validation errors (Bean Validation).
+     */
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<ProblemDetail> handleValidationErrors(
+            org.springframework.web.bind.MethodArgumentNotValidException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "validation-error"));
+        problemDetail.setTitle("Validation Error");
+        problemDetail.setDetail("Request validation failed");
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+
+        // Add violations list
+        var violations = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> java.util.Map.of(
+                        "field", fe.getField(),
+                        "rejected_value", fe.getRejectedValue() != null ? fe.getRejectedValue().toString() : "null",
+                        "message", fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "Invalid value"
+                ))
+                .toList();
+
+        problemDetail.setProperty("violations", violations);
+        addCustomProperties(problemDetail, "VALIDATION-400");
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(problemDetail);
+    }
+
+    /**
      * Handle generic exceptions (catch-all).
      */
     @ExceptionHandler(Exception.class)

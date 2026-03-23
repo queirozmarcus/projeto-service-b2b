@@ -60,11 +60,9 @@ public class JpaBriefingRepositoryAdapter implements BriefingSessionRepository {
         return sessionRepo.countAnswers(sessionId.value());
     }
 
-    /**
-     * Find by public token (for public client access).
-     */
+    @Override
     public Optional<BriefingSession> findByPublicToken(PublicToken token) {
-        return sessionRepo.findByPublicToken(token.value())
+        return sessionRepo.findByPublicToken(token.value().toString())
                 .map(this::toDomain);
     }
 

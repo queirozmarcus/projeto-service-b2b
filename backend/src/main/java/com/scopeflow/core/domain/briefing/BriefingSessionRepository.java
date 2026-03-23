@@ -35,4 +35,10 @@ public interface BriefingSessionRepository {
      * Count answers already submitted for a session.
      */
     long countAnswers(BriefingSessionId sessionId);
+
+    /**
+     * Find briefing session by public token (for client-facing public API).
+     * Used by public endpoints (no auth required).
+     */
+    Optional<BriefingSession> findByPublicToken(PublicToken publicToken);
 }

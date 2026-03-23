@@ -62,12 +62,16 @@ public class PublicBriefingControllerV1 {
     public ResponseEntity<PublicBriefingResponse> getPublicBriefing(
             @Parameter(description = "Public token for client access") @PathVariable UUID publicToken
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Convert publicToken → PublicToken domain object
-        // 2. Call repository.findByPublicToken(publicToken)
-        // 3. Convert domain → DTO: BriefingSession → PublicBriefingResponse (no sensitive data)
-        // 4. Return ResponseEntity.ok(response)
-        throw new UnsupportedOperationException("Not implemented yet");
+        var token = mapper.toPublicToken(publicToken);
+
+        var session = briefingService.sessionRepository().findByPublicToken(token)
+                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
+                        "Briefing session not found or token invalid: " + publicToken
+                ));
+
+        var response = mapper.toPublicResponse(session);
+
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -97,13 +101,17 @@ public class PublicBriefingControllerV1 {
     public ResponseEntity<QuestionResponse> getPublicNextQuestion(
             @Parameter(description = "Public token for client access") @PathVariable UUID publicToken
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Convert publicToken → PublicToken domain object
-        // 2. Call repository.findByPublicToken(publicToken) → get session
-        // 3. Call briefingService.getNextQuestion(sessionId)
-        // 4. Convert domain → DTO: BriefingQuestion → QuestionResponse
-        // 5. Return ResponseEntity.ok(response)
-        throw new UnsupportedOperationException("Not implemented yet");
+        var token = mapper.toPublicToken(publicToken);
+
+        var session = briefingService.sessionRepository().findByPublicToken(token)
+                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
+                        "Briefing session not found or token invalid: " + publicToken
+                ));
+
+        var question = briefingService.getNextQuestion(session.getId());
+        var response = mapper.toQuestionResponse(question, false);
+
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -136,12 +144,18 @@ public class PublicBriefingControllerV1 {
             @Parameter(description = "Public token for client access") @PathVariable UUID publicToken,
             @Valid @RequestBody SubmitAnswerRequest request
     ) {
-        // TODO: Implementation in Step 5 (backend-dev)
-        // 1. Convert publicToken → PublicToken domain object
-        // 2. Call repository.findByPublicToken(publicToken) → get session
-        // 3. Convert DTO → domain: questionId, answerText
-        // 4. Call briefingService.submitDirectAnswer(sessionId, questionId, answerText, qualityScore)
-        // 5. Return ResponseEntity.noContent().build()
-        throw new UnsupportedOperationException("Not implemented yet");
+        var token = mapper.toPublicToken(publicToken);
+
+        var session = briefingService.sessionRepository().findByPublicToken(token)
+                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
+                        "Briefing session not found or token invalid: " + publicToken
+                ));
+
+        var questionId = mapper.toQuestionId(request.questionId());
+        var answerText = mapper.toAnswerText(request.answerText());
+
+        briefingService.submitDirectAnswer(session.getId(), questionId, answerText, 0);
+
+        return ResponseEntity.noContent().build();
     }
 }
