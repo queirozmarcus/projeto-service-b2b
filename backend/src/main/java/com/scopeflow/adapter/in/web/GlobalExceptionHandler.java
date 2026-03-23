@@ -1,5 +1,6 @@
 package com.scopeflow.adapter.in.web;
 
+import com.scopeflow.core.domain.briefing.*;
 import com.scopeflow.core.domain.user.EmailAlreadyRegisteredException;
 import com.scopeflow.core.domain.workspace.*;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -159,6 +160,199 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
+                .body(problemDetail);
+    }
+
+    // ============ Briefing Domain Exceptions ============
+
+    /**
+     * Handle briefing session not found.
+     */
+    @ExceptionHandler(BriefingNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleBriefingNotFound(
+            BriefingNotFoundException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "briefing-not-found"));
+        problemDetail.setTitle("Briefing Not Found");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle briefing already completed (cannot modify).
+     */
+    @ExceptionHandler(BriefingAlreadyCompletedException.class)
+    public ResponseEntity<ProblemDetail> handleBriefingAlreadyCompleted(
+            BriefingAlreadyCompletedException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "briefing-already-completed"));
+        problemDetail.setTitle("Briefing Already Completed");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle invalid answer (empty, too long, etc.).
+     */
+    @ExceptionHandler(InvalidAnswerException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidAnswer(
+            InvalidAnswerException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-answer"));
+        problemDetail.setTitle("Invalid Answer");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle max follow-up exceeded (max 1 per question).
+     */
+    @ExceptionHandler(MaxFollowupExceededException.class)
+    public ResponseEntity<ProblemDetail> handleMaxFollowupExceeded(
+            MaxFollowupExceededException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "max-followup-exceeded"));
+        problemDetail.setTitle("Max Follow-up Exceeded");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle incomplete briefing (completion score < 80%).
+     */
+    @ExceptionHandler(IncompleteGapsException.class)
+    public ResponseEntity<ProblemDetail> handleIncompleteGaps(
+            IncompleteGapsException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "incomplete-gaps"));
+        problemDetail.setTitle("Incomplete Briefing");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle briefing already in progress (duplicate active session).
+     */
+    @ExceptionHandler(BriefingAlreadyInProgressException.class)
+    public ResponseEntity<ProblemDetail> handleBriefingAlreadyInProgress(
+            BriefingAlreadyInProgressException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "briefing-already-in-progress"));
+        problemDetail.setTitle("Briefing Already In Progress");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle invalid state exception (generic briefing state violation).
+     */
+    @ExceptionHandler(InvalidStateException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidState(
+            InvalidStateException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-state"));
+        problemDetail.setTitle("Invalid State");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle access denied (workspace ownership violation).
+     */
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAccessDenied(
+            org.springframework.security.access.AccessDeniedException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "access-denied"));
+        problemDetail.setTitle("Access Denied");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, "AUTH-403");
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle validation errors (Bean Validation).
+     */
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<ProblemDetail> handleValidationErrors(
+            org.springframework.web.bind.MethodArgumentNotValidException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "validation-error"));
+        problemDetail.setTitle("Validation Error");
+        problemDetail.setDetail("Request validation failed");
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+
+        // Add violations list
+        var violations = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> java.util.Map.of(
+                        "field", fe.getField(),
+                        "rejected_value", fe.getRejectedValue() != null ? fe.getRejectedValue().toString() : "null",
+                        "message", fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "Invalid value"
+                ))
+                .toList();
+
+        problemDetail.setProperty("violations", violations);
+        addCustomProperties(problemDetail, "VALIDATION-400");
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
                 .body(problemDetail);
     }
 

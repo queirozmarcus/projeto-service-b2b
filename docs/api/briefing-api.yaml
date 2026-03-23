@@ -1,0 +1,1014 @@
+openapi: 3.1.0
+info:
+  title: ScopeFlow Briefing API
+  version: 1.0.0
+  description: |
+    AI-assisted discovery flow for B2B service providers.
+
+    Transforms scattered WhatsApp conversations into structured, approved briefings.
+    Guides clients through sequential questions, detects gaps in answers, generates follow-up questions,
+    and consolidates responses into a clear briefing ready for scope generation.
+
+    **Key Features:**
+    - Sequential question flow (no skip)
+    - AI-powered gap detection
+    - Auto-generated follow-up questions (max 1 per question)
+    - Immutable answer audit trail
+    - Public access for clients (no auth required)
+    - Workspace-scoped for service providers
+
+  contact:
+    name: ScopeFlow AI Team
+    email: api@scopeflow.com
+  license:
+    name: Proprietary
+    url: https://scopeflow.com/terms
+
+servers:
+  - url: http://localhost:8080
+    description: Local Development
+  - url: https://api-staging.scopeflow.com
+    description: Staging
+  - url: https://api.scopeflow.com
+    description: Production
+
+tags:
+  - name: Briefings
+    description: Authenticated endpoints for workspace owners/members to manage briefings
+  - name: Public Briefings
+    description: Public endpoints for clients to access and answer briefing questions (no authentication)
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/v1/briefings:
+    post:
+      operationId: createBriefing
+      summary: Create a new briefing session
+      description: |
+        Starts a new discovery flow for a client and service type.
+
+        **Invariant:** Only 1 active briefing per client per service type per workspace.
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Briefings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBriefingRequest'
+            examples:
+              socialMedia:
+                summary: Social Media Briefing
+                value:
+                  clientId: "550e8400-e29b-41d4-a716-446655440000"
+                  serviceType: "SOCIAL_MEDIA"
+      responses:
+        '201':
+          description: Briefing session created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL to the created briefing resource
+              example: /api/v1/briefings/7c9e6679-7425-40de-944b-e07fc1f90ae7
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/BusinessRuleError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+    get:
+      operationId: listBriefings
+      summary: List briefings with pagination and filters
+      description: |
+        Returns paginated list of briefings for the authenticated user's workspace.
+
+        **Rate limit:** 100 req/min (authenticated)
+
+        **Caching:** No caching (list endpoint always reflects current state)
+      tags: [Briefings]
+      parameters:
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            $ref: '#/components/schemas/BriefingStatus'
+        - name: serviceType
+          in: query
+          description: Filter by service type
+          schema:
+            $ref: '#/components/schemas/ServiceType'
+        - name: createdAfter
+          in: query
+          description: Filter by creation date (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+          example: "2026-03-01T00:00:00Z"
+        - name: page
+          in: query
+          description: Page number (zero-based)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Page size
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sort
+          in: query
+          description: Sort field and direction
+          schema:
+            type: string
+            enum: [createdAt,asc, createdAt,desc, status,asc, status,desc]
+            default: "createdAt,desc"
+      responses:
+        '200':
+          description: Paginated list of briefings
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfBriefings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/v1/briefings/{briefingId}:
+    get:
+      operationId: getBriefing
+      summary: Get briefing details
+      description: |
+        Returns full details of a briefing session.
+
+        **Rate limit:** 100 req/min (authenticated)
+
+        **Caching:** No caching (detail endpoint always reflects current state)
+      tags: [Briefings]
+      parameters:
+        - $ref: '#/components/parameters/BriefingIdPath'
+      responses:
+        '200':
+          description: Briefing details
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingDetailResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/v1/briefings/{briefingId}/progress:
+    get:
+      operationId: getBriefingProgress
+      summary: Get briefing progress metrics
+      description: |
+        Returns completion progress (step count, percentage, gaps).
+
+        **Rate limit:** 100 req/min (authenticated)
+
+        **Caching:** 30s (progress updates on answer submission)
+      tags: [Briefings]
+      parameters:
+        - $ref: '#/components/parameters/BriefingIdPath'
+      responses:
+        '200':
+          description: Progress metrics
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+            Cache-Control:
+              schema:
+                type: string
+              description: Cache control header
+              example: "max-age=30, must-revalidate"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/v1/briefings/{briefingId}/next-question:
+    get:
+      operationId: getNextQuestion
+      summary: Get next question in the flow
+      description: |
+        Returns the next sequential question to answer.
+
+        **Invariant:** Questions are sequential (no skip).
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Briefings]
+      parameters:
+        - $ref: '#/components/parameters/BriefingIdPath'
+      responses:
+        '200':
+          description: Next question
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/v1/briefings/{briefingId}/answers:
+    post:
+      operationId: submitAnswer
+      summary: Submit answer to a question
+      description: |
+        Submits a client answer to a briefing question.
+
+        **Invariants:**
+        - Answer text cannot be empty
+        - Max 1 follow-up per question
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Briefings]
+      parameters:
+        - $ref: '#/components/parameters/BriefingIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAnswerRequest'
+            examples:
+              directAnswer:
+                summary: Direct answer (no follow-up)
+                value:
+                  questionId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                  answerText: "We want to post 3 times per week on Instagram and Facebook."
+      responses:
+        '204':
+          description: Answer submitted successfully (no content)
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/BusinessRuleError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/v1/briefings/{briefingId}/complete:
+    post:
+      operationId: completeBriefing
+      summary: Mark briefing as completed
+      description: |
+        Completes the briefing (locks it for scope generation).
+
+        **Invariant:** Completion score must be >= 80% and no critical gaps.
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Briefings]
+      parameters:
+        - $ref: '#/components/parameters/BriefingIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteBriefingRequest'
+      responses:
+        '200':
+          description: Briefing completed successfully
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/BusinessRuleError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/v1/briefings/{briefingId}/abandon:
+    post:
+      operationId: abandonBriefing
+      summary: Abandon briefing session
+      description: |
+        Abandons an in-progress briefing. Client can start a new one later.
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Briefings]
+      parameters:
+        - $ref: '#/components/parameters/BriefingIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AbandonBriefingRequest'
+      responses:
+        '204':
+          description: Briefing abandoned successfully (no content)
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  # ============ PUBLIC ENDPOINTS (No Auth) ============
+
+  /public/briefings/{publicToken}:
+    get:
+      operationId: getPublicBriefing
+      summary: Get public briefing by token (no auth)
+      description: |
+        Client-facing endpoint. Returns briefing details via public token.
+
+        **Rate limit:** 10 req/min (public, per IP)
+      tags: [Public Briefings]
+      security: []
+      parameters:
+        - name: publicToken
+          in: path
+          required: true
+          description: Public token for client access
+          schema:
+            type: string
+            format: uuid
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+      responses:
+        '200':
+          description: Public briefing details
+          headers:
+            X-Rate-Limit-Remaining:
+              schema:
+                type: integer
+              description: Remaining requests for public endpoint
+              example: 8
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicBriefingResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /public/briefings/{publicToken}/next-question:
+    get:
+      operationId: getPublicNextQuestion
+      summary: Get next question (public, no auth)
+      description: |
+        Client-facing endpoint. Returns next question in the flow.
+
+        **Rate limit:** 10 req/min (public, per IP)
+      tags: [Public Briefings]
+      security: []
+      parameters:
+        - name: publicToken
+          in: path
+          required: true
+          description: Public token for client access
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Next question
+          headers:
+            X-Rate-Limit-Remaining:
+              schema:
+                type: integer
+              example: 8
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuestionResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /public/briefings/{publicToken}/answers:
+    post:
+      operationId: submitPublicAnswer
+      summary: Submit answer (public, no auth)
+      description: |
+        Client-facing endpoint. Submits an answer to a question.
+
+        **Rate limit:** 10 req/min (public, per IP)
+      tags: [Public Briefings]
+      security: []
+      parameters:
+        - name: publicToken
+          in: path
+          required: true
+          description: Public token for client access
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitAnswerRequest'
+      responses:
+        '204':
+          description: Answer submitted successfully (no content)
+          headers:
+            X-Rate-Limit-Remaining:
+              schema:
+                type: integer
+              example: 7
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '422':
+          $ref: '#/components/responses/BusinessRuleError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token issued by /api/v1/auth/login.
+        Include in Authorization header: `Bearer <token>`
+
+  parameters:
+    BriefingIdPath:
+      name: briefingId
+      in: path
+      required: true
+      description: Briefing session UUID
+      schema:
+        type: string
+        format: uuid
+      example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+
+  headers:
+    X-Rate-Limit-Remaining:
+      schema:
+        type: integer
+      description: Remaining requests in current rate limit window
+      example: 95
+
+  schemas:
+    # ============ Request DTOs ============
+
+    CreateBriefingRequest:
+      type: object
+      required:
+        - clientId
+        - serviceType
+      properties:
+        clientId:
+          type: string
+          format: uuid
+          description: Client UUID (from Clients context)
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        serviceType:
+          $ref: '#/components/schemas/ServiceType'
+
+    SubmitAnswerRequest:
+      type: object
+      required:
+        - questionId
+        - answerText
+      properties:
+        questionId:
+          type: string
+          format: uuid
+          description: Question UUID
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        answerText:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          description: Client's answer text
+          example: "We want to post 3 times per week on Instagram and Facebook, focusing on wellness and nutrition tips."
+
+    CompleteBriefingRequest:
+      type: object
+      required:
+        - completionScore
+      properties:
+        completionScore:
+          type: integer
+          minimum: 80
+          maximum: 100
+          description: Completion score (must be >= 80 to complete)
+          example: 95
+        gapsIdentified:
+          type: array
+          items:
+            type: string
+          description: List of identified gaps (optional)
+          example: ["Audience demographics unclear", "Budget range not specified"]
+
+    AbandonBriefingRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          description: Optional reason for abandoning
+          example: "Client decided to postpone project"
+
+    # ============ Response DTOs ============
+
+    BriefingResponse:
+      type: object
+      required:
+        - id
+        - workspaceId
+        - clientId
+        - serviceType
+        - status
+        - publicToken
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        workspaceId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        clientId:
+          type: string
+          format: uuid
+          example: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+        serviceType:
+          $ref: '#/components/schemas/ServiceType'
+        status:
+          $ref: '#/components/schemas/BriefingStatus'
+        publicToken:
+          type: string
+          format: uuid
+          description: Public token for client access (share via link)
+          example: "9f8c7d6e-5b4a-3210-9876-543210fedcba"
+        completionScore:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 100
+          description: Completion score (only set when status=COMPLETED)
+          example: 95
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-03-22T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-03-22T14:30:00Z"
+
+    BriefingDetailResponse:
+      allOf:
+        - $ref: '#/components/schemas/BriefingResponse'
+        - type: object
+          properties:
+            progress:
+              $ref: '#/components/schemas/ProgressResponse'
+            questions:
+              type: array
+              items:
+                $ref: '#/components/schemas/QuestionResponse'
+            answers:
+              type: array
+              items:
+                $ref: '#/components/schemas/AnswerResponse'
+
+    PublicBriefingResponse:
+      type: object
+      required:
+        - id
+        - serviceType
+        - status
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        serviceType:
+          $ref: '#/components/schemas/ServiceType'
+        status:
+          $ref: '#/components/schemas/BriefingStatus'
+        progress:
+          $ref: '#/components/schemas/ProgressResponse'
+        createdAt:
+          type: string
+          format: date-time
+
+    ProgressResponse:
+      type: object
+      required:
+        - currentStep
+        - totalSteps
+        - completionPercentage
+      properties:
+        currentStep:
+          type: integer
+          minimum: 0
+          example: 7
+        totalSteps:
+          type: integer
+          minimum: 0
+          example: 10
+        completionPercentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+          example: 70
+        gapsIdentified:
+          type: array
+          items:
+            type: string
+          example: ["Need more details on target audience", "Budget range missing"]
+
+    QuestionResponse:
+      type: object
+      required:
+        - id
+        - text
+        - step
+        - questionType
+        - required
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        text:
+          type: string
+          example: "What are your main goals for this social media campaign?"
+        step:
+          type: integer
+          minimum: 1
+          example: 1
+        questionType:
+          type: string
+          enum: [OPEN_ENDED, MULTIPLE_CHOICE, SCALE]
+          example: "OPEN_ENDED"
+        required:
+          type: boolean
+          example: true
+        followUpGenerated:
+          type: boolean
+          description: True if this is an auto-generated follow-up question
+          example: false
+
+    AnswerResponse:
+      type: object
+      required:
+        - id
+        - questionId
+        - answerText
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        questionId:
+          type: string
+          format: uuid
+        answerText:
+          type: string
+          example: "We want to increase brand awareness and generate leads for our wellness coaching service."
+        qualityScore:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 100
+          description: AI-computed quality score (null if not yet computed)
+          example: 85
+        createdAt:
+          type: string
+          format: date-time
+
+    PageOfBriefings:
+      type: object
+      required:
+        - content
+        - totalElements
+        - totalPages
+        - size
+        - number
+        - first
+        - last
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/BriefingResponse'
+        totalElements:
+          type: integer
+          description: Total number of briefings matching filters
+          example: 150
+        totalPages:
+          type: integer
+          description: Total pages with current size
+          example: 8
+        size:
+          type: integer
+          description: Page size (items per page)
+          example: 20
+        number:
+          type: integer
+          description: Current page number (zero-based)
+          example: 0
+        first:
+          type: boolean
+          description: True if this is the first page
+          example: true
+        last:
+          type: boolean
+          description: True if this is the last page
+          example: false
+
+    # ============ Enums ============
+
+    ServiceType:
+      type: string
+      enum:
+        - SOCIAL_MEDIA
+        - LANDING_PAGE
+        - WEB_DESIGN
+        - BRANDING
+        - VIDEO_PRODUCTION
+        - CONSULTING
+      example: "SOCIAL_MEDIA"
+
+    BriefingStatus:
+      type: string
+      enum:
+        - IN_PROGRESS
+        - COMPLETED
+        - ABANDONED
+      example: "IN_PROGRESS"
+
+    # ============ Error Schemas (RFC 9457) ============
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI reference identifying the problem type
+          example: "https://api.scopeflow.com/errors/briefing-not-found"
+        title:
+          type: string
+          description: Short, human-readable summary
+          example: "Briefing Not Found"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 404
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence
+          example: "Briefing session with ID 7c9e6679-7425-40de-944b-e07fc1f90ae7 was not found"
+        instance:
+          type: string
+          format: uri
+          description: URI reference identifying the specific occurrence
+          example: "/api/v1/briefings/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        errorCode:
+          type: string
+          description: Stable error code for automation
+          example: "BRIEFING-001"
+        errorId:
+          type: string
+          format: uuid
+          description: Unique error ID for support tickets
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+          example: "2026-03-22T14:30:00Z"
+
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          properties:
+            violations:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    example: "answerText"
+                  message:
+                    type: string
+                    example: "must not be blank"
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblem'
+          examples:
+            emptyAnswer:
+              summary: Empty answer text
+              value:
+                type: "https://api.scopeflow.com/errors/validation"
+                title: "Validation Failed"
+                status: 400
+                detail: "Request contains invalid fields"
+                instance: "/api/v1/briefings/7c9e6679-7425-40de-944b-e07fc1f90ae7/answers"
+                errorCode: "VALIDATION-400"
+                errorId: "550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2026-03-22T14:30:00Z"
+                violations:
+                  - field: "answerText"
+                    message: "must not be blank"
+
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: "https://api.scopeflow.com/errors/unauthorized"
+            title: "Unauthorized"
+            status: 401
+            detail: "Authentication required. Provide valid JWT token."
+            instance: "/api/v1/briefings"
+            errorCode: "AUTH-401"
+            errorId: "550e8400-e29b-41d4-a716-446655440000"
+            timestamp: "2026-03-22T14:30:00Z"
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: "https://api.scopeflow.com/errors/briefing-not-found"
+            title: "Briefing Not Found"
+            status: 404
+            detail: "Briefing session with ID 7c9e6679-7425-40de-944b-e07fc1f90ae7 was not found"
+            instance: "/api/v1/briefings/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+            errorCode: "BRIEFING-001"
+            errorId: "550e8400-e29b-41d4-a716-446655440000"
+            timestamp: "2026-03-22T14:30:00Z"
+
+    ConflictError:
+      description: Conflict with current state (business rule violation)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          examples:
+            alreadyCompleted:
+              summary: Briefing already completed
+              value:
+                type: "https://api.scopeflow.com/errors/briefing-already-completed"
+                title: "Briefing Already Completed"
+                status: 409
+                detail: "Cannot modify completed briefing. Briefing session is locked."
+                instance: "/api/v1/briefings/7c9e6679-7425-40de-944b-e07fc1f90ae7/answers"
+                errorCode: "BRIEFING-002"
+                errorId: "550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2026-03-22T14:30:00Z"
+            alreadyInProgress:
+              summary: Duplicate active briefing
+              value:
+                type: "https://api.scopeflow.com/errors/briefing-already-in-progress"
+                title: "Briefing Already In Progress"
+                status: 409
+                detail: "Only 1 active briefing per client per service type. Client 550e8400-e29b-41d4-a716-446655440000 already has active SOCIAL_MEDIA briefing."
+                instance: "/api/v1/briefings"
+                errorCode: "BRIEFING-006"
+                errorId: "550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2026-03-22T14:30:00Z"
+
+    BusinessRuleError:
+      description: Business rule violated
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          examples:
+            incompleteGaps:
+              summary: Completion score too low
+              value:
+                type: "https://api.scopeflow.com/errors/incomplete-gaps"
+                title: "Incomplete Briefing"
+                status: 422
+                detail: "Completion score < 80%. Current: 65%. Please answer remaining questions."
+                instance: "/api/v1/briefings/7c9e6679-7425-40de-944b-e07fc1f90ae7/complete"
+                errorCode: "BRIEFING-005"
+                errorId: "550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2026-03-22T14:30:00Z"
+            maxFollowupExceeded:
+              summary: Max follow-up exceeded
+              value:
+                type: "https://api.scopeflow.com/errors/max-followup-exceeded"
+                title: "Max Follow-up Exceeded"
+                status: 422
+                detail: "Max 1 follow-up per question. Question 7c9e6679-7425-40de-944b-e07fc1f90ae7 already has 1 follow-up."
+                instance: "/api/v1/briefings/7c9e6679-7425-40de-944b-e07fc1f90ae7/answers"
+                errorCode: "BRIEFING-004"
+                errorId: "550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2026-03-22T14:30:00Z"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: "https://api.scopeflow.com/errors/rate-limit-exceeded"
+            title: "Rate Limit Exceeded"
+            status: 429
+            detail: "Rate limit of 10 requests/minute exceeded. Try again in 45 seconds."
+            instance: "/public/briefings/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+            errorCode: "RATE-429"
+            errorId: "550e8400-e29b-41d4-a716-446655440000"
+            timestamp: "2026-03-22T14:30:00Z"
