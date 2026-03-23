@@ -17,6 +17,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - scopeflow-network
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -34,6 +36,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - scopeflow-network
 
   redis:
     image: redis:7-alpine
@@ -47,6 +51,63 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - scopeflow-network
+
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: scopeflow-api
+    environment:
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: local
+
+      # Database Configuration
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/scopeflow
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+      # RabbitMQ Configuration
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+      # Redis Configuration
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      # Application Configuration
+      SERVER_PORT: 8080
+
+      # JWT Configuration (development only)
+      JWT_SECRET: dev-secret-key-change-in-production-min-32-chars
+      JWT_EXPIRATION_MS: 900000
+
+      # AWS S3 (mock for local development)
+      AWS_S3_ENABLED: "false"
+
+      # OpenAI API (optional for local dev)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/v1/health/ready"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+    networks:
+      - scopeflow-network
+    restart: unless-stopped
 
 volumes:
   postgres_data:
@@ -54,5 +115,5 @@ volumes:
   redis_data:
 
 networks:
-  default:
-    name: scopeflow-network
+  scopeflow-network:
+    driver: bridge

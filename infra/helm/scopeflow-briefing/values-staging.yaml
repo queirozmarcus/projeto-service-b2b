@@ -1,0 +1,115 @@
+# Staging environment overrides
+replicaCount: 2
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  hosts:
+    - host: api-staging.scopeflow.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: scopeflow-api-staging-tls
+      hosts:
+        - api-staging.scopeflow.com
+
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: "staging"
+  - name: SERVER_PORT
+    value: "8080"
+  - name: SPRING_DATASOURCE_URL
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: database-url
+  - name: SPRING_DATASOURCE_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: database-username
+  - name: SPRING_DATASOURCE_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: database-password
+  - name: JWT_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: jwt-secret
+  - name: SPRING_RABBITMQ_HOST
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: rabbitmq-host
+  - name: SPRING_RABBITMQ_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: rabbitmq-username
+  - name: SPRING_RABBITMQ_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: rabbitmq-password
+  - name: SPRING_DATA_REDIS_HOST
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: redis-host
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: aws-access-key-id
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: aws-secret-access-key
+  - name: AWS_S3_BUCKET
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: aws-s3-bucket
+  - name: OPENAI_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: scopeflow-briefing-secrets
+        key: openai-api-key
+  - name: JAVA_OPTS
+    value: "-XX:+UseG1GC -XX:MaxRAMPercentage=75.0"
+
+configMap:
+  data:
+    application.yaml: |
+      spring:
+        application:
+          name: scopeflow-briefing
+        jpa:
+          show-sql: true
+      management:
+        endpoints:
+          web:
+            exposure:
+              include: health,info,prometheus,metrics,env
+      logging:
+        level:
+          com.scopeflow: DEBUG
+          org.springframework.web: INFO

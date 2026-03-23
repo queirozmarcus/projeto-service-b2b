@@ -1,0 +1,10 @@
+{{- if .Values.configMap.create }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "scopeflow-briefing.fullname" . }}-config
+  labels:
+    {{- include "scopeflow-briefing.labels" . | nindent 4 }}
+data:
+  {{- toYaml .Values.configMap.data | nindent 2 }}
+{{- end }}
