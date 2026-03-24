@@ -726,4 +726,5 @@ class AuthControllerIntegrationTest {
 
 - ✅ Branch: `feature/sprint-2-adapter-layer` criado
 - ✅ Plano estruturado (3 contextos, 4 fases)
-- ⏳ Aguardando aprovação para iniciar execução
+- ✅ **APROVADO** em 2026-03-24 10:35 UTC
+- 🚀 **EXECUÇÃO INICIADA** — delegando ao architect (Fase 1)
