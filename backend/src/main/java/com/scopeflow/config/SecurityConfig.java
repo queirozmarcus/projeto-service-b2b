@@ -1,5 +1,6 @@
 package com.scopeflow.config;
 
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,9 +21,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * - Stateless JWT (no session)
  * - Public: /auth/**, /actuator/health, /proposals/*/approve (client-facing)
  * - Protected: all other endpoints require valid JWT
+ * - @EnableCaching: habilita Caffeine cache para UserStatusCacheService
  */
 @Configuration
 @EnableWebSecurity
+@EnableCaching
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;

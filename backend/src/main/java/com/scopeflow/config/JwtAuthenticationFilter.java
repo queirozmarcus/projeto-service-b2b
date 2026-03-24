@@ -1,6 +1,5 @@
 package com.scopeflow.config;
 
-import com.scopeflow.adapter.out.persistence.user.JpaUserSpringRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -25,6 +24,9 @@ import java.util.UUID;
  *
  * Sets UsernamePasswordAuthenticationToken with ScopeFlowPrincipal as principal,
  * enabling SecurityUtil to extract userId and workspaceId from any authenticated request.
+ *
+ * Hexagonal: injects UserRepository port (via UserStatusCacheService), not JPA directly.
+ * Performance: user status is cached (TTL 5min) to avoid N+1 DB queries per request.
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -32,11 +34,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
-    private final JpaUserSpringRepository userRepo;
+    private final UserStatusCacheService userStatusCacheService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, JpaUserSpringRepository userRepo) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserStatusCacheService userStatusCacheService) {
         this.jwtService = jwtService;
-        this.userRepo = userRepo;
+        this.userStatusCacheService = userStatusCacheService;
     }
 
     @Override
@@ -70,9 +72,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             UUID workspaceId = workspaceIdStr != null ? UUID.fromString(workspaceIdStr) : null;
 
-            // Verify user still exists and is active
-            var user = userRepo.findById(userId);
-            if (user.isEmpty() || !"ACTIVE".equals(user.get().getStatus())) {
+            // Verify user still exists and is active.
+            // UserStatusCacheService uses UserRepository (domain port) — not JPA directly.
+            // Cache TTL: 5min (configured in application.properties via Caffeine spec).
+            String status = userStatusCacheService.getUserStatus(userId);
+            if (!"ACTIVE".equals(status)) {
+                log.debug("Rejecting token for userId={}: status={}", userId, status);
                 filterChain.doFilter(request, response);
                 return;
             }
