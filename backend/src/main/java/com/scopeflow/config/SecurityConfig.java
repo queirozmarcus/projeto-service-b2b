@@ -18,10 +18,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * Spring Security 6.x configuration.
  *
- * - Stateless JWT (no session)
- * - Public: /auth/**, /actuator/health, /proposals/*/approve (client-facing)
- * - Protected: all other endpoints require valid JWT
- * - @EnableCaching: habilita Caffeine cache para UserStatusCacheService
+ * Stateless JWT authentication with role-based access control.
+ * Public endpoints: auth, health, OpenAPI docs, client-facing briefing/approval.
+ * Protected endpoints: require valid JWT token with appropriate role.
  */
 @Configuration
 @EnableWebSecurity
@@ -43,13 +42,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public auth endpoints
                         .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/refresh").permitAll()
-                        // Health & observability
+                        // Health and observability
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                        // OpenAPI docs
+                        // OpenAPI documentation
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         // Client-facing briefing endpoints (public token access)
                         .requestMatchers("/public/briefings/**").permitAll()
-                        // Client-facing approval endpoints (token-based, no JWT)
+                        // Client-facing approval endpoints (token-based)
                         .requestMatchers(HttpMethod.GET, "/proposals/*/approve").permitAll()
                         .requestMatchers(HttpMethod.POST, "/proposals/*/approve").permitAll()
                         // All other requests require authentication
