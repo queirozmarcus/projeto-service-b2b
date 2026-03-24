@@ -2,7 +2,7 @@ package com.scopeflow.adapter.in.web.workspace;
 
 import com.scopeflow.adapter.in.web.security.SecurityUtil;
 import com.scopeflow.adapter.in.web.workspace.dto.*;
-import com.scopeflow.core.domain.user.UserId;
+import com.scopeflow.core.domain.user.*;
 import com.scopeflow.core.domain.workspace.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,9 +31,17 @@ public class WorkspaceControllerV2 {
     private static final Logger log = LoggerFactory.getLogger(WorkspaceControllerV2.class);
 
     private final WorkspaceService workspaceService;
+    private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
 
-    public WorkspaceControllerV2(WorkspaceService workspaceService) {
+    public WorkspaceControllerV2(
+            WorkspaceService workspaceService,
+            UserService userService,
+            PasswordEncoder passwordEncoder
+    ) {
         this.workspaceService = workspaceService;
+        this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -76,13 +85,11 @@ public class WorkspaceControllerV2 {
      * GET /workspaces
      * List all workspaces where current user is a member.
      *
-     * Note: This requires a user-scoped query (not in current WorkspaceService).
-     * Returns current workspace from JWT context as a simplified approach.
+     * Note: Returns current workspace from JWT context as a simplified approach.
      */
     @GetMapping
     @Operation(summary = "List workspaces for current user")
     public List<WorkspaceResponse> list() {
-        // Simplified: return workspace from JWT context
         UUID workspaceId = SecurityUtil.getWorkspaceId();
         Workspace workspace = workspaceService.getWorkspaceById(new WorkspaceId(workspaceId))
                 .orElseThrow(() -> new WorkspaceNotFoundException("Workspace not found: " + workspaceId));
@@ -94,6 +101,10 @@ public class WorkspaceControllerV2 {
     /**
      * POST /workspaces/{id}/members/invite
      * Invite a user by email with a role.
+     *
+     * If the user already exists (by email), they are added directly.
+     * If the user does not exist, a new INACTIVE user is created and
+     * an invite link would be sent async (not yet implemented — logged for now).
      */
     @PostMapping("/{workspaceId}/members/invite")
     @ResponseStatus(HttpStatus.CREATED)
@@ -102,22 +113,33 @@ public class WorkspaceControllerV2 {
             @PathVariable UUID workspaceId,
             @Valid @RequestBody InviteMemberRequest request
     ) {
-        // Enforce RBAC: only OWNER or ADMIN can invite
         requireOwnerOrAdmin(workspaceId);
 
-        // Invite by finding user by email (simplified — real impl would send email invite)
-        // For now: create a placeholder invited member record
-        // In production, would look up user by email or send invite link
         WorkspaceId wsId = new WorkspaceId(workspaceId);
+        Email email = new Email(request.email());
 
-        // Placeholder userId — in production, look up or create user by email
-        UserId invitedUserId = UserId.generate();
-        workspaceService.inviteMember(wsId, invitedUserId, request.role());
+        // Lookup existing user by email, or create a new INACTIVE user
+        User invitedUser = userService.getUserByEmail(email)
+                .orElseGet(() -> {
+                    // User does not exist — create as INACTIVE pending invite acceptance
+                    UserId newUserId = UserId.generate();
+                    // Temporary password hash (INACTIVE user cannot login until they set a real one)
+                    String tempHashValue = passwordEncoder.encode(UUID.randomUUID().toString());
+                    PasswordHash tempHash = new PasswordHash(tempHashValue);
+                    String displayName = extractDisplayNameFromEmail(email.normalized());
+                    UserInactive newUser = User.createInvited(newUserId, email, tempHash, displayName);
+                    userService.saveInvitedUser(newUser);
+                    log.info("New invited user created: userId={}, email={}", newUserId.value(), email.normalized());
+                    return newUser;
+                });
 
-        log.info("Member invited: workspaceId={}, email={}, role={}",
-                workspaceId, request.email(), request.role());
+        workspaceService.inviteMember(wsId, invitedUser.getId(), request.role());
 
-        return new MemberResponse(invitedUserId.value(), request.role().name(), "INVITED", null);
+        // TODO: publish WorkspaceMemberInvited event → async email with accept link
+        log.info("Member invited: workspaceId={}, email={}, role={}, userId={}",
+                workspaceId, request.email(), request.role(), invitedUser.getId().value());
+
+        return new MemberResponse(invitedUser.getId().value(), request.role().name(), "INVITED", null);
     }
 
     /**
@@ -176,7 +198,7 @@ public class WorkspaceControllerV2 {
                 .toList();
     }
 
-    // ============ RBAC helpers ============
+    // ============ Private helpers ============
 
     private void requireOwnerOrAdmin(UUID workspaceId) {
         if (!SecurityUtil.hasRole("OWNER") && !SecurityUtil.hasRole("ADMIN")) {
@@ -184,5 +206,25 @@ public class WorkspaceControllerV2 {
                     "Only OWNER or ADMIN can perform this action"
             );
         }
+    }
+
+    /**
+     * Extract a display name from email address (e.g., "john.doe@example.com" → "John Doe").
+     * Used as default name for newly invited users.
+     */
+    private String extractDisplayNameFromEmail(String email) {
+        String localPart = email.split("@")[0];
+        return localPart.replace(".", " ").replace("_", " ")
+                .chars()
+                .collect(StringBuilder::new,
+                        (sb, c) -> {
+                            if (sb.isEmpty() || sb.charAt(sb.length() - 1) == ' ') {
+                                sb.append(Character.toUpperCase(c));
+                            } else {
+                                sb.append((char) c);
+                            }
+                        },
+                        StringBuilder::append)
+                .toString();
     }
 }

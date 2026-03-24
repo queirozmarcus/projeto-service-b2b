@@ -75,6 +75,19 @@ public class UserService {
     }
 
     /**
+     * Persist an invited (inactive) user created by the workspace invite flow.
+     *
+     * This bypasses the email-uniqueness check because it is called only
+     * after confirming the user does not exist (findByEmail returned empty).
+     *
+     * @param user UserInactive to persist
+     */
+    public void saveInvitedUser(UserInactive user) {
+        Objects.requireNonNull(user, "Invited user cannot be null");
+        userRepository.save(user);
+    }
+
+    /**
      * Deactivate a user (soft delete).
      */
     public void deactivateUser(UserId userId) {
