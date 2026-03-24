@@ -80,25 +80,66 @@ public class ProposalControllerV2 {
 
     /**
      * GET /proposals
-     * List all proposals in current workspace.
+     * List proposals in current workspace with pagination.
+     *
+     * @param page Page number (zero-based, default 0)
+     * @param size Page size (default 20, max 100)
+     * @param status Optional status filter (DRAFT, PUBLISHED, APPROVED, REJECTED)
      */
     @GetMapping
-    @Operation(summary = "List proposals in workspace")
-    public List<ProposalResponse> list() {
+    @Operation(summary = "List proposals in workspace with pagination")
+    public ProposalPageResponse list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String status
+    ) {
         UUID workspaceId = SecurityUtil.getWorkspaceId();
-        return proposalService.findByWorkspace(new WorkspaceId(workspaceId))
+
+        // Enforce max page size to prevent memory exhaustion
+        int effectiveSize = Math.min(Math.max(size, 1), 100);
+
+        List<Proposal> all = (status != null && !status.isBlank())
+                ? proposalService.findByWorkspaceAndStatus(new WorkspaceId(workspaceId),
+                    ProposalStatus.valueOf(status.toUpperCase()))
+                : proposalService.findByWorkspace(new WorkspaceId(workspaceId));
+
+        int totalElements = all.size();
+        int totalPages = (int) Math.ceil((double) totalElements / effectiveSize);
+        int fromIndex = Math.min(page * effectiveSize, totalElements);
+        int toIndex = Math.min(fromIndex + effectiveSize, totalElements);
+
+        List<ProposalResponse> content = all.subList(fromIndex, toIndex)
                 .stream()
                 .map(ProposalResponse::from)
                 .toList();
+
+        boolean first = page == 0;
+        boolean last = totalPages == 0 || page >= totalPages - 1;
+
+        return ProposalPageResponse.of(content, totalElements, totalPages, effectiveSize, page, first, last);
     }
 
     /**
      * GET /proposals/{id}/versions
      * Get proposal version history.
+     *
+     * Workspace isolation: proposal must belong to authenticated workspace.
      */
     @GetMapping("/{id}/versions")
     @Operation(summary = "Get proposal version history")
     public List<ProposalVersionResponse> getVersions(@PathVariable UUID id) {
+        UUID workspaceId = SecurityUtil.getWorkspaceId();
+
+        // Workspace isolation: verify proposal belongs to authenticated workspace before returning versions
+        Proposal proposal = proposalService.findById(ProposalId.of(id))
+                .orElseThrow(() -> new ProposalNotFoundException("Proposal not found: " + id));
+
+        if (!proposal.getWorkspaceId().value().equals(workspaceId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Proposal does not belong to your workspace"
+            );
+        }
+
         return proposalService.findVersions(ProposalId.of(id))
                 .stream()
                 .map(ProposalVersionResponse::from)

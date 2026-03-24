@@ -174,6 +174,12 @@ public class ProposalService {
         return proposalRepository.findByWorkspaceId(workspaceId);
     }
 
+    public List<Proposal> findByWorkspaceAndStatus(WorkspaceId workspaceId, ProposalStatus status) {
+        Objects.requireNonNull(workspaceId, "workspaceId cannot be null");
+        Objects.requireNonNull(status, "status cannot be null");
+        return proposalRepository.findByWorkspaceIdAndStatus(workspaceId, status);
+    }
+
     public List<ProposalVersion> findVersions(ProposalId proposalId) {
         return versionRepository.findByProposalId(proposalId);
     }
