@@ -27,7 +27,7 @@ import java.util.UUID;
  * Rate limit: 100 req/min per user.
  */
 @RestController
-@RequestMapping("/api/v1/briefings")
+@RequestMapping("/briefings")
 @Tag(name = "Briefings", description = "Authenticated endpoints for workspace owners/members to manage briefings")
 @SecurityRequirement(name = "bearerAuth")
 public class BriefingControllerV1 {

@@ -1,7 +1,9 @@
 package com.scopeflow.adapter.in.web;
 
 import com.scopeflow.core.domain.briefing.*;
+import com.scopeflow.core.domain.proposal.*;
 import com.scopeflow.core.domain.user.EmailAlreadyRegisteredException;
+import com.scopeflow.core.domain.user.InvalidCredentialsException;
 import com.scopeflow.core.domain.workspace.*;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -161,6 +163,82 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(problemDetail);
+    }
+
+    // ============ Auth Exceptions ============
+
+    /**
+     * Handle invalid credentials (login failure).
+     */
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidCredentials(
+            InvalidCredentialsException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-credentials"));
+        problemDetail.setTitle("Invalid Credentials");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
+    }
+
+    // ============ Proposal Domain Exceptions ============
+
+    /**
+     * Handle proposal not found.
+     */
+    @ExceptionHandler(ProposalNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleProposalNotFound(
+            ProposalNotFoundException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "proposal-not-found"));
+        problemDetail.setTitle("Proposal Not Found");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    /**
+     * Handle invalid proposal state transition.
+     */
+    @ExceptionHandler(InvalidProposalStateException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidProposalState(
+            InvalidProposalStateException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-proposal-state"));
+        problemDetail.setTitle("Invalid Proposal State");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+    }
+
+    /**
+     * Handle expired approval token.
+     */
+    @ExceptionHandler(ApprovalTokenExpiredException.class)
+    public ResponseEntity<ProblemDetail> handleApprovalTokenExpired(
+            ApprovalTokenExpiredException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "approval-token-expired"));
+        problemDetail.setTitle("Approval Token Expired");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
     }
 
     // ============ Briefing Domain Exceptions ============
