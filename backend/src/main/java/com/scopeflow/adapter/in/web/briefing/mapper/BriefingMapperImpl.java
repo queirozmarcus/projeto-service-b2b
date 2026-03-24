@@ -122,6 +122,20 @@ public class BriefingMapperImpl implements BriefingMapper {
     }
 
     @Override
+    public ProgressResponse toProgressResponse(com.scopeflow.core.domain.briefing.GapAnalysis analysis) {
+        if (analysis == null) {
+            return new ProgressResponse(0, 0, 0, List.of());
+        }
+
+        return new ProgressResponse(
+                0, // currentStep — calculated dynamically in future
+                0, // totalSteps — calculated dynamically in future
+                analysis.score(),
+                analysis.gaps()
+        );
+    }
+
+    @Override
     public QuestionResponse toQuestionResponse(BriefingQuestion question, boolean followUpGenerated) {
         if (question == null) {
             return null;

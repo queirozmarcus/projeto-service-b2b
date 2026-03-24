@@ -53,6 +53,21 @@ public sealed class User permits UserActive, UserInactive, UserDeleted {
         return new UserActive(id, email, passwordHash, fullName, phone, Instant.now(), Instant.now());
     }
 
+    /**
+     * Factory method: create an invited (inactive) user.
+     *
+     * Used when inviting a user by email who does not yet have an account.
+     * User remains INACTIVE until they accept the invite and set their password.
+     */
+    public static UserInactive createInvited(
+            UserId id,
+            Email email,
+            PasswordHash temporaryPasswordHash,
+            String fullName
+    ) {
+        return new UserInactive(id, email, temporaryPasswordHash, fullName, null, Instant.now(), Instant.now());
+    }
+
     // ============ Accessors ============
 
     public UserId getId() {

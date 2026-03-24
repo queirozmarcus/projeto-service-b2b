@@ -168,14 +168,18 @@ public class BriefingService {
     /**
      * Detect gaps in the briefing.
      *
-     * @return CompletionScore with gaps identified
+     * <p>Always returns a non-null GapAnalysis. A low score does not mean absence of
+     * information — it is valid information that the briefing is incomplete.
+     * Use {@link GapAnalysis#isEligibleForCompletion()} to check if score >= 80%.
+     *
+     * @return GapAnalysis with current score and identified gaps — never null
      * @throws BriefingNotFoundException if session not found
      */
-    public CompletionScore detectGaps(BriefingSessionId sessionId)
+    public GapAnalysis detectGaps(BriefingSessionId sessionId)
             throws BriefingNotFoundException {
         Objects.requireNonNull(sessionId, "sessionId cannot be null");
 
-        BriefingSession session = sessionRepository.findById(sessionId)
+        sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new BriefingNotFoundException("Briefing session not found: " + sessionId));
 
         List<BriefingAnswer> answers = answerRepository.findBySession(sessionId);
@@ -186,16 +190,12 @@ public class BriefingService {
         int score = Math.min(100, (answers.size() * 100) / expectedAnswers);
 
         List<String> gaps = new ArrayList<>();
-        if (score < 100) {
-            gaps.add("Need " + (expectedAnswers - answers.size()) + " more answers");
+        int remaining = expectedAnswers - answers.size();
+        if (remaining > 0) {
+            gaps.add("Need " + remaining + " more answer" + (remaining == 1 ? "" : "s") + " to reach minimum threshold");
         }
 
-        // If score < 80, cannot complete
-        if (score < 80) {
-            return null; // Caller should handle retry or abandonment
-        }
-
-        return new CompletionScore(score, gaps);
+        return new GapAnalysis(score, gaps);
     }
 
     /**
@@ -272,26 +272,52 @@ public class BriefingService {
         aiGenerationRepository.save(generation);
     }
 
-    // ============ Repository Access (for controllers) ============
+    // ============ Query methods (encapsulados — controllers delegam para cá) ============
 
     /**
-     * Expose sessionRepository for direct queries in adapter layer.
+     * Find a briefing session by ID and validate workspace ownership.
+     *
+     * @throws BriefingNotFoundException if session not found
+     * @throws org.springframework.security.access.AccessDeniedException if session belongs to another workspace
      */
-    public BriefingSessionRepository sessionRepository() {
-        return sessionRepository;
+    public BriefingSession findByIdAndWorkspace(BriefingSessionId sessionId, WorkspaceId workspaceId)
+            throws BriefingNotFoundException {
+        Objects.requireNonNull(sessionId, "sessionId cannot be null");
+        Objects.requireNonNull(workspaceId, "workspaceId cannot be null");
+
+        BriefingSession session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new BriefingNotFoundException("Briefing session not found: " + sessionId));
+
+        if (!session.getWorkspaceId().equals(workspaceId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Briefing does not belong to authenticated workspace"
+            );
+        }
+
+        return session;
     }
 
     /**
-     * Expose questionRepository for direct queries in adapter layer.
+     * Find all questions for a session.
      */
-    public BriefingQuestionRepository questionRepository() {
-        return questionRepository;
+    public List<BriefingQuestion> findQuestions(BriefingSessionId sessionId) {
+        Objects.requireNonNull(sessionId, "sessionId cannot be null");
+        return questionRepository.findBySession(sessionId);
     }
 
     /**
-     * Expose answerRepository for direct queries in adapter layer.
+     * Find all answers for a session.
      */
-    public BriefingAnswerRepository answerRepository() {
-        return answerRepository;
+    public List<BriefingAnswer> findAnswers(BriefingSessionId sessionId) {
+        Objects.requireNonNull(sessionId, "sessionId cannot be null");
+        return answerRepository.findBySession(sessionId);
+    }
+
+    /**
+     * Find paginated briefings for a workspace with optional filters.
+     */
+    public List<BriefingSession> findByWorkspaceAndStatus(WorkspaceId workspaceId, String status) {
+        Objects.requireNonNull(workspaceId, "workspaceId cannot be null");
+        return sessionRepository.findByWorkspaceAndStatus(workspaceId, status);
     }
 }
