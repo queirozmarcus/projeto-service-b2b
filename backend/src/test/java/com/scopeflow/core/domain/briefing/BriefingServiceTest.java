@@ -233,7 +233,7 @@ class BriefingServiceTest {
     class DetectGapsTests {
 
         @Test
-        void shouldDetectGaps() {
+        void shouldReturnGapAnalysis_whenNoAnswers() {
             // Given
             BriefingSessionId sessionId = BriefingSessionId.generate();
             when(sessionRepository.findById(sessionId))
@@ -242,10 +242,62 @@ class BriefingServiceTest {
                     .thenReturn(List.of()); // 0 answers
 
             // When
-            CompletionScore score = service.detectGaps(sessionId);
+            GapAnalysis analysis = service.detectGaps(sessionId);
+
+            // Then — detectGaps ALWAYS returns non-null GapAnalysis (C3 fix)
+            assertThat(analysis).isNotNull();
+            assertThat(analysis.score()).isEqualTo(0); // 0 of 10 answers → 0%
+            assertThat(analysis.gaps()).isNotEmpty();
+            assertThat(analysis.isEligibleForCompletion()).isFalse();
+        }
+
+        @Test
+        void shouldReturnEligible_whenEnoughAnswers() {
+            // Given — 10 answers → score = 100%, eligible for completion
+            BriefingSessionId sessionId = BriefingSessionId.generate();
+            when(sessionRepository.findById(sessionId))
+                    .thenReturn(Optional.of(BriefingSession.startNew(workspaceId, clientId, serviceType)));
+
+            List<BriefingAnswer> tenAnswers = java.util.stream.IntStream.range(0, 10)
+                    .mapToObj(i -> (BriefingAnswer) new AnsweredDirect(
+                            AnswerId.generate(), sessionId, QuestionId.generate(),
+                            new AnswerText("answer " + i), java.time.Instant.now(), 80
+                    ))
+                    .toList();
+            when(answerRepository.findBySession(sessionId)).thenReturn(tenAnswers);
+
+            // When
+            GapAnalysis analysis = service.detectGaps(sessionId);
 
             // Then
-            assertThat(score).isNull(); // Score < 80%, cannot complete
+            assertThat(analysis).isNotNull();
+            assertThat(analysis.score()).isEqualTo(100);
+            assertThat(analysis.gaps()).isEmpty();
+            assertThat(analysis.isEligibleForCompletion()).isTrue();
+        }
+
+        @Test
+        void shouldReturnPartialScore_withSomeAnswers() {
+            // Given — 5 answers → score = 50%, not eligible
+            BriefingSessionId sessionId = BriefingSessionId.generate();
+            when(sessionRepository.findById(sessionId))
+                    .thenReturn(Optional.of(BriefingSession.startNew(workspaceId, clientId, serviceType)));
+
+            List<BriefingAnswer> fiveAnswers = java.util.stream.IntStream.range(0, 5)
+                    .mapToObj(i -> (BriefingAnswer) new AnsweredDirect(
+                            AnswerId.generate(), sessionId, QuestionId.generate(),
+                            new AnswerText("answer " + i), java.time.Instant.now(), 80
+                    ))
+                    .toList();
+            when(answerRepository.findBySession(sessionId)).thenReturn(fiveAnswers);
+
+            // When
+            GapAnalysis analysis = service.detectGaps(sessionId);
+
+            // Then
+            assertThat(analysis).isNotNull();
+            assertThat(analysis.score()).isEqualTo(50);
+            assertThat(analysis.isEligibleForCompletion()).isFalse();
         }
 
         @Test

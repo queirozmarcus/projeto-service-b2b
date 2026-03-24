@@ -2,7 +2,9 @@ package com.scopeflow.adapter.in.web.briefing;
 
 import com.scopeflow.adapter.in.web.briefing.dto.*;
 import com.scopeflow.adapter.in.web.briefing.mapper.BriefingMapper;
-import com.scopeflow.core.domain.briefing.BriefingService;
+import com.scopeflow.adapter.in.web.security.SecurityUtil;
+import com.scopeflow.core.domain.briefing.*;
+import com.scopeflow.core.domain.workspace.WorkspaceId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -68,7 +71,7 @@ public class BriefingControllerV1 {
     public ResponseEntity<BriefingResponse> createBriefing(
             @Valid @RequestBody CreateBriefingRequest request
     ) {
-        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var workspaceId = mapper.toWorkspaceId(SecurityUtil.getWorkspaceId());
         var clientId = mapper.toClientId(request.clientId());
         var serviceType = request.serviceType();
 
@@ -87,11 +90,8 @@ public class BriefingControllerV1 {
      * Rate limit: 100 req/min (authenticated)
      *
      * @param status Filter by status (optional)
-     * @param serviceType Filter by service type (optional)
-     * @param createdAfter Filter by creation date (optional)
      * @param page Page number (zero-based, default 0)
      * @param size Page size (default 20, max 100)
-     * @param sort Sort field and direction (default "createdAt,desc")
      * @return 200 OK with PageResponse<BriefingResponse>
      */
     @GetMapping
@@ -107,19 +107,31 @@ public class BriefingControllerV1 {
     })
     public ResponseEntity<PageResponse<BriefingResponse>> listBriefings(
             @Parameter(description = "Filter by status") @RequestParam(required = false) String status,
-            @Parameter(description = "Filter by service type") @RequestParam(required = false) String serviceType,
-            @Parameter(description = "Filter by creation date (ISO 8601)") @RequestParam(required = false) String createdAfter,
             @Parameter(description = "Page number (zero-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Sort field and direction") @RequestParam(defaultValue = "createdAt,desc") String sort
+            @Parameter(description = "Page size (max 100)") @RequestParam(defaultValue = "20") int size
     ) {
-        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var workspaceId = mapper.toWorkspaceId(SecurityUtil.getWorkspaceId());
 
-        // TODO: Build Pageable with sort
-        // TODO: Apply filters (status, serviceType, createdAfter)
-        // For now, return empty page as placeholder until repository findByWorkspace is implemented
-        var content = java.util.List.<BriefingResponse>of();
-        var pageResponse = mapper.toPageResponse(content, 0, 0, size, page, true, true);
+        // Enforce max page size to prevent memory exhaustion
+        int effectiveSize = Math.min(size, 100);
+
+        List<BriefingSession> sessions = briefingService.findByWorkspaceAndStatus(workspaceId, status);
+
+        // Manual pagination over the list (paginação in-memory — adequado para MVP)
+        int totalElements = sessions.size();
+        int totalPages = effectiveSize == 0 ? 0 : (int) Math.ceil((double) totalElements / effectiveSize);
+        int fromIndex = Math.min(page * effectiveSize, totalElements);
+        int toIndex = Math.min(fromIndex + effectiveSize, totalElements);
+
+        List<BriefingResponse> content = sessions.subList(fromIndex, toIndex)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+
+        boolean first = page == 0;
+        boolean last = page >= totalPages - 1;
+
+        var pageResponse = mapper.toPageResponse(content, totalElements, totalPages, effectiveSize, page, first, last);
 
         return ResponseEntity.ok(pageResponse);
     }
@@ -148,24 +160,13 @@ public class BriefingControllerV1 {
     public ResponseEntity<BriefingDetailResponse> getBriefing(
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId
     ) {
-        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var workspaceId = mapper.toWorkspaceId(SecurityUtil.getWorkspaceId());
         var sessionId = mapper.toBriefingSessionId(briefingId);
 
-        // Find session and verify ownership
-        var session = briefingService.sessionRepository().findById(sessionId)
-                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
-                        "Briefing session not found: " + briefingId
-                ));
-
-        if (!session.getWorkspaceId().equals(workspaceId)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Briefing does not belong to authenticated workspace"
-            );
-        }
-
-        // Fetch questions and answers
-        var questions = briefingService.questionRepository().findBySession(sessionId);
-        var answers = briefingService.answerRepository().findBySession(sessionId);
+        // findByIdAndWorkspace already validates workspace ownership
+        var session = briefingService.findByIdAndWorkspace(sessionId, workspaceId);
+        var questions = briefingService.findQuestions(sessionId);
+        var answers = briefingService.findAnswers(sessionId);
 
         var response = mapper.toDetailResponse(session, questions, answers);
 
@@ -197,22 +198,21 @@ public class BriefingControllerV1 {
     public ResponseEntity<ProgressResponse> getBriefingProgress(
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId
     ) {
-        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var workspaceId = mapper.toWorkspaceId(SecurityUtil.getWorkspaceId());
         var sessionId = mapper.toBriefingSessionId(briefingId);
 
-        var session = briefingService.sessionRepository().findById(sessionId)
-                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
-                        "Briefing session not found: " + briefingId
-                ));
+        // Validates workspace ownership — throws AccessDeniedException if wrong workspace
+        briefingService.findByIdAndWorkspace(sessionId, workspaceId);
 
-        if (!session.getWorkspaceId().equals(workspaceId)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Briefing does not belong to authenticated workspace"
-            );
-        }
+        // detectGaps always returns a non-null GapAnalysis (C3 fix)
+        GapAnalysis analysis = briefingService.detectGaps(sessionId);
 
-        var score = briefingService.detectGaps(sessionId);
-        var response = mapper.toProgressResponse(score);
+        var response = new ProgressResponse(
+                0, // currentStep — calculated dynamically in future from answers count
+                10, // totalSteps — placeholder
+                analysis.score(),
+                analysis.gaps()
+        );
 
         return ResponseEntity.ok()
                 .cacheControl(org.springframework.http.CacheControl.maxAge(30, java.util.concurrent.TimeUnit.SECONDS))
@@ -247,19 +247,10 @@ public class BriefingControllerV1 {
     public ResponseEntity<QuestionResponse> getNextQuestion(
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId
     ) {
-        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var workspaceId = mapper.toWorkspaceId(SecurityUtil.getWorkspaceId());
         var sessionId = mapper.toBriefingSessionId(briefingId);
 
-        var session = briefingService.sessionRepository().findById(sessionId)
-                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
-                        "Briefing session not found: " + briefingId
-                ));
-
-        if (!session.getWorkspaceId().equals(workspaceId)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Briefing does not belong to authenticated workspace"
-            );
-        }
+        briefingService.findByIdAndWorkspace(sessionId, workspaceId);
 
         var question = briefingService.getNextQuestion(sessionId);
         var response = mapper.toQuestionResponse(question, false);
@@ -300,19 +291,10 @@ public class BriefingControllerV1 {
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId,
             @Valid @RequestBody SubmitAnswerRequest request
     ) {
-        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var workspaceId = mapper.toWorkspaceId(SecurityUtil.getWorkspaceId());
         var sessionId = mapper.toBriefingSessionId(briefingId);
 
-        var session = briefingService.sessionRepository().findById(sessionId)
-                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
-                        "Briefing session not found: " + briefingId
-                ));
-
-        if (!session.getWorkspaceId().equals(workspaceId)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Briefing does not belong to authenticated workspace"
-            );
-        }
+        briefingService.findByIdAndWorkspace(sessionId, workspaceId);
 
         var questionId = mapper.toQuestionId(request.questionId());
         var answerText = mapper.toAnswerText(request.answerText());
@@ -354,19 +336,10 @@ public class BriefingControllerV1 {
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId,
             @Valid @RequestBody CompleteBriefingRequest request
     ) {
-        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var workspaceId = mapper.toWorkspaceId(SecurityUtil.getWorkspaceId());
         var sessionId = mapper.toBriefingSessionId(briefingId);
 
-        var session = briefingService.sessionRepository().findById(sessionId)
-                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
-                        "Briefing session not found: " + briefingId
-                ));
-
-        if (!session.getWorkspaceId().equals(workspaceId)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Briefing does not belong to authenticated workspace"
-            );
-        }
+        briefingService.findByIdAndWorkspace(sessionId, workspaceId);
 
         var score = mapper.toCompletionScore(request);
         var completed = briefingService.completeBriefing(sessionId, score);
@@ -404,20 +377,10 @@ public class BriefingControllerV1 {
             @Parameter(description = "Briefing session UUID") @PathVariable UUID briefingId,
             @Valid @RequestBody AbandonBriefingRequest request
     ) {
-        var workspaceId = mapper.toWorkspaceId(com.scopeflow.adapter.in.web.security.SecurityUtil.getWorkspaceId());
+        var workspaceId = mapper.toWorkspaceId(SecurityUtil.getWorkspaceId());
         var sessionId = mapper.toBriefingSessionId(briefingId);
 
-        var session = briefingService.sessionRepository().findById(sessionId)
-                .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
-                        "Briefing session not found: " + briefingId
-                ));
-
-        if (!session.getWorkspaceId().equals(workspaceId)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Briefing does not belong to authenticated workspace"
-            );
-        }
-
+        briefingService.findByIdAndWorkspace(sessionId, workspaceId);
         briefingService.abandonBriefing(sessionId);
 
         return ResponseEntity.noContent().build();
