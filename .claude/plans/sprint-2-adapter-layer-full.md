@@ -722,9 +722,28 @@ class AuthControllerIntegrationTest {
 
 ---
 
-## Status
+## Status: FASE 3 (Code Review) — 3 CRITICOS + 6 IMPORTANTES ENCONTRADOS
 
-- ✅ Branch: `feature/sprint-2-adapter-layer` criado
-- ✅ Plano estruturado (3 contextos, 4 fases)
-- ✅ **APROVADO** em 2026-03-24 10:35 UTC
-- 🚀 **EXECUÇÃO INICIADA** — delegando ao architect (Fase 1)
+### Steps Executadas
+| # | Step | Status | Tempo | Notes |
+|---|------|--------|-------|-------|
+| 1 | Architect: Design doc | ✅ | 1h | 42 endpoints, 15 entities, 50 DTOs, 4 ADRs |
+| 2 | Backend-Dev: JPA + Controllers | ✅ | 10h | 10 entities, 6 adapters, 4 controllers, 79 testes |
+| 3 | DBA: Schema validation | ✅ | 2h | V4 migration fixed, 9 issues corrigidos, 4 docs |
+| 4 | Code-Reviewer: Quality review | ✅ | 1h | **3 críticos + 6 importantes** |
+| 5 | Backend-Dev: Fix issues | ⏳ | ~2h | **PRÓXIMO** — corrigir antes de QA |
+| 6 | QA-Engineer: Expand tests | ⏳ | ~3h | Após fixes do backend-dev |
+| 7 | Merge e consolidação | ⏳ | ~1h | Merge para develop após tudo passar |
+
+### Issues Críticos (bloqueiam merge)
+- **C1:** JwtAuthenticationFilter injeta JpaUserSpringRepository (viola hexagonal)
+- **C2:** inviteMember ignora email (inconsistência referencial)
+- **C3:** BriefingService.detectGaps() retorna null (NPE no controller)
+
+### Issues Importantes (corrigir antes de QA)
+- **I1:** IP spoofing X-Forwarded-For
+- **I2:** GET /proposals/{id}/versions sem workspace isolation
+- **I3:** GET /proposals sem paginação
+- **I4:** GET /briefings com TODO desconectado
+- **I5:** BriefingService expõe repositórios
+- **I6:** Adapters sem @Transactional
