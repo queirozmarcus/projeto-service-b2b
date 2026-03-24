@@ -2,6 +2,7 @@ package com.scopeflow.adapter.out.persistence.proposal;
 
 import com.scopeflow.core.domain.proposal.*;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,6 +12,7 @@ import java.util.UUID;
  * JPA adapter implementing ApprovalWorkflowRepository domain port.
  */
 @Component
+@Transactional(readOnly = true)
 public class JpaApprovalWorkflowRepositoryAdapter implements ApprovalWorkflowRepository {
 
     private final JpaApprovalWorkflowSpringRepository workflowRepo;
@@ -25,6 +27,7 @@ public class JpaApprovalWorkflowRepositoryAdapter implements ApprovalWorkflowRep
     }
 
     @Override
+    @Transactional
     public void save(ApprovalWorkflow workflow) {
         // Upsert workflow
         workflowRepo.findById(workflow.id().value()).ifPresentOrElse(

@@ -5,6 +5,7 @@ import com.scopeflow.core.domain.workspace.*;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import java.util.UUID;
  * JPA adapter implementing WorkspaceMemberRepository domain port.
  */
 @Component
+@Transactional(readOnly = true)
 public class JpaWorkspaceMemberRepositoryAdapter implements WorkspaceMemberRepository {
 
     private final JpaWorkspaceMemberSpringRepository springRepo;
@@ -23,6 +25,7 @@ public class JpaWorkspaceMemberRepositoryAdapter implements WorkspaceMemberRepos
     }
 
     @Override
+    @Transactional
     public void save(WorkspaceMember member) {
         springRepo.findByWorkspaceIdAndUserId(
                 member.getWorkspaceId().value(), member.getUserId().value()

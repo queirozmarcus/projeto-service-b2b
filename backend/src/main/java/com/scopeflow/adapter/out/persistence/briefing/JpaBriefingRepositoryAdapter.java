@@ -5,6 +5,7 @@ import com.scopeflow.core.domain.workspace.WorkspaceId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.UUID;
  * Converts between domain objects and JPA entities.
  */
 @Component
+@Transactional(readOnly = true)
 public class JpaBriefingRepositoryAdapter implements BriefingSessionRepository {
 
     private final JpaBriefingSessionSpringRepository sessionRepo;
@@ -36,6 +38,7 @@ public class JpaBriefingRepositoryAdapter implements BriefingSessionRepository {
     }
 
     @Override
+    @Transactional
     public void save(BriefingSession session) {
         JpaBriefingSession jpaEntity = toJpaEntity(session);
         sessionRepo.save(jpaEntity);

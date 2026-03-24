@@ -4,6 +4,7 @@ import com.scopeflow.core.domain.briefing.BriefingSessionId;
 import com.scopeflow.core.domain.proposal.*;
 import com.scopeflow.core.domain.workspace.WorkspaceId;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.UUID;
  * JPA adapter implementing ProposalRepository domain port.
  */
 @Component
+@Transactional(readOnly = true)
 public class JpaProposalRepositoryAdapter implements ProposalRepository {
 
     private final JpaProposalSpringRepository springRepo;
@@ -28,6 +30,7 @@ public class JpaProposalRepositoryAdapter implements ProposalRepository {
     }
 
     @Override
+    @Transactional
     public void save(Proposal proposal) {
         springRepo.findById(proposal.getId().value()).ifPresentOrElse(
                 existing -> {
@@ -67,6 +70,7 @@ public class JpaProposalRepositoryAdapter implements ProposalRepository {
     }
 
     @Override
+    @Transactional
     public void delete(ProposalId id) {
         springRepo.deleteById(id.value());
     }

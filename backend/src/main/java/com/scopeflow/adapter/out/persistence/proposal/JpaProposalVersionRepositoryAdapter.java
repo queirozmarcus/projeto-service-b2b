@@ -2,6 +2,7 @@ package com.scopeflow.adapter.out.persistence.proposal;
 
 import com.scopeflow.core.domain.proposal.*;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +11,7 @@ import java.util.Optional;
  * JPA adapter implementing ProposalVersionRepository domain port.
  */
 @Component
+@Transactional(readOnly = true)
 public class JpaProposalVersionRepositoryAdapter implements ProposalVersionRepository {
 
     private final JpaProposalVersionSpringRepository springRepo;
@@ -24,6 +26,7 @@ public class JpaProposalVersionRepositoryAdapter implements ProposalVersionRepos
     }
 
     @Override
+    @Transactional
     public void save(ProposalVersion version) {
         // Version is immutable: always insert
         springRepo.save(fromDomain(version));

@@ -2,6 +2,7 @@ package com.scopeflow.adapter.out.persistence.briefing;
 
 import com.scopeflow.core.domain.briefing.*;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ import java.util.List;
  * Converts between domain objects and JPA entities.
  */
 @Component
+@Transactional(readOnly = true)
 public class JpaBriefingAnswerRepositoryAdapter implements BriefingAnswerRepository {
 
     private final JpaBriefingAnswerSpringRepository repo;
@@ -19,6 +21,7 @@ public class JpaBriefingAnswerRepositoryAdapter implements BriefingAnswerReposit
     }
 
     @Override
+    @Transactional
     public void save(BriefingAnswer answer) {
         JpaBriefingAnswer jpaEntity = toJpaEntity(answer);
         repo.save(jpaEntity);

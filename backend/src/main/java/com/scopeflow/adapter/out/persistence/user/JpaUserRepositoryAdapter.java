@@ -2,6 +2,7 @@ package com.scopeflow.adapter.out.persistence.user;
 
 import com.scopeflow.core.domain.user.*;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -12,6 +13,7 @@ import java.util.Optional;
  * Converts between domain User (sealed class) and JpaUser entity.
  */
 @Component
+@Transactional(readOnly = true)
 public class JpaUserRepositoryAdapter implements UserRepository {
 
     private final JpaUserSpringRepository springRepo;
@@ -21,6 +23,7 @@ public class JpaUserRepositoryAdapter implements UserRepository {
     }
 
     @Override
+    @Transactional
     public void save(User user) {
         JpaUser entity = fromDomain(user);
         // For update: merge if exists
@@ -53,6 +56,7 @@ public class JpaUserRepositoryAdapter implements UserRepository {
     }
 
     @Override
+    @Transactional
     public void delete(UserId id) {
         springRepo.findById(id.value()).ifPresent(entity -> {
             entity.setStatus("DELETED");

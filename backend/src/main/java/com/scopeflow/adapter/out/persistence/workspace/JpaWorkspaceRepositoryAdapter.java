@@ -3,6 +3,7 @@ package com.scopeflow.adapter.out.persistence.workspace;
 import com.scopeflow.core.domain.user.UserId;
 import com.scopeflow.core.domain.workspace.*;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -11,6 +12,7 @@ import java.util.Optional;
  * JPA adapter implementing WorkspaceRepository domain port.
  */
 @Component
+@Transactional(readOnly = true)
 public class JpaWorkspaceRepositoryAdapter implements WorkspaceRepository {
 
     private final JpaWorkspaceSpringRepository springRepo;
@@ -20,6 +22,7 @@ public class JpaWorkspaceRepositoryAdapter implements WorkspaceRepository {
     }
 
     @Override
+    @Transactional
     public void save(Workspace workspace) {
         springRepo.findById(workspace.getId().value()).ifPresentOrElse(
                 existing -> {
@@ -45,6 +48,7 @@ public class JpaWorkspaceRepositoryAdapter implements WorkspaceRepository {
     }
 
     @Override
+    @Transactional
     public void delete(WorkspaceId id) {
         springRepo.findById(id.value()).ifPresent(entity -> {
             entity.setStatus("SUSPENDED");
