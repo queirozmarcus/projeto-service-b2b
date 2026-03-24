@@ -151,6 +151,7 @@ class ApprovalControllerV2Test {
         ApproveProposalRequest request = new ApproveProposalRequest("John Client", "john@example.com");
 
         // When / Then
+        // MockMvc sends from 127.0.0.1 (trusted proxy), so X-Forwarded-For is respected (I1 fix)
         mockMvc.perform(post("/proposals/" + id + "/approve")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
@@ -160,5 +161,37 @@ class ApprovalControllerV2Test {
                 .andExpect(jsonPath("$.approverEmail").value("john@example.com"))
                 .andExpect(jsonPath("$.status").value("APPROVED"))
                 .andExpect(jsonPath("$.ipAddress").value("203.0.113.5"));
+    }
+
+    // ============ I1: IP Spoofing Tests ============
+
+    @Test
+    @DisplayName("POST /approve: X-Forwarded-For from trusted proxy (localhost) is accepted")
+    void approve_shouldUseForwardedIp_whenCallerIsLocalhost() throws Exception {
+        // MockMvc remoteAddr defaults to 127.0.0.1 (trusted proxy)
+        UUID id = UUID.randomUUID();
+        ApproveProposalRequest request = new ApproveProposalRequest("Client", "client@example.com");
+
+        mockMvc.perform(post("/proposals/" + id + "/approve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("X-Forwarded-For", "10.20.30.40"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.ipAddress").value("10.20.30.40"));
+    }
+
+    @Test
+    @DisplayName("POST /approve: first IP in X-Forwarded-For chain is extracted (not intermediaries)")
+    void approve_shouldExtractFirstIp_fromForwardedForChain() throws Exception {
+        UUID id = UUID.randomUUID();
+        ApproveProposalRequest request = new ApproveProposalRequest("Client", "client@example.com");
+
+        // X-Forwarded-For: <client>, <proxy1>, <proxy2>
+        mockMvc.perform(post("/proposals/" + id + "/approve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .header("X-Forwarded-For", "198.51.100.1, 10.0.0.1, 172.16.0.1"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.ipAddress").value("198.51.100.1"));
     }
 }

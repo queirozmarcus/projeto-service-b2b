@@ -98,12 +98,64 @@ public class ApprovalControllerV2 {
 
     // ============ Private helpers ============
 
+    /**
+     * Extract real client IP with spoofing mitigation.
+     *
+     * X-Forwarded-For is only trusted when the immediate caller (remoteAddr) is a known
+     * private/loopback address — meaning a trusted proxy/load balancer forwarded the request.
+     * If remoteAddr is a public IP, we do NOT trust X-Forwarded-For to prevent spoofing.
+     *
+     * Format: "X-Forwarded-For: client, proxy1, proxy2" — we take the leftmost IP.
+     */
     private String extractClientIp(HttpServletRequest request) {
-        // Respect X-Forwarded-For header for load balancer scenarios
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
+        String remoteAddr = request.getRemoteAddr();
+
+        // Only trust X-Forwarded-For when request comes from a trusted proxy (private network or loopback)
+        if (isTrustedProxy(remoteAddr)) {
+            String forwardedFor = request.getHeader("X-Forwarded-For");
+            if (forwardedFor != null && !forwardedFor.isBlank()) {
+                // Take the leftmost IP (original client), ignore intermediaries
+                String candidate = forwardedFor.split(",")[0].trim();
+                // Basic validation: reject obviously malformed values
+                if (isValidIpAddress(candidate)) {
+                    return candidate;
+                }
+            }
         }
-        return request.getRemoteAddr();
+
+        return remoteAddr;
+    }
+
+    /**
+     * Returns true if the IP is from a trusted private/loopback range.
+     * Only these origins are allowed to set X-Forwarded-For.
+     */
+    private boolean isTrustedProxy(String ip) {
+        if (ip == null || ip.isBlank()) {
+            return false;
+        }
+        return ip.equals("127.0.0.1")
+                || ip.equals("::1")
+                || ip.startsWith("10.")
+                || ip.startsWith("192.168.")
+                || ip.startsWith("172.16.")
+                || ip.startsWith("172.17.")
+                || ip.startsWith("172.18.")
+                || ip.startsWith("172.19.")
+                || ip.startsWith("172.2")
+                || ip.startsWith("172.30.")
+                || ip.startsWith("172.31.");
+    }
+
+    /**
+     * Basic IP address validation: accepts IPv4 and IPv6 formats.
+     * Rejects injected values like "1.2.3.4, 5.6.7.8" (already split, should be clean).
+     */
+    private boolean isValidIpAddress(String ip) {
+        if (ip == null || ip.isBlank() || ip.length() > 45) {
+            return false;
+        }
+        // Must contain only valid IP characters (digits, dots, colons, hex for IPv6)
+        return ip.matches("[0-9a-fA-F.:]+");
     }
 }
