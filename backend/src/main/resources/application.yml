@@ -99,6 +99,13 @@ logging:
     max-size: 10MB
     max-history: 10
 
+# CORS Configuration
+# Multiple origins: cors.allowed-origins=http://localhost:3000,https://app.scopeflow.com
+cors:
+  allowed-origins:
+    - ${CORS_ORIGIN_LOCAL:http://localhost:3000}
+    - ${CORS_ORIGIN_PROD:https://app.scopeflow.com}
+
 # JWT Configuration
 jwt:
   secret: ${JWT_SECRET:your-secret-key-change-in-production-minimum-32-characters-long}

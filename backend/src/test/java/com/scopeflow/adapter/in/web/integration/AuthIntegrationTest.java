@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -36,9 +37,12 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
                         .content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
-                .andExpect(jsonPath("$.email").value("newuser@example.com"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"));
+                // Refresh token is NOT in the body — delivered via Set-Cookie (httpOnly)
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(header().exists("Set-Cookie"))
+                .andExpect(header().string("Set-Cookie", containsString("refreshToken=")))
+                .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
+                .andExpect(jsonPath("$.email").value("newuser@example.com"));
     }
 
     @Test
@@ -127,7 +131,11 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
                         .content(loginBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                // Refresh token is NOT in the body — delivered via Set-Cookie (httpOnly)
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(header().exists("Set-Cookie"))
+                .andExpect(header().string("Set-Cookie", containsString("refreshToken=")))
+                .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
                 .andExpect(jsonPath("$.email").value("login@example.com"));
     }
 

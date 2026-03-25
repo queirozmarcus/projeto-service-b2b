@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static containsString;
 
 @WebMvcTest(AuthControllerV2.class)
 @Import({GlobalExceptionHandler.class, TestSecurityConfig.class})
@@ -64,6 +65,7 @@ class AuthControllerV2Test {
         given(jwtService.generateAccessToken(any(), any(), any(), any())).willReturn("access-token");
         given(jwtService.generateRefreshToken(any())).willReturn("refresh-token");
         given(jwtService.getAccessTokenExpirationMs()).willReturn(900000L);
+        given(jwtService.getRefreshTokenExpirationMs()).willReturn(604800000L);
 
         RegisterRequest request = new RegisterRequest(
                 "user@example.com", "Password1!", "Test User", "+5511999999999"
@@ -75,7 +77,11 @@ class AuthControllerV2Test {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken").value("access-token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
+                // Refresh token is NOT in the body — it is delivered via Set-Cookie (httpOnly)
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(header().exists("Set-Cookie"))
+                .andExpect(header().string("Set-Cookie", containsString("refreshToken=")))
+                .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
                 .andExpect(jsonPath("$.email").value("user@example.com"));
     }
 
@@ -159,6 +165,7 @@ class AuthControllerV2Test {
         given(jwtService.generateAccessToken(any(), any(), any(), any())).willReturn("access-token");
         given(jwtService.generateRefreshToken(any())).willReturn("refresh-token");
         given(jwtService.getAccessTokenExpirationMs()).willReturn(900000L);
+        given(jwtService.getRefreshTokenExpirationMs()).willReturn(604800000L);
 
         LoginRequest request = new LoginRequest("user@example.com", "Password1!");
 
@@ -167,6 +174,10 @@ class AuthControllerV2Test {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("access-token"));
+                .andExpect(jsonPath("$.accessToken").value("access-token"))
+                // Refresh token is NOT in the body — it is delivered via Set-Cookie (httpOnly)
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andExpect(header().exists("Set-Cookie"))
+                .andExpect(header().string("Set-Cookie", containsString("HttpOnly")));
     }
 }
