@@ -51,11 +51,12 @@ const nextConfig = {
 
   // Rewrites for API proxying (optional)
   async rewrites() {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
     return {
       beforeFiles: [
         {
           source: '/api/:path*',
-          destination: `${process.env.NEXT_PUBLIC_API_URL}/:path*`,
+          destination: `${apiUrl}/:path*`,
         },
       ],
     };
@@ -90,9 +91,6 @@ const nextConfig = {
     // Add custom webpack configuration here if needed
     return config;
   },
-
-  // SWC minification (default in Next.js 13+)
-  swcMinify: true,
 
   // Output standalone for containerization
   output: 'standalone',
