@@ -69,16 +69,3 @@ public interface PdfService {
         PREVIEW    // Draft preview (not yet approved)
     }
 }
-
-/**
- * Checked exception for PDF generation failures.
- */
-class PdfGenerationException extends Exception {
-    public PdfGenerationException(String message) {
-        super(message);
-    }
-
-    public PdfGenerationException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}

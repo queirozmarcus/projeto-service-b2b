@@ -81,16 +81,3 @@ public interface EmailService {
      */
     void sendBriefingCompletionEmail(String email, UUID sessionId) throws EmailException;
 }
-
-/**
- * Checked exception for email service failures.
- */
-class EmailException extends Exception {
-    public EmailException(String message) {
-        super(message);
-    }
-
-    public EmailException(String message, Throwable cause) {
-        super(message, cause);
-    }
-}
