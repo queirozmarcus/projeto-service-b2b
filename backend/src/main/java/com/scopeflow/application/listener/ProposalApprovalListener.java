@@ -1,6 +1,9 @@
 package com.scopeflow.application.listener;
 
 import com.scopeflow.application.idempotency.IdempotencyService;
+import com.scopeflow.application.port.out.PdfService;
+import com.scopeflow.application.port.out.PdfService.GenerationContext;
+import com.scopeflow.application.port.out.PdfGenerationException;
 import com.scopeflow.core.domain.proposal.event.ProposalApprovedEvent;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -47,12 +50,16 @@ public class ProposalApprovalListener {
     private static final String LISTENER_ID = "proposal-approval-listener";
 
     private final IdempotencyService idempotencyService;
-    // private final PdfService pdfService;              // TODO: Wire in Phase 3
+    private final PdfService pdfService;
     // private final EmailService emailService;           // TODO: Wire in Phase 4
     // private final ProposalRepository proposalRepository; // TODO: Load full proposal context
 
-    public ProposalApprovalListener(IdempotencyService idempotencyService) {
+    public ProposalApprovalListener(
+            IdempotencyService idempotencyService,
+            PdfService pdfService
+    ) {
         this.idempotencyService = idempotencyService;
+        this.pdfService = pdfService;
     }
 
     /**
@@ -79,14 +86,16 @@ public class ProposalApprovalListener {
         }
 
         try {
-            // Step 2a: Generate proposal PDF (Phase 3)
-            // TODO: String pdfUrl = pdfService.generateProposalPdf(
-            //        proposalId,
-            //        GenerationContext.APPROVAL
-            // );
-
-            logger.info("PDF would be generated for proposal: {}", proposalId);
-            String pdfUrl = "https://s3.amazonaws.com/scopeflow-mvp/proposals/" + proposalId + "/approval.pdf";
+            // Step 2a: Generate proposal PDF (Phase 3 - IMPLEMENTED)
+            String pdfUrl;
+            try {
+                pdfUrl = pdfService.generateProposalPdf(proposalId, GenerationContext.APPROVAL);
+                logger.info("PDF generated and uploaded to S3: {}", pdfUrl);
+            } catch (PdfGenerationException e) {
+                logger.error("PDF generation failed for proposal: {}, will retry", proposalId, e);
+                // Re-throw to trigger RabbitMQ retry
+                throw new RuntimeException("Failed to generate PDF", e);
+            }
 
             // Step 2b: Send approval email with PDF link (Phase 4)
             // TODO: emailService.sendProposalApprovedEmail(
@@ -103,13 +112,14 @@ public class ProposalApprovalListener {
 
             // Step 3: Mark as processed
             // Store PDF URL as result data for audit trail
-            String resultData = "{\"pdfUrl\":\"" + pdfUrl + "\",\"emailSent\":true}";
+            String resultData = "{\"pdfUrl\":\"" + pdfUrl + "\",\"emailSent\":false}";
             idempotencyService.markAsProcessed(LISTENER_ID, idempotencyKey, resultData);
 
             logger.info(
-                    "ProposalApprovedEvent processed successfully. proposalId={}, clientEmail={}",
+                    "ProposalApprovedEvent processed successfully. proposalId={}, clientEmail={}, pdfUrl={}",
                     proposalId,
-                    event.clientEmail()
+                    event.clientEmail(),
+                    pdfUrl
             );
 
         } catch (Exception e) {
