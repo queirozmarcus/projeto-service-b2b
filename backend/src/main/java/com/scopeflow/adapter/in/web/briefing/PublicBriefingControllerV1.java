@@ -2,6 +2,8 @@ package com.scopeflow.adapter.in.web.briefing;
 
 import com.scopeflow.adapter.in.web.briefing.dto.*;
 import com.scopeflow.adapter.in.web.briefing.mapper.BriefingMapper;
+import com.scopeflow.adapter.out.persistence.briefing.JpaServiceContextQuestion;
+import com.scopeflow.core.application.briefing.BriefingSessionService;
 import com.scopeflow.core.domain.briefing.BriefingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,6 +15,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 import java.util.UUID;
 
@@ -31,10 +35,16 @@ public class PublicBriefingControllerV1 {
 
     private final BriefingService briefingService;
     private final BriefingMapper mapper;
+    private final BriefingSessionService briefingSessionService;
 
-    public PublicBriefingControllerV1(BriefingService briefingService, BriefingMapper mapper) {
+    public PublicBriefingControllerV1(
+            BriefingService briefingService,
+            BriefingMapper mapper,
+            BriefingSessionService briefingSessionService
+    ) {
         this.briefingService = briefingService;
         this.mapper = mapper;
+        this.briefingSessionService = briefingSessionService;
     }
 
     /**
@@ -156,6 +166,72 @@ public class PublicBriefingControllerV1 {
 
         briefingService.submitDirectAnswer(session.getId(), questionId, answerText, 0);
 
+        return ResponseEntity.noContent().build();
+    }
+
+    // ============ Sprint 6 Task 3: ServiceContextProfile-based public endpoints ============
+
+    /**
+     * GET /public/briefings/{token}/questions — Load session + template questions (no auth).
+     *
+     * Returns questions from the ServiceContextProfile for the session's service type.
+     * Intended for the client-facing briefing flow (token link shared by service provider).
+     *
+     * Rate limit: 10 req/min (public, per IP)
+     */
+    @GetMapping("/{publicToken}/questions")
+    @Operation(
+            summary = "Get briefing questions by public token (no auth)",
+            description = "Returns template questions for the client to answer. Questions come from the ServiceContextProfile. No authentication required."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "List of questions"),
+            @ApiResponse(responseCode = "404", description = "Token invalid or session not found"),
+            @ApiResponse(responseCode = "429", description = "Rate limit exceeded")
+    })
+    public ResponseEntity<List<BriefingQuestionResponse>> getPublicQuestions(
+            @Parameter(description = "Public token for client access") @PathVariable String publicToken
+    ) {
+        List<JpaServiceContextQuestion> questions =
+                briefingSessionService.getQuestionsByPublicToken(publicToken);
+        List<BriefingQuestionResponse> response = questions.stream()
+                .map(q -> new BriefingQuestionResponse(
+                        q.getId(),
+                        q.getQuestionText(),
+                        q.getQuestionType(),
+                        q.getOrderIndex(),
+                        q.isRequired()
+                ))
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * POST /public/briefings/{token}/batch-answers — Submit multiple answers at once (no auth).
+     *
+     * Idempotent: already-answered questions are silently skipped.
+     * Rate limit: 10 req/min (public, per IP)
+     */
+    @PostMapping("/{publicToken}/batch-answers")
+    @Operation(
+            summary = "Submit multiple answers by public token (no auth)",
+            description = "Batch answer submission for the client briefing flow. Idempotent. No authentication required."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Answers submitted"),
+            @ApiResponse(responseCode = "400", description = "Validation error"),
+            @ApiResponse(responseCode = "404", description = "Token invalid or session not found"),
+            @ApiResponse(responseCode = "409", description = "Session is not IN_PROGRESS"),
+            @ApiResponse(responseCode = "429", description = "Rate limit exceeded")
+    })
+    public ResponseEntity<Void> submitPublicBatchAnswers(
+            @Parameter(description = "Public token for client access") @PathVariable String publicToken,
+            @Valid @RequestBody SubmitAnswersRequest request
+    ) {
+        List<BriefingSessionService.AnswerInput> inputs = request.answers().stream()
+                .map(a -> new BriefingSessionService.AnswerInput(a.questionId(), a.answerText()))
+                .toList();
+        briefingSessionService.submitAnswersByPublicToken(publicToken, inputs);
         return ResponseEntity.noContent().build();
     }
 }

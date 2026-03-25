@@ -37,13 +37,16 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
     private final List<String> allowedOrigins;
+    private final boolean requiresHttps;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtFilter,
-            @Value("${cors.allowed-origins:http://localhost:3000}") List<String> allowedOrigins
+            @Value("${cors.allowed-origins:http://localhost:3000}") List<String> allowedOrigins,
+            @Value("${app.requires-https:true}") boolean requiresHttps
     ) {
         this.jwtFilter = jwtFilter;
         this.allowedOrigins = allowedOrigins;
+        this.requiresHttps = requiresHttps;
     }
 
     @Bean
@@ -53,9 +56,16 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // HTTPS enforcement: desativado em dev/staging via APP_REQUIRES_HTTPS=false
+                .requiresChannel(channel -> {
+                    if (requiresHttps) {
+                        channel.anyRequest().requiresSecure();
+                    }
+                })
                 .authorizeHttpRequests(auth -> auth
                         // Public auth endpoints
-                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/refresh").permitAll()
+                        // /auth/logout é público: o cookie identifica o usuário; não requer token de acesso
+                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout").permitAll()
                         // Health and observability
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/health/**").permitAll()
@@ -63,6 +73,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         // Client-facing briefing endpoints (public token access)
                         .requestMatchers("/public/briefings/**").permitAll()
+                        .requestMatchers("/api/v1/public/briefings/**").permitAll()
                         // Client-facing approval endpoints (token-based)
                         .requestMatchers(HttpMethod.GET, "/proposals/*/approve").permitAll()
                         .requestMatchers(HttpMethod.POST, "/proposals/*/approve").permitAll()

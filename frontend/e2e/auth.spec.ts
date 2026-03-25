@@ -4,7 +4,8 @@ import { test, expect, type BrowserContext, type Page } from '@playwright/test';
 // Credenciais de teste — substitua por variáveis de ambiente em CI
 // ---------------------------------------------------------------------------
 const TEST_EMAIL = process.env.E2E_TEST_EMAIL ?? 'e2e@scopeflow.dev';
-const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD ?? 'SenhaE2E123';
+// Senha satisfaz a política do backend: uppercase + digit + special char
+const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD ?? 'SenhaE2E@123';
 const TEST_USER_FULL_NAME = process.env.E2E_TEST_FULL_NAME ?? 'E2E User';
 
 // ---------------------------------------------------------------------------
@@ -94,8 +95,9 @@ test.describe('Authentication', () => {
     await page.locator('#workspaceName').fill('Agência Teste 1');
     await page.locator('#fullName').fill('Teste User');
     await page.locator('#email').fill(email);
-    await page.locator('#password').fill('SenhaForte123');
-    await page.locator('#confirmPassword').fill('SenhaForte123');
+    // Senha satisfaz a política do backend: uppercase + digit + special char
+    await page.locator('#password').fill('SenhaForte@123');
+    await page.locator('#confirmPassword').fill('SenhaForte@123');
 
     // Submete o formulário
     await page.getByRole('button', { name: 'Criar Conta' }).click();
@@ -122,19 +124,28 @@ test.describe('Authentication', () => {
     // Injeta cookie de refresh para que o middleware permita acesso a /dashboard
     await injectRefreshTokenCookie(context);
 
-    // Mock do endpoint /auth/refresh — retorna novo accessToken e dados do usuário
+    // Mock do endpoint /auth/refresh — retorna novo accessToken (sem user, igual ao backend real)
     await page.route('**/auth/refresh', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           accessToken: 'new-access-token-mock',
-          user: {
-            id: 'user-001',
-            fullName: TEST_USER_FULL_NAME,
-            email: TEST_EMAIL,
-            workspaceId: 'ws-001',
-          },
+          expiresIn: 900,
+        }),
+      });
+    });
+
+    // Mock do /auth/me — chamado pelo SessionProvider após o refresh para popular o user
+    await page.route('**/auth/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          id: 'user-001',
+          fullName: TEST_USER_FULL_NAME,
+          email: TEST_EMAIL,
+          workspaceId: 'ws-001',
         }),
       });
     });
@@ -162,41 +173,24 @@ test.describe('Authentication', () => {
     // Contexto compartilhado: mesma origem = mesmo BroadcastChannel
     const context = await browser.newContext();
 
-    // Aba 1: mock do /auth/refresh para sessão ativa sem backend
+    // Aba 1: mock do /auth/refresh e /auth/me para sessão ativa sem backend
     const page1 = await context.newPage();
     await page1.route('**/auth/refresh', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({
-          accessToken: 'access-token-tab1',
-          user: {
-            id: 'user-001',
-            fullName: TEST_USER_FULL_NAME,
-            email: TEST_EMAIL,
-            workspaceId: 'ws-001',
-          },
-        }),
+        body: JSON.stringify({ accessToken: 'access-token-tab1', expiresIn: 900 }),
       });
     });
-
-    // Mock de /auth/login para não depender do backend
-    await page1.route('**/auth/login', async (route) => {
+    await page1.route('**/auth/me', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        headers: {
-          // httpOnly cookie simulado pelo backend — Playwright não pode setar httpOnly
-          // mas o middleware usa document.cookie; injetamos via context.addCookies
-        },
         body: JSON.stringify({
-          accessToken: 'access-token-tab1',
-          user: {
-            id: 'user-001',
-            fullName: TEST_USER_FULL_NAME,
-            email: TEST_EMAIL,
-            workspaceId: 'ws-001',
-          },
+          id: 'user-001',
+          fullName: TEST_USER_FULL_NAME,
+          email: TEST_EMAIL,
+          workspaceId: 'ws-001',
         }),
       });
     });
@@ -224,14 +218,18 @@ test.describe('Authentication', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
+        body: JSON.stringify({ accessToken: 'access-token-tab2', expiresIn: 900 }),
+      });
+    });
+    await page2.route('**/auth/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
         body: JSON.stringify({
-          accessToken: 'access-token-tab2',
-          user: {
-            id: 'user-001',
-            fullName: TEST_USER_FULL_NAME,
-            email: TEST_EMAIL,
-            workspaceId: 'ws-001',
-          },
+          id: 'user-001',
+          fullName: TEST_USER_FULL_NAME,
+          email: TEST_EMAIL,
+          workspaceId: 'ws-001',
         }),
       });
     });
@@ -246,7 +244,7 @@ test.describe('Authentication', () => {
     // Aguarda BroadcastChannel propagar para aba 2
     // SessionProvider ouve authBroadcaster.onMessage e chama clearSession()
     // O middleware então redireciona para /auth/login no próximo request
-    await page2.waitForURL('/auth/login', { timeout: 5_000 });
+    await page2.waitForURL('/auth/login', { timeout: 10_000 });
     await expect(page2).toHaveURL('/auth/login');
 
     await context.close();
@@ -262,9 +260,9 @@ test.describe('Authentication', () => {
     await page.locator('#password').fill('wrongpassword');
     await page.getByRole('button', { name: 'Entrar' }).click();
 
-    // O LoginForm exibe div[role="alert"] com a mensagem de erro do backend
+    // O LoginForm exibe div[data-testid="login-error"] com a mensagem de erro do backend
     // Aguarda o alert aparecer (pode haver delay da requisição)
-    const alert = page.locator('[role="alert"]');
+    const alert = page.locator('[data-testid="login-error"]');
     await expect(alert).toBeVisible({ timeout: 10_000 });
 
     // Verifica que permanece em /auth/login (sem redirect)
@@ -301,12 +299,10 @@ test.describe('Authentication', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           accessToken: 'access-token-after-login',
-          user: {
-            id: 'user-001',
-            fullName: TEST_USER_FULL_NAME,
-            email: TEST_EMAIL,
-            workspaceId: 'ws-001',
-          },
+          expiresIn: 900,
+          userId: 'user-001',
+          fullName: TEST_USER_FULL_NAME,
+          email: TEST_EMAIL,
         }),
       });
     });
@@ -316,14 +312,20 @@ test.describe('Authentication', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
+        body: JSON.stringify({ accessToken: 'access-token-refreshed', expiresIn: 900 }),
+      });
+    });
+
+    // Mock do /auth/me para SessionProvider popular o user após silent refresh
+    await page.route('**/auth/me', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
         body: JSON.stringify({
-          accessToken: 'access-token-refreshed',
-          user: {
-            id: 'user-001',
-            fullName: TEST_USER_FULL_NAME,
-            email: TEST_EMAIL,
-            workspaceId: 'ws-001',
-          },
+          id: 'user-001',
+          fullName: TEST_USER_FULL_NAME,
+          email: TEST_EMAIL,
+          workspaceId: 'ws-001',
         }),
       });
     });

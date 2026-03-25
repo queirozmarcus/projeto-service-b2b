@@ -36,6 +36,7 @@ public class JpaProposalRepositoryAdapter implements ProposalRepository {
                 existing -> {
                     existing.setStatus(proposal.status().name());
                     existing.setScopeJson(scopeMapper.toJson(proposal.getScope()));
+                    existing.setProposalName(proposal.getProposalName());
                     existing.setUpdatedAt(Instant.now());
                     springRepo.save(existing);
                 },
@@ -70,9 +71,21 @@ public class JpaProposalRepositoryAdapter implements ProposalRepository {
     }
 
     @Override
+    public Optional<Proposal> findByIdAndWorkspaceId(ProposalId id, WorkspaceId workspaceId) {
+        return springRepo.findByIdAndWorkspaceId(id.value(), workspaceId.value())
+                .map(this::toDomain);
+    }
+
+    @Override
     @Transactional
-    public void delete(ProposalId id) {
-        springRepo.deleteById(id.value());
+    public void softDelete(ProposalId id, WorkspaceId workspaceId) {
+        JpaProposal entity = springRepo.findByIdAndWorkspaceId(id.value(), workspaceId.value())
+                .orElseThrow(() -> new ProposalNotFoundException(
+                        "Proposal not found: " + id.value() + " in workspace: " + workspaceId.value()
+                ));
+        entity.setDeletedAt(Instant.now());
+        entity.setUpdatedAt(Instant.now());
+        springRepo.save(entity);
     }
 
     // ============ JPA → Domain ============

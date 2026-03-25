@@ -107,6 +107,14 @@ cors:
     - ${CORS_ORIGIN_LOCAL:http://localhost:3000}
     - ${CORS_ORIGIN_PROD:https://app.scopeflow.com}
 
+# Cookie e HTTPS security:
+# - APP_COOKIE_SECURE=false em dev/staging (HTTP); true em produção (HTTPS)
+# - APP_REQUIRES_HTTPS=false em dev/staging; true em produção para forçar redirect HTTP→HTTPS
+app:
+  cookie:
+    secure: ${APP_COOKIE_SECURE:true}
+  requires-https: ${APP_REQUIRES_HTTPS:true}
+
 # JWT Configuration
 jwt:
   secret: ${JWT_SECRET:your-secret-key-change-in-production-minimum-32-characters-long}

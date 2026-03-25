@@ -147,6 +147,49 @@ public class ProposalControllerV2 {
     }
 
     /**
+     * PUT /proposals/{id}
+     * Update mutable fields of a DRAFT proposal (currently only proposalName).
+     *
+     * @throws InvalidProposalStateException if proposal is not in DRAFT status
+     */
+    @PutMapping("/{id}")
+    @Operation(summary = "Update proposal name (DRAFT only)")
+    public ProposalResponse update(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateProposalRequest request
+    ) {
+        UUID workspaceId = SecurityUtil.getWorkspaceId();
+
+        ProposalDraft updated = proposalService.renameProposal(
+                ProposalId.of(id),
+                new WorkspaceId(workspaceId),
+                request.proposalName()
+        );
+
+        log.info("Proposal renamed: proposalId={}, workspaceId={}", id, workspaceId);
+        return ProposalResponse.from(updated);
+    }
+
+    /**
+     * DELETE /proposals/{id}
+     * Soft-delete a proposal (sets deleted_at). The proposal is no longer visible
+     * in list/get endpoints but is retained in the database for audit purposes.
+     */
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Soft-delete a proposal (irreversible via API)")
+    public void delete(@PathVariable UUID id) {
+        UUID workspaceId = SecurityUtil.getWorkspaceId();
+
+        proposalService.deleteProposal(
+                ProposalId.of(id),
+                new WorkspaceId(workspaceId)
+        );
+
+        log.info("Proposal soft-deleted: proposalId={}, workspaceId={}", id, workspaceId);
+    }
+
+    /**
      * POST /proposals/{id}/update-scope
      * Update scope of a draft proposal.
      */

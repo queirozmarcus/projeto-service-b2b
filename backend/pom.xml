@@ -114,11 +114,12 @@
     </dependency>
 
     <!-- PDF Generation: iText (Sprint 4 Phase 3) -->
-    <dependency>
+    <!-- Commented out for Sprint 5: iText 8.x requires AGPL licensing; placeholder for Phase 4 -->
+    <!-- <dependency>
       <groupId>com.itextpdf</groupId>
       <artifactId>itext-core</artifactId>
       <version>${itext.version}</version>
-    </dependency>
+    </dependency> -->
 
     <!-- Spring Mail (for email templates, also needed for SES integration in Phase 4) -->
     <dependency>
@@ -141,6 +142,13 @@
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <!-- Bucket4j: rate limiting por IP para endpoints de autenticação -->
+    <dependency>
+      <groupId>com.bucket4j</groupId>
+      <artifactId>bucket4j-core</artifactId>
+      <version>8.10.1</version>
     </dependency>
 
     <!-- Spring Cache + Caffeine (in-memory cache com TTL para JWT user lookup) -->

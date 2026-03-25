@@ -52,4 +52,19 @@ public final class ProposalDraft extends Proposal {
                 getProposalName(), newScope, getCreatedAt(), Instant.now()
         );
     }
+
+    /**
+     * Rename proposal (creates new draft with updated name).
+     *
+     * @throws IllegalArgumentException if name is blank
+     */
+    public ProposalDraft rename(String newName) {
+        if (newName == null || newName.isBlank()) {
+            throw new IllegalArgumentException("Proposal name cannot be blank");
+        }
+        return new ProposalDraft(
+                getId(), getWorkspaceId(), getClientId(), getBriefingId(),
+                newName.strip(), getScope(), getCreatedAt(), Instant.now()
+        );
+    }
 }

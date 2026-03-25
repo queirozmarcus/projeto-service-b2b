@@ -38,6 +38,13 @@ public interface JpaBriefingAnswerSpringRepository extends JpaRepository<JpaBrie
     List<JpaBriefingAnswer> findByQuestion(@Param("questionId") UUID questionId);
 
     /**
+     * Check if an answer already exists for a given session+question combination.
+     * Used for idempotency checks when submitting answers.
+     * Uses unique constraint: idx_briefing_answers_unique_per_question.
+     */
+    boolean existsByBriefingSessionIdAndQuestionId(UUID briefingSessionId, UUID questionId);
+
+    /**
      * Count follow-up answers for a question.
      * Max 1 follow-up per question (enforced by domain service).
      * This query checks if a follow-up was already generated.

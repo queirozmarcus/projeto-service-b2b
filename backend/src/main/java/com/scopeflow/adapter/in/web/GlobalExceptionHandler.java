@@ -427,6 +427,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * Handle illegal state transitions (e.g., completing an already-completed briefing session).
+     * Maps to HTTP 409 Conflict.
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ProblemDetail> handleIllegalState(
+            IllegalStateException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-state-transition"));
+        problemDetail.setTitle("Invalid State Transition");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, "BRIEFING-409");
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(problemDetail);
+    }
+
+    /**
      * Handle rate limit exceeded.
      *
      * Note: This is a placeholder. In production, use a proper rate limiting library

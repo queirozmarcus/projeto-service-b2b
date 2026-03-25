@@ -166,8 +166,47 @@ public class ProposalService {
         }
     }
 
+    /**
+     * Rename a draft proposal.
+     *
+     * @throws InvalidProposalStateException if proposal is not DRAFT
+     * @throws ProposalNotFoundException if proposal not found in workspace
+     */
+    public ProposalDraft renameProposal(ProposalId proposalId, WorkspaceId workspaceId, String newName) {
+        Proposal proposal = proposalRepository.findByIdAndWorkspaceId(proposalId, workspaceId)
+                .orElseThrow(() -> new ProposalNotFoundException("Proposal not found: " + proposalId.value()));
+
+        if (!(proposal instanceof ProposalDraft draft)) {
+            throw new InvalidProposalStateException(
+                    "Can only rename a DRAFT proposal, current status: " + proposal.status()
+            );
+        }
+
+        ProposalDraft renamed = draft.rename(newName);
+        proposalRepository.save(renamed);
+        return renamed;
+    }
+
+    /**
+     * Soft-delete a proposal.
+     * Sets deleted_at = now(); the proposal becomes invisible to all list queries.
+     *
+     * @throws ProposalNotFoundException if proposal not found in workspace
+     */
+    public void deleteProposal(ProposalId proposalId, WorkspaceId workspaceId) {
+        // Verify proposal exists and belongs to workspace before soft-deleting
+        proposalRepository.findByIdAndWorkspaceId(proposalId, workspaceId)
+                .orElseThrow(() -> new ProposalNotFoundException("Proposal not found: " + proposalId.value()));
+
+        proposalRepository.softDelete(proposalId, workspaceId);
+    }
+
     public Optional<Proposal> findById(ProposalId id) {
         return proposalRepository.findById(id);
+    }
+
+    public Optional<Proposal> findByIdAndWorkspaceId(ProposalId id, WorkspaceId workspaceId) {
+        return proposalRepository.findByIdAndWorkspaceId(id, workspaceId);
     }
 
     public List<Proposal> findByWorkspace(WorkspaceId workspaceId) {

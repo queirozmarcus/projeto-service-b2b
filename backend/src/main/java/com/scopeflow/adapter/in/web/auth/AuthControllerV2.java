@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -39,9 +40,14 @@ public class AuthControllerV2 {
 
     private static final Logger log = LoggerFactory.getLogger(AuthControllerV2.class);
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";
-    // Path restrito: cookie enviado apenas para o endpoint de refresh.
-    // Inclui o context-path configurado em server.servlet.context-path (/api/v1).
-    private static final String REFRESH_COOKIE_PATH = "/api/v1/auth/refresh";
+    // Path "/" garante que o browser inclua o cookie em TODAS as requisições,
+    // permitindo que o Next.js middleware leia o refreshToken para proteger rotas.
+    // SameSite=Lax é compatível com navegação direta (GET) e formulários (POST)
+    // sem expor o cookie em requisições cross-site de terceiros.
+    private static final String REFRESH_COOKIE_PATH = "/";
+
+    @Value("${app.cookie.secure:true}")
+    private boolean cookieSecure;
 
     private final UserService userService;
     private final JwtService jwtService;
@@ -62,6 +68,7 @@ public class AuthControllerV2 {
      * Register a new user. Returns access token in body; refresh token via httpOnly cookie.
      */
     @PostMapping("/register")
+    @RateLimit
     @Operation(summary = "Register new user account")
     public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         Email email = new Email(request.email());
@@ -79,6 +86,7 @@ public class AuthControllerV2 {
      * Authenticate user. Returns access token in body; refresh token via httpOnly cookie.
      */
     @PostMapping("/login")
+    @RateLimit
     @Operation(summary = "Authenticate and obtain tokens")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         Email email = new Email(request.email());
@@ -157,14 +165,20 @@ public class AuthControllerV2 {
     @PostMapping("/logout")
     @Operation(summary = "Logout: clears refresh token cookie")
     public ResponseEntity<Void> logout() {
-        log.info("User logged out: userId={}", SecurityUtil.getUserId());
+        // Não exige autenticação: apenas invalida o cookie.
+        // Log opcional do userId se autenticado.
+        try {
+            log.info("User logged out: userId={}", SecurityUtil.getUserId());
+        } catch (Exception e) {
+            log.info("Logout called without active session (cookie-only logout)");
+        }
 
         // Invalidate cookie by setting max-age=0
         ResponseCookie clearCookie = ResponseCookie
                 .from(REFRESH_TOKEN_COOKIE, "")
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
+                .secure(cookieSecure)
+                .sameSite("Lax")
                 .path(REFRESH_COOKIE_PATH)
                 .maxAge(0)
                 .build();
@@ -191,8 +205,8 @@ public class AuthControllerV2 {
         ResponseCookie cookie = ResponseCookie
                 .from(REFRESH_TOKEN_COOKIE, refreshToken)
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
+                .secure(cookieSecure)
+                .sameSite("Lax")
                 .path(REFRESH_COOKIE_PATH)
                 .maxAge(jwtService.getRefreshTokenExpirationMs() / 1000)
                 .build();

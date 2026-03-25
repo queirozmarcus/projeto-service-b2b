@@ -120,6 +120,73 @@ class JpaProposalRepositoryAdapterTest {
     }
 
     @Test
+    @DisplayName("findByIdAndWorkspaceId should return proposal when found in workspace")
+    void findByIdAndWorkspaceId_shouldReturnProposal_whenFound() {
+        // Given
+        given(springRepo.findByIdAndWorkspaceId(proposalId, workspaceId))
+                .willReturn(Optional.of(jpaProposal));
+        given(scopeMapper.fromJson(null)).willReturn(null);
+
+        // When
+        Optional<Proposal> result = adapter.findByIdAndWorkspaceId(
+                ProposalId.of(proposalId),
+                new WorkspaceId(workspaceId)
+        );
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().getId().value()).isEqualTo(proposalId);
+    }
+
+    @Test
+    @DisplayName("findByIdAndWorkspaceId should return empty when not in workspace")
+    void findByIdAndWorkspaceId_shouldReturnEmpty_whenNotFound() {
+        // Given
+        given(springRepo.findByIdAndWorkspaceId(proposalId, workspaceId))
+                .willReturn(Optional.empty());
+
+        // When
+        Optional<Proposal> result = adapter.findByIdAndWorkspaceId(
+                ProposalId.of(proposalId),
+                new WorkspaceId(workspaceId)
+        );
+
+        // Then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("softDelete should set deletedAt and save entity")
+    void softDelete_shouldSetDeletedAt_andSave() {
+        // Given
+        given(springRepo.findByIdAndWorkspaceId(proposalId, workspaceId))
+                .willReturn(Optional.of(jpaProposal));
+        given(springRepo.save(jpaProposal)).willReturn(jpaProposal);
+
+        // When
+        adapter.softDelete(ProposalId.of(proposalId), new WorkspaceId(workspaceId));
+
+        // Then
+        assertThat(jpaProposal.getDeletedAt()).isNotNull();
+        assertThat(jpaProposal.getUpdatedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("softDelete should throw ProposalNotFoundException when not found in workspace")
+    void softDelete_shouldThrow_whenProposalNotFound() {
+        // Given
+        given(springRepo.findByIdAndWorkspaceId(proposalId, workspaceId))
+                .willReturn(Optional.empty());
+
+        // When / Then
+        assertThatThrownBy(() -> adapter.softDelete(
+                ProposalId.of(proposalId),
+                new WorkspaceId(workspaceId)
+        ))
+                .isInstanceOf(ProposalNotFoundException.class);
+    }
+
+    @Test
     @DisplayName("should throw for unknown proposal status")
     void findById_shouldThrow_whenUnknownStatus() {
         // Given

@@ -1,6 +1,8 @@
 package com.scopeflow.adapter.out.persistence.proposal;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.SQLRestriction;
+
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -11,7 +13,13 @@ import java.util.UUID;
  *
  * Scope is stored via ProposalVersion (JSONB snapshot) — not duplicated here.
  */
+/**
+ * Hibernate @SQLRestriction appends "deleted_at IS NULL" to every query automatically.
+ * This makes soft-deleted proposals invisible without changing any query in the codebase.
+ * Added in V8 migration (Sprint 6).
+ */
 @Entity
+@SQLRestriction("deleted_at IS NULL")
 @Table(
         name = "proposals",
         indexes = {
@@ -52,6 +60,10 @@ public class JpaProposal {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    // Soft delete: NULL = active. @SQLRestriction above filters these out transparently.
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+
     @Version
     @Column(name = "version")
     private Long version;
@@ -84,7 +96,9 @@ public class JpaProposal {
 
     public void setStatus(String status) { this.status = status; }
     public void setScopeJson(String scopeJson) { this.scopeJson = scopeJson; }
+    public void setProposalName(String proposalName) { this.proposalName = proposalName; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public void setDeletedAt(Instant deletedAt) { this.deletedAt = deletedAt; }
 
     public UUID getId() { return id; }
     public UUID getWorkspaceId() { return workspaceId; }
@@ -95,6 +109,7 @@ public class JpaProposal {
     public String getScopeJson() { return scopeJson; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public Instant getDeletedAt() { return deletedAt; }
 
     @Override
     public boolean equals(Object o) {
