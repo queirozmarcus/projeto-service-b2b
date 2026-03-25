@@ -60,7 +60,7 @@ public class BriefingMapperImpl implements BriefingMapper {
             progress = toProgressResponse(completed.getCompletionScore());
         } else {
             // For in-progress/abandoned sessions, return empty progress
-            progress = new ProgressResponse(0, List.of());
+            progress = new ProgressResponse(0, 0, 0, List.of());
         }
 
         List<QuestionResponse> questionResponses = questions.stream()

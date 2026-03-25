@@ -1,7 +1,11 @@
 package com.scopeflow.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.sesv2.SesV2Client;
@@ -24,17 +28,36 @@ import software.amazon.awssdk.services.sesv2.SesV2Client;
 @Configuration
 public class AwsConfig {
 
+    @Value("${aws.region:us-east-1}")
+    private String awsRegion;
+
+    @Value("${aws.access-key-id:local-dev-key}")
+    private String accessKeyId;
+
+    @Value("${aws.secret-access-key:local-dev-secret}")
+    private String secretAccessKey;
+
+    private StaticCredentialsProvider credentialsProvider() {
+        return StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(accessKeyId, secretAccessKey)
+        );
+    }
+
     /**
      * S3Client bean for object operations.
      *
      * Used by PdfService to upload PDFs and other files.
-     * Credentials loaded from environment or IAM role.
+     * Credentials loaded from environment or application.yml defaults.
+     * For local/staging: uses static credentials to avoid AWS metadata service calls.
      *
      * @return configured S3Client
      */
     @Bean
     public S3Client s3Client() {
-        return S3Client.builder().build();
+        return S3Client.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider())
+                .build();
     }
 
     /**
@@ -47,19 +70,26 @@ public class AwsConfig {
      */
     @Bean
     public S3Presigner s3Presigner() {
-        return S3Presigner.builder().build();
+        return S3Presigner.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider())
+                .build();
     }
 
     /**
      * SESv2Client bean for email sending (Phase 4).
      *
      * Used by EmailService to send emails via AWS SES.
-     * Requires sender email registration in SES.
+     * For local/staging: uses static credentials to avoid AWS metadata service calls.
+     * Email sending is stubbed in non-production environments.
      *
      * @return configured SESv2Client
      */
     @Bean
     public SesV2Client sesClient() {
-        return SesV2Client.builder().build();
+        return SesV2Client.builder()
+                .region(Region.of(awsRegion))
+                .credentialsProvider(credentialsProvider())
+                .build();
     }
 }

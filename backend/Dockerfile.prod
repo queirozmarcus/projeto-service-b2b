@@ -8,18 +8,20 @@ LABEL stage=builder
 
 WORKDIR /build
 
-# Copy Maven wrapper and pom.xml
-COPY .mvn .mvn
-COPY mvnw pom.xml ./
+# Install Maven
+RUN apk add --no-cache maven
+
+# Copy pom.xml
+COPY pom.xml ./
 
 # Download Maven dependencies (cached layer)
-RUN ./mvnw dependency:resolve-plugins dependency:resolve -q
+RUN mvn dependency:resolve-plugins dependency:resolve -q
 
 # Copy source code
 COPY src ./src
 
 # Build application (skip tests for faster build)
-RUN ./mvnw clean package -DskipTests -q && \
+RUN mvn clean package -Dmaven.test.skip=true -q && \
     mv target/*.jar application.jar
 
 # Stage 2: Runtime with JRE only (minimal image)

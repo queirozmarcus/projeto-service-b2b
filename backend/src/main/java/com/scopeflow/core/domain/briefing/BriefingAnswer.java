@@ -12,7 +12,7 @@ import java.util.Objects;
  *
  * Immutable: answers cannot be edited once submitted (audit trail).
  */
-public sealed class BriefingAnswer permits AnsweredDirect, AnsweredWithFollowup {
+public abstract sealed class BriefingAnswer permits AnsweredDirect, AnsweredWithFollowup {
     private final AnswerId id;
     private final BriefingSessionId sessionId;
     private final QuestionId questionId;

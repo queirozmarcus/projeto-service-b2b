@@ -30,6 +30,17 @@ public class BriefingService {
     }
 
     /**
+     * Find a briefing session by public token (client-facing, no auth).
+     *
+     * @param token the public token to look up
+     * @return Optional with the session, or empty if not found
+     */
+    public Optional<BriefingSession> findByPublicToken(PublicToken token) {
+        Objects.requireNonNull(token, "publicToken cannot be null");
+        return sessionRepository.findByPublicToken(token);
+    }
+
+    /**
      * Start a new briefing session.
      *
      * Invariant: Only 1 active briefing per client per service type.

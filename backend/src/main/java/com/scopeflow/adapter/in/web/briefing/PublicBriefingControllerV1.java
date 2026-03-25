@@ -64,7 +64,7 @@ public class PublicBriefingControllerV1 {
     ) {
         var token = mapper.toPublicToken(publicToken);
 
-        var session = briefingService.sessionRepository().findByPublicToken(token)
+        var session = briefingService.findByPublicToken(token)
                 .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
                         "Briefing session not found or token invalid: " + publicToken
                 ));
@@ -103,7 +103,7 @@ public class PublicBriefingControllerV1 {
     ) {
         var token = mapper.toPublicToken(publicToken);
 
-        var session = briefingService.sessionRepository().findByPublicToken(token)
+        var session = briefingService.findByPublicToken(token)
                 .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
                         "Briefing session not found or token invalid: " + publicToken
                 ));
@@ -146,7 +146,7 @@ public class PublicBriefingControllerV1 {
     ) {
         var token = mapper.toPublicToken(publicToken);
 
-        var session = briefingService.sessionRepository().findByPublicToken(token)
+        var session = briefingService.findByPublicToken(token)
                 .orElseThrow(() -> new com.scopeflow.core.domain.briefing.BriefingNotFoundException(
                         "Briefing session not found or token invalid: " + publicToken
                 ));

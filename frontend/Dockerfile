@@ -7,8 +7,8 @@ WORKDIR /build
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --production=false
+# Install dependencies (--legacy-peer-deps for @testing-library/react React 19 compatibility)
+RUN npm ci --production=false --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -17,7 +17,7 @@ COPY . .
 ARG NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-RUN npm run build
+RUN npm run build && mkdir -p /build/public
 
 # Stage 2: Runtime (Node.js minimal + production dependencies only)
 FROM node:20-alpine
@@ -25,18 +25,18 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Create non-root user for security
-RUN addgroup -g 1000 nextjs && \
-    adduser -D -u 1000 -G nextjs nextjs
+RUN addgroup -g 1001 nextjs && \
+    adduser -D -u 1001 -G nextjs nextjs
 
 # Copy package files and install production dependencies
 COPY --from=builder /build/package*.json ./
-RUN npm ci --production && \
+RUN npm ci --production --legacy-peer-deps && \
     npm cache clean --force
 
-# Copy Next.js build artifacts and public files
+# Copy Next.js build artifacts
 COPY --from=builder /build/.next ./.next
-COPY --from=builder /build/public ./public
 COPY --from=builder /build/next.config.js ./
+COPY --from=builder /build/public ./public
 
 # Change ownership
 RUN chown -R nextjs:nextjs /app

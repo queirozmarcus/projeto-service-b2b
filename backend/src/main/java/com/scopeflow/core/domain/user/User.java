@@ -13,7 +13,7 @@ import java.util.Objects;
  *
  * No framework dependencies. Pure domain logic.
  */
-public sealed class User permits UserActive, UserInactive, UserDeleted {
+public abstract sealed class User permits UserActive, UserInactive, UserDeleted {
     private final UserId id;
     private final Email email;
     private final PasswordHash passwordHash;

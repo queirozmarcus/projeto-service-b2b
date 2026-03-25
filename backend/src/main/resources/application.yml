@@ -46,8 +46,9 @@ spring:
         default-requeue-rejected: false
         # Prefetch count: number of messages pulled per consumer
         prefetch: 1
-        # Concurrency for listener container
-        concurrency: "1-5"
+        # Concurrency for listener container (min and max)
+        min-concurrency: 1
+        max-concurrency: 5
         # Acknowledge mode: MANUAL for idempotent processing
         acknowledge-mode: MANUAL
         # Channel transaction size
@@ -140,3 +141,6 @@ management:
   endpoint:
     health:
       show-details: always
+  health:
+    mail:
+      enabled: false

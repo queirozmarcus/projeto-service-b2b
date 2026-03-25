@@ -14,7 +14,7 @@ import java.util.Objects;
  * - MemberInvited: invited but not yet accepted
  * - MemberLeft: removed/exited (historical record)
  */
-public sealed class WorkspaceMember permits MemberActive, MemberInvited, MemberLeft {
+public abstract sealed class WorkspaceMember permits MemberActive, MemberInvited, MemberLeft {
     private final WorkspaceId workspaceId;
     private final UserId userId;
     private final Role role;

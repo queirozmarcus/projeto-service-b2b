@@ -74,8 +74,17 @@ services:
       JWT_SECRET: staging-secret-key-change-in-production-min-32-chars
       JWT_EXPIRATION_MS: 900000
       AWS_S3_ENABLED: "false"
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: local-dev-key
+      AWS_SECRET_ACCESS_KEY: local-dev-secret
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       CORS_ORIGIN_LOCAL: "http://localhost:3000"
+      SPRING_MAIL_HOST: localhost
+      SPRING_MAIL_PORT: 1025
+      SPRING_MAIL_USERNAME: ""
+      SPRING_MAIL_PASSWORD: ""
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
     ports:
       - "8080:8080"
     depends_on:

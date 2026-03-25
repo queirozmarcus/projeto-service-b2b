@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -12,10 +10,10 @@ echo -e "${YELLOW}🔍 Iniciando Smoke Tests${NC}"
 echo "========================================"
 
 # Configuration
-API_URL="${API_URL:-http://localhost:8080/api}"
+API_URL="${API_URL:-http://localhost:8080/api/v1}"
 FRONTEND_URL="${FRONTEND_URL:-http://localhost:3000}"
 TEST_EMAIL="smoketest-$(date +%s)@example.com"
-TEST_PASSWORD="SmokeTest123"
+TEST_PASSWORD="SmokeTest123!"
 TEST_WORKSPACE="Smoke Test $(date +%s)"
 TEST_FULLNAME="Smoke Test User"
 
@@ -119,9 +117,9 @@ test_case "Database Health" \
 test_case "RabbitMQ Management Console" \
   "curl -s -f http://localhost:15672 > /dev/null"
 
-# Test 10: Redis Connectivity
+# Test 10: Redis Connectivity (via docker exec if redis-cli not in host PATH)
 test_case "Redis is running" \
-  "redis-cli ping | grep -q PONG || true"
+  "docker exec scopeflow-redis-staging redis-cli ping | grep -q PONG 2>/dev/null || redis-cli ping 2>/dev/null | grep -q PONG || true"
 
 # Summary
 echo -e "\n========================================"

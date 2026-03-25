@@ -58,6 +58,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/refresh").permitAll()
                         // Health and observability
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/health/**").permitAll()
                         // OpenAPI documentation
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         // Client-facing briefing endpoints (public token access)

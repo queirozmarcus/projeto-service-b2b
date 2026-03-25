@@ -17,7 +17,7 @@ import java.util.UUID;
  *
  * No framework dependencies. Pure domain.
  */
-public sealed class Proposal permits ProposalDraft, ProposalPublished, ProposalApproved, ProposalRejected {
+public abstract sealed class Proposal permits ProposalDraft, ProposalPublished, ProposalApproved, ProposalRejected {
 
     private final ProposalId id;
     private final WorkspaceId workspaceId;
