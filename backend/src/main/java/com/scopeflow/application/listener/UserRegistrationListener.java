@@ -1,6 +1,8 @@
 package com.scopeflow.application.listener;
 
 import com.scopeflow.application.idempotency.IdempotencyService;
+import com.scopeflow.application.port.out.EmailService;
+import com.scopeflow.application.port.out.EmailException;
 import com.scopeflow.core.domain.user.event.UserRegisteredEvent;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -38,10 +40,14 @@ public class UserRegistrationListener {
     private static final String LISTENER_ID = "user-registration-listener";
 
     private final IdempotencyService idempotencyService;
-    // private final EmailService emailService;  // TODO: Wire EmailService in Phase 4
+    private final EmailService emailService;
 
-    public UserRegistrationListener(IdempotencyService idempotencyService) {
+    public UserRegistrationListener(
+            IdempotencyService idempotencyService,
+            EmailService emailService
+    ) {
         this.idempotencyService = idempotencyService;
+        this.emailService = emailService;
     }
 
     /**
@@ -68,23 +74,24 @@ public class UserRegistrationListener {
         }
 
         try {
-            // Step 2: Send welcome email (Phase 4 implementation)
-            // TODO: emailService.sendWelcomeEmail(
-            //        event.email(),
-            //        event.workspaceId(),
-            //        "Welcome to ScopeFlow!"
-            // );
-
-            logger.info(
-                    "Welcome email would be sent to: {} for user: {}",
-                    event.email(),
-                    userId
-            );
+            // Step 2: Send welcome email (Phase 4 - IMPLEMENTED)
+            try {
+                emailService.sendWelcomeEmail(
+                        event.email(),
+                        event.fullName(),
+                        event.workspaceId()
+                );
+                logger.info("Welcome email sent to: {} for user: {}", event.email(), userId);
+            } catch (EmailException e) {
+                logger.error("Failed to send welcome email to: {}, will retry", event.email(), e);
+                // Re-throw to trigger RabbitMQ retry
+                throw new RuntimeException("Failed to send welcome email", e);
+            }
 
             // Step 3: Mark as processed (before TX commits)
             idempotencyService.markAsProcessed(LISTENER_ID, idempotencyKey);
 
-            logger.info("UserRegisteredEvent processed successfully. userId={}", userId);
+            logger.info("UserRegisteredEvent processed successfully. userId={}, email={}", userId, event.email());
 
         } catch (Exception e) {
             // Log the error; RabbitMQ will retry based on configuration

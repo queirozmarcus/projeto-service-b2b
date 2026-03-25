@@ -4,6 +4,8 @@ import com.scopeflow.application.idempotency.IdempotencyService;
 import com.scopeflow.application.port.out.PdfService;
 import com.scopeflow.application.port.out.PdfService.GenerationContext;
 import com.scopeflow.application.port.out.PdfGenerationException;
+import com.scopeflow.application.port.out.EmailService;
+import com.scopeflow.application.port.out.EmailException;
 import com.scopeflow.core.domain.proposal.event.ProposalApprovedEvent;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -51,15 +53,17 @@ public class ProposalApprovalListener {
 
     private final IdempotencyService idempotencyService;
     private final PdfService pdfService;
-    // private final EmailService emailService;           // TODO: Wire in Phase 4
+    private final EmailService emailService;
     // private final ProposalRepository proposalRepository; // TODO: Load full proposal context
 
     public ProposalApprovalListener(
             IdempotencyService idempotencyService,
-            PdfService pdfService
+            PdfService pdfService,
+            EmailService emailService
     ) {
         this.idempotencyService = idempotencyService;
         this.pdfService = pdfService;
+        this.emailService = emailService;
     }
 
     /**
@@ -97,22 +101,23 @@ public class ProposalApprovalListener {
                 throw new RuntimeException("Failed to generate PDF", e);
             }
 
-            // Step 2b: Send approval email with PDF link (Phase 4)
-            // TODO: emailService.sendProposalApprovedEmail(
-            //        event.clientEmail(),
-            //        pdfUrl,
-            //        proposalId
-            // );
-
-            logger.info(
-                    "Approval email would be sent to: {} with PDF: {}",
-                    event.clientEmail(),
-                    pdfUrl
-            );
+            // Step 2b: Send approval email with PDF link (Phase 4 - IMPLEMENTED)
+            try {
+                emailService.sendProposalApprovedEmail(
+                        event.clientEmail(),
+                        pdfUrl,
+                        proposalId
+                );
+                logger.info("Approval email sent to: {} with PDF", event.clientEmail());
+            } catch (EmailException e) {
+                logger.error("Failed to send approval email to: {}, will retry", event.clientEmail(), e);
+                // Re-throw to trigger RabbitMQ retry
+                throw new RuntimeException("Failed to send approval email", e);
+            }
 
             // Step 3: Mark as processed
-            // Store PDF URL as result data for audit trail
-            String resultData = "{\"pdfUrl\":\"" + pdfUrl + "\",\"emailSent\":false}";
+            // Store PDF URL and email status as result data for audit trail
+            String resultData = "{\"pdfUrl\":\"" + pdfUrl + "\",\"emailSent\":true}";
             idempotencyService.markAsProcessed(LISTENER_ID, idempotencyKey, resultData);
 
             logger.info(
