@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '@/styles/globals.css';
+import { SessionProvider } from '@/components/auth/SessionProvider';
 
 export const metadata: Metadata = {
   title: 'ScopeFlow - AI-Powered Briefing & Scope Alignment',
@@ -38,7 +39,9 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-secondary-50 text-secondary-900">
-        <div id="root">{children}</div>
+        <SessionProvider>
+          <div id="root">{children}</div>
+        </SessionProvider>
       </body>
     </html>
   );
