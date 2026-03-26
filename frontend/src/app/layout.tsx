@@ -1,6 +1,21 @@
 import type { Metadata } from 'next';
+import { Plus_Jakarta_Sans, Playfair_Display } from 'next/font/google';
 import '@/styles/globals.css';
 import { SessionProvider } from '@/components/auth/SessionProvider';
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700', '800'],
+});
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-display',
+  weight: ['600', '700', '800', '900'],
+});
 
 export const metadata: Metadata = {
   title: 'ScopeFlow - AI-Powered Briefing & Scope Alignment',
@@ -48,23 +63,21 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${plusJakarta.variable} ${playfair.variable}`}
+    >
       <head>
         <meta charSet="utf-8" />
         <meta name="theme-color" content="#0ea5e9" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
         {/* JSON-LD Schema.org */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
         />
       </head>
-      <body className="bg-secondary-50 text-secondary-900">
+      <body className="bg-secondary-50 text-secondary-900 font-sans">
         <SessionProvider>
           <div id="root">{children}</div>
         </SessionProvider>
