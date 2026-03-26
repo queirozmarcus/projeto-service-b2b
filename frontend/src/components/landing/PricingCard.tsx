@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CheckIcon } from '@heroicons/react/24/solid';
 
 interface PricingCardProps {
   name: string;
@@ -7,7 +8,7 @@ interface PricingCardProps {
   features: string[];
   cta: string;
   ctaHref: string;
-  highlight?: boolean | undefined;
+  highlight?: boolean;
 }
 
 export function PricingCard({
@@ -19,56 +20,94 @@ export function PricingCard({
   ctaHref,
   highlight = false,
 }: PricingCardProps) {
-  return (
-    <div
-      className={`relative flex flex-col gap-6 rounded-lg border p-8 transition-shadow ${
-        highlight
-          ? 'border-primary-600 bg-primary-50 shadow-lg ring-2 ring-primary-600/10'
-          : 'border-secondary-200 bg-white shadow-sm hover:shadow-md'
-      }`}
-    >
-      {/* Highlight Badge */}
-      {highlight && (
+  if (highlight) {
+    return (
+      <div className="relative flex flex-col rounded-3xl bg-primary-600 p-8 shadow-xl ring-1 ring-primary-500">
+        {/* Badge */}
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <span className="inline-block rounded-full bg-primary-600 px-4 py-1 text-sm font-semibold text-white">
+          <span className="inline-block rounded-full bg-ink-900 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-white shadow">
             Most Popular
           </span>
         </div>
-      )}
 
-      {/* Plan Name */}
-      <div>
-        <h3 className="text-2xl font-bold text-secondary-900">{name}</h3>
-        {description && <p className="mt-2 text-secondary-600">{description}</p>}
+        {/* Header */}
+        <div className="mb-6 mt-2">
+          <h3 className="text-xl font-bold text-white">{name}</h3>
+          {description && <p className="mt-1 text-sm text-primary-200">{description}</p>}
+        </div>
+
+        {/* Price */}
+        <div className="mb-6 flex items-end gap-1.5">
+          <span className="font-display text-5xl font-black text-white">{price}</span>
+          {price !== 'Contact us' && (
+            <span className="mb-1 text-sm font-medium text-primary-200">/mês</span>
+          )}
+        </div>
+
+        <div className="mb-6 h-px bg-primary-500" />
+
+        {/* Features */}
+        <ul className="mb-8 flex flex-col gap-3">
+          {features.map((feature, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white/20">
+                <CheckIcon className="h-3 w-3 text-white" strokeWidth={3} />
+              </span>
+              <span className="text-sm leading-relaxed text-primary-100">{feature}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-auto">
+          <Link
+            href={ctaHref}
+            className="block w-full rounded-xl bg-white px-6 py-3.5 text-center text-sm font-bold text-primary-700 transition-all duration-200 hover:bg-primary-50 hover:shadow-sm"
+          >
+            {cta}
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col rounded-3xl border border-secondary-200 bg-surface p-8 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+      {/* Header */}
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-ink-800">{name}</h3>
+        {description && <p className="mt-1 text-sm text-secondary-500">{description}</p>}
       </div>
 
       {/* Price */}
-      <div className={`text-4xl font-bold ${highlight ? 'text-primary-700' : 'text-secondary-900'}`}>
-        {price}
-        {price !== 'Contact us' && <span className="text-sm font-normal text-secondary-600">/month</span>}
+      <div className="mb-6 flex items-end gap-1.5">
+        <span className="font-display text-5xl font-black text-ink-900">{price}</span>
+        {price !== 'Contact us' && (
+          <span className="mb-1 text-sm font-medium text-secondary-500">/mês</span>
+        )}
       </div>
 
-      {/* Features List */}
-      <ul className="flex flex-col gap-3">
-        {features.map((feature, index) => (
-          <li key={index} className="flex gap-3 text-secondary-700">
-            <span className="text-lg text-success-500 flex-shrink-0">✓</span>
-            <span>{feature}</span>
+      <div className="mb-6 h-px bg-secondary-100" />
+
+      {/* Features */}
+      <ul className="mb-8 flex flex-col gap-3">
+        {features.map((feature, i) => (
+          <li key={i} className="flex items-start gap-3">
+            <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-primary-50">
+              <CheckIcon className="h-3 w-3 text-primary-600" strokeWidth={3} />
+            </span>
+            <span className="text-sm leading-relaxed text-secondary-700">{feature}</span>
           </li>
         ))}
       </ul>
 
-      {/* CTA Button */}
-      <Link
-        href={ctaHref}
-        className={`rounded-lg px-6 py-3 font-semibold text-center transition-colors ${
-          highlight
-            ? 'bg-primary-600 text-white hover:bg-primary-700'
-            : 'border-2 border-primary-600 text-primary-600 hover:bg-primary-50'
-        }`}
-      >
-        {cta}
-      </Link>
+      <div className="mt-auto">
+        <Link
+          href={ctaHref}
+          className="block w-full rounded-xl border-2 border-primary-600 px-6 py-3.5 text-center text-sm font-bold text-primary-600 transition-all duration-200 hover:bg-primary-600 hover:text-white"
+        >
+          {cta}
+        </Link>
+      </div>
     </div>
   );
 }

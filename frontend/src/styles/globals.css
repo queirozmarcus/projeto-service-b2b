@@ -1,74 +1,153 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Global styles */
+/* ── Custom design tokens ──────────────────────────────────────────── */
+@theme {
+  --color-canvas: #f3f4f6;
+  --color-surface: #ffffff;
+  --color-surface-raised: #f8fafc;
+
+  /* Primary — sky blue */
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c3d66;
+
+  /* Secondary — cool gray slate */
+  --color-secondary-50: #f8fafc;
+  --color-secondary-100: #f1f5f9;
+  --color-secondary-200: #e2e8f0;
+  --color-secondary-300: #cbd5e1;
+  --color-secondary-400: #94a3b8;
+  --color-secondary-500: #64748b;
+  --color-secondary-600: #475569;
+  --color-secondary-700: #334155;
+  --color-secondary-800: #1e293b;
+  --color-secondary-900: #0f172a;
+
+  /* Ink — professional text (not pure black) */
+  --color-ink-50: #f7f7f7;
+  --color-ink-100: #efefef;
+  --color-ink-200: #dfdfdf;
+  --color-ink-300: #c8c8c8;
+  --color-ink-400: #a8a8a8;
+  --color-ink-500: #6f6f6f;
+  --color-ink-600: #4f4f4f;
+  --color-ink-700: #3b3b3b;
+  --color-ink-800: #2c2c2c;
+  --color-ink-900: #1a1a1a;
+
+  /* Accent — emerald for success/positive states */
+  --color-accent-50: #f0fdf4;
+  --color-accent-100: #dcfce7;
+  --color-accent-200: #bbf7d0;
+  --color-accent-300: #86efac;
+  --color-accent-400: #4ade80;
+  --color-accent-500: #10b981;
+  --color-accent-600: #059669;
+  --color-accent-700: #047857;
+  --color-accent-800: #065f46;
+  --color-accent-900: #064e3b;
+
+  /* Status */
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-700: #b91c1c;
+
+  /* Typography */
+  --font-sans: var(--font-sans), system-ui, sans-serif;
+  --font-display: var(--font-display), system-ui, serif;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-card-hover: 0 4px 12px -2px rgb(0 0 0 / 0.08);
+}
+
+/* ── Base ──────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  @apply bg-secondary-50 text-secondary-900 antialiased;
+  background-color: var(--color-canvas);
+  color: var(--color-ink-800);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
 }
 
-/* Typography */
-h1 {
-  @apply scroll-m-20 text-4xl font-extrabold tracking-tight;
-}
-
-h2 {
-  @apply scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight;
-}
-
-h3 {
-  @apply scroll-m-20 text-2xl font-semibold tracking-tight;
-}
-
-h4 {
-  @apply scroll-m-20 text-xl font-semibold tracking-tight;
-}
-
-h5 {
-  @apply scroll-m-20 text-lg font-semibold tracking-tight;
-}
-
-h6 {
-  @apply scroll-m-20 text-base font-semibold tracking-tight;
-}
-
-p {
-  @apply leading-7 [&:not(:last-child)]:mb-2;
-}
-
-a {
-  @apply text-primary-600 hover:text-primary-700 transition-colors;
-}
-
-/* Form elements */
+/* ── Form element defaults ──────────────────────────────────────────── */
 input,
 textarea,
 select {
-  @apply rounded-md border border-secondary-200 bg-white px-3 py-2 placeholder-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-secondary-200);
+  background-color: var(--color-surface);
+  padding: 0.5rem 0.75rem;
+  color: var(--color-ink-800);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-secondary-400);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgb(14 165 233 / 0.15);
 }
 
 button {
-  @apply transition-all duration-200;
+  transition: all 0.2s;
 }
 
-/* Accessibility */
+/* ── Global link color ─────────────────────────────────────────────── */
+a {
+  transition: color 0.15s;
+}
+
+/* ── Utility: section label ────────────────────────────────────────── */
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-primary-600);
+}
+
+/* ── Keyframe animations ──────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in    { animation: fadeIn 0.6s ease-out forwards; }
+.animate-slide-up   { animation: slideUp 0.6s ease-out forwards; }
+.animate-slide-in-right { animation: slideInRight 0.7s ease-out forwards; }
+
+/* ── Accessibility: reduced motion ──────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-}
-
-/* Dark mode utilities (if needed) */
-@media (prefers-color-scheme: dark) {
-  body {
-    @apply bg-secondary-900 text-secondary-100;
   }
 }

@@ -77,7 +77,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
         />
       </head>
-      <body className="bg-secondary-50 text-secondary-900 font-sans">
+      <body className="font-sans" style={{ backgroundColor: '#f3f4f6', color: '#2c2c2c' }}>
         <SessionProvider>
           <div id="root">{children}</div>
         </SessionProvider>

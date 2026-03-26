@@ -1,44 +1,113 @@
 'use client';
 
 import Link from 'next/link';
+import {
+  DocumentPlusIcon,
+  ClipboardDocumentListIcon,
+  UsersIcon,
+} from '@heroicons/react/24/outline';
 
 interface QuickActionsProps {
   onNewProposal?: () => void;
   onNewBriefing?: () => void;
 }
 
-export function QuickActions({
-  onNewProposal,
-  onNewBriefing,
-}: QuickActionsProps) {
+const actions = [
+  {
+    label: 'Nova Proposta',
+    description: 'Iniciar escopo assistido por IA',
+    href: '/dashboard/proposals/new',
+    icon: DocumentPlusIcon,
+    variant: 'primary' as const,
+  },
+  {
+    label: 'Novo Briefing',
+    description: 'Enviar link de discovery ao cliente',
+    href: '#',
+    icon: ClipboardDocumentListIcon,
+    variant: 'secondary' as const,
+  },
+  {
+    label: 'Ver Clientes',
+    description: 'Gerenciar carteira de clientes',
+    href: '/dashboard/clients',
+    icon: UsersIcon,
+    variant: 'ghost' as const,
+  },
+];
+
+export function QuickActions({ onNewProposal, onNewBriefing }: QuickActionsProps) {
   return (
     <div className="grid gap-3 sm:grid-cols-3">
-      <Link
-        href="/dashboard/proposals/new"
-        onClick={(e) => {
-          if (onNewProposal) {
-            e.preventDefault();
-            onNewProposal();
-          }
-        }}
-        className="flex items-center justify-center rounded-lg bg-primary-600 px-6 py-3 text-center font-semibold text-white transition hover:bg-primary-700"
-      >
-        + Nova Proposta
-      </Link>
+      {actions.map((action) => {
+        const Icon = action.icon;
+        const isNew = action.label === 'Nova Proposta';
+        const isBriefing = action.label === 'Novo Briefing';
 
-      <button
-        onClick={onNewBriefing}
-        className="flex items-center justify-center rounded-lg border-2 border-primary-600 px-6 py-3 text-center font-semibold text-primary-600 transition hover:bg-primary-50"
-      >
-        + Novo Briefing
-      </button>
+        const base =
+          'group flex items-center gap-3 rounded-2xl border px-5 py-4 transition-all duration-200 hover:-translate-y-0.5';
 
-      <Link
-        href="/dashboard/clients"
-        className="flex items-center justify-center rounded-lg border border-secondary-300 px-6 py-3 text-center font-semibold text-secondary-700 transition hover:bg-secondary-50"
-      >
-        Ver Clientes
-      </Link>
+        const style =
+          action.variant === 'primary'
+            ? `${base} border-primary-600 bg-primary-600 text-white shadow-sm hover:bg-primary-700 hover:shadow`
+            : action.variant === 'secondary'
+            ? `${base} border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100`
+            : `${base} border-secondary-200 bg-surface text-secondary-700 hover:border-secondary-300 hover:bg-secondary-50`;
+
+        if (isNew && onNewProposal) {
+          return (
+            <button
+              key={action.label}
+              onClick={onNewProposal}
+              className={style}
+            >
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              <div className="text-left">
+                <p className="text-sm font-semibold">{action.label}</p>
+                <p
+                  className={`text-xs ${
+                    action.variant === 'primary' ? 'text-primary-200' : 'text-secondary-500'
+                  }`}
+                >
+                  {action.description}
+                </p>
+              </div>
+            </button>
+          );
+        }
+
+        if (isBriefing && onNewBriefing) {
+          return (
+            <button
+              key={action.label}
+              onClick={onNewBriefing}
+              className={style}
+            >
+              <Icon className="h-5 w-5 flex-shrink-0" />
+              <div className="text-left">
+                <p className="text-sm font-semibold">{action.label}</p>
+                <p className="text-xs text-primary-500">{action.description}</p>
+              </div>
+            </button>
+          );
+        }
+
+        return (
+          <Link key={action.label} href={action.href} className={style}>
+            <Icon className="h-5 w-5 flex-shrink-0" />
+            <div className="text-left">
+              <p className="text-sm font-semibold">{action.label}</p>
+              <p
+                className={`text-xs ${
+                  action.variant === 'primary' ? 'text-primary-200' : 'text-secondary-500'
+                }`}
+              >
+                {action.description}
+              </p>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }

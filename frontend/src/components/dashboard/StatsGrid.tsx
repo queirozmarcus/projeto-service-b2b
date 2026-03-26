@@ -1,5 +1,11 @@
 'use client';
 
+import {
+  DocumentTextIcon,
+  ClipboardDocumentCheckIcon,
+  ChartBarIcon,
+  UsersIcon,
+} from '@heroicons/react/24/outline';
 import { StatCard } from './StatCard';
 
 interface StatsGridProps {
@@ -12,6 +18,13 @@ interface StatsGridProps {
   }>;
   isLoading?: boolean;
 }
+
+const statIcons: Record<string, React.ReactNode> = {
+  active: <DocumentTextIcon className="h-6 w-6" />,
+  completed: <ClipboardDocumentCheckIcon className="h-6 w-6" />,
+  approval: <ChartBarIcon className="h-6 w-6" />,
+  clients: <UsersIcon className="h-6 w-6" />,
+};
 
 const defaultStats = [
   {
@@ -51,10 +64,15 @@ export function StatsGrid({ stats = defaultStats, isLoading = false }: StatsGrid
         {defaultStats.map((stat) => (
           <div
             key={stat.id}
-            className="rounded-xl border border-secondary-200 bg-white p-6 animate-pulse"
+            className="rounded-2xl border border-secondary-200 bg-surface p-6 animate-pulse"
           >
-            <div className="h-4 w-32 rounded bg-secondary-200" />
-            <div className="mt-4 h-8 w-16 rounded bg-secondary-200" />
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="h-4 w-28 rounded-lg bg-secondary-200" />
+                <div className="mt-4 h-8 w-20 rounded-lg bg-secondary-200" />
+              </div>
+              <div className="h-12 w-12 rounded-xl bg-secondary-100" />
+            </div>
           </div>
         ))}
       </div>
@@ -68,6 +86,7 @@ export function StatsGrid({ stats = defaultStats, isLoading = false }: StatsGrid
           key={stat.id}
           label={stat.label}
           value={stat.value}
+          icon={statIcons[stat.id]}
           trend={stat.trend ?? undefined}
           trendDirection={stat.trendDirection ?? undefined}
         />

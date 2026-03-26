@@ -50,7 +50,7 @@ export function ProposalList({
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-secondary-200 bg-white p-4 animate-pulse"
+            className="rounded-xl border border-secondary-200 bg-surface p-4 animate-pulse"
           >
             <div className="flex items-center gap-4">
               <div className="flex-1 space-y-2">
@@ -67,7 +67,7 @@ export function ProposalList({
 
   if (proposals.length === 0) {
     return (
-      <div className="rounded-xl border border-secondary-200 bg-white p-12 text-center">
+      <div className="rounded-xl border border-secondary-200 bg-surface p-12 text-center">
         <p className="text-secondary-600">
           Nenhuma proposta criada. Começe criando sua primeira!
         </p>
@@ -92,7 +92,7 @@ export function ProposalList({
         return (
           <div
             key={proposal.id}
-            className="flex items-center justify-between rounded-xl border border-secondary-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+            className="flex items-center justify-between rounded-xl border border-secondary-200 bg-surface p-4 shadow-sm transition hover:shadow-md"
           >
             <div className="flex-1">
               <h3 className="font-semibold text-secondary-900">

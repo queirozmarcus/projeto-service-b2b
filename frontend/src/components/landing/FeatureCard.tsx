@@ -1,22 +1,51 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, ReactNode } from 'react';
 
 interface FeatureCardProps {
-  icon: string;
+  icon: ReactNode;
   title: string;
   description: string;
   index?: number;
+  size?: 'default' | 'large';
+  accentColor?: 'primary' | 'accent' | 'indigo';
 }
+
+const accentMap = {
+  primary: {
+    iconBg: 'bg-primary-50',
+    iconBorder: 'border-primary-100',
+    iconColor: 'text-primary-600',
+    hoverBorder: 'hover:border-primary-300',
+    bar: 'bg-primary-500',
+  },
+  accent: {
+    iconBg: 'bg-accent-50',
+    iconBorder: 'border-accent-100',
+    iconColor: 'text-accent-600',
+    hoverBorder: 'hover:border-accent-300',
+    bar: 'bg-accent-500',
+  },
+  indigo: {
+    iconBg: 'bg-indigo-50',
+    iconBorder: 'border-indigo-100',
+    iconColor: 'text-indigo-600',
+    hoverBorder: 'hover:border-indigo-300',
+    bar: 'bg-indigo-500',
+  },
+};
 
 export function FeatureCard({
   icon,
   title,
   description,
   index = 0,
+  size = 'default',
+  accentColor = 'primary',
 }: FeatureCardProps) {
   const [isInView, setIsInView] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const colors = accentMap[accentColor];
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -28,41 +57,35 @@ export function FeatureCard({
       { threshold: 0.1 }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
+    if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
 
   return (
     <div
       ref={ref}
-      className={`group relative rounded-xl border border-secondary-200 bg-gradient-to-br from-white to-secondary-50 p-8 transition-all duration-500 hover:border-primary-300 hover:shadow-lg ${
+      className={`group relative rounded-2xl border border-secondary-200 bg-white p-8 transition-all duration-300 ${colors.hoverBorder} hover:shadow-card-hover hover:-translate-y-0.5 ${
         isInView ? 'animate-slide-up' : 'opacity-0'
-      }`}
-      style={{
-        animationDelay: isInView ? `${index * 100}ms` : '0ms',
-      }}
+      } ${size === 'large' ? 'lg:p-10' : ''}`}
+      style={{ animationDelay: isInView ? `${index * 120}ms` : '0ms' }}
     >
-      {/* Glow effect on hover */}
-      <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary-500 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-5" />
-
-      {/* Icon background */}
-      <div className="mb-6 inline-flex rounded-lg bg-gradient-to-br from-primary-100 to-primary-50 p-3 text-3xl transition-all duration-300 group-hover:scale-110 group-hover:from-primary-200 group-hover:to-primary-100">
+      {/* Icon */}
+      <div className={`mb-6 inline-flex rounded-xl border p-3 ${colors.iconBg} ${colors.iconBorder} ${colors.iconColor} transition-transform duration-300 group-hover:scale-110`}>
         {icon}
       </div>
 
       {/* Content */}
-      <div className="relative z-10 space-y-3">
-        <h3 className="font-display text-xl font-700 text-secondary-900">
+      <div className="space-y-3">
+        <h3 className={`font-display font-bold text-ink-800 ${size === 'large' ? 'text-2xl' : 'text-xl'}`}>
           {title}
         </h3>
-        <p className="text-secondary-600 leading-relaxed">{description}</p>
+        <p className={`leading-relaxed text-secondary-600 ${size === 'large' ? 'text-base' : 'text-sm'}`}>
+          {description}
+        </p>
       </div>
 
-      {/* Bottom accent */}
-      <div className="absolute bottom-0 left-0 h-1 w-0 rounded-full bg-gradient-to-r from-primary-600 to-primary-400 transition-all duration-300 group-hover:w-16" />
+      {/* Bottom accent bar — reveals on hover */}
+      <div className={`absolute bottom-0 left-8 right-8 h-0.5 scale-x-0 rounded-full ${colors.bar} transition-transform duration-300 origin-left group-hover:scale-x-100`} />
     </div>
   );
 }
