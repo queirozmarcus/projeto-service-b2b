@@ -51,12 +51,11 @@ export interface UseBriefingReturn {
    * 1. POST /public/briefings/{token}/batch-answers (sem auth)
    * 2. POST /api/v1/briefing-sessions/{sessionId}/complete (com auth)
    *
-   * Requer `sessionId` para o step 2 (UUID interno da sessão).
-   * O `sessionId` deve ser obtido pela página server-side e passado ao componente.
+   * O `sessionId` é lido da store (setado pelo componente pai).
    *
    * @throws never — erros são capturados e armazenados em `error`
    */
-  submitAllAnswers: (sessionId: string) => Promise<void>;
+  submitAllAnswers: () => Promise<void>;
   /**
    * Recarrega as perguntas em caso de falha de rede no fetch inicial.
    * Limpa o erro atual antes de tentar novamente.
@@ -78,6 +77,7 @@ export function useBriefing(token: string): UseBriefingReturn {
     error,
     completionResult,
     answers,
+    sessionId,
     setQuestions,
     setLoading,
     setCompleting,
@@ -136,7 +136,7 @@ export function useBriefing(token: string): UseBriefingReturn {
   // ---- Submissão + completion ----------------------------------------------
 
   const submitAllAnswers = useCallback(
-    async (sessionId: string): Promise<void> => {
+    async (): Promise<void> => {
       if (!token || !sessionId) return;
 
       // Constrói array de Answer a partir do Map de respostas
@@ -172,7 +172,7 @@ export function useBriefing(token: string): UseBriefingReturn {
         setCompleting(false);
       }
     },
-    [token, answers, setCompleting, setError, setCompleted],
+    [token, sessionId, answers, setCompleting, setError, setCompleted],
   );
 
   // ---- Retry ---------------------------------------------------------------

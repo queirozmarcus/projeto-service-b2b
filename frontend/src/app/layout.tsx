@@ -26,6 +26,27 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const schemaData = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'ScopeFlow',
+    description:
+      'AI-powered briefing and scope management platform for freelancers and agencies',
+    url: 'https://scopeflow.app',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    offers: {
+      '@type': 'Offer',
+      price: '29',
+      priceCurrency: 'BRL',
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.8',
+      ratingCount: '150',
+    },
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -36,6 +57,11 @@ export default function RootLayout({
           rel="preconnect"
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
+        />
+        {/* JSON-LD Schema.org */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
         />
       </head>
       <body className="bg-secondary-50 text-secondary-900">

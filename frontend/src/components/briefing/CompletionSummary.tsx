@@ -7,7 +7,7 @@ import type { CompletionResult } from '@/types/briefing';
 interface CompletionSummaryProps {
   completionResult: CompletionResult;
   /** UUID da proposta — usado para montar o link no dashboard (/dashboard/proposals/{proposalId}). */
-  proposalId: string;
+  proposalId?: string;
 }
 
 /**

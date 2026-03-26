@@ -12,12 +12,13 @@ export default function AuthLayout({
   const { isAuthenticated } = useSessionStore();
   const router = useRouter();
 
-  // Redireciona usuário já autenticado para o dashboard
+  // Guard: redireciona usuário já autenticado para o dashboard
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/dashboard');
     }
   }, [isAuthenticated, router]);
 
+  // Renderiza children diretamente — formulários já usam AuthCard wrapper
   return <>{children}</>;
 }

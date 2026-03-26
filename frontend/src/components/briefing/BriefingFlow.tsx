@@ -16,8 +16,6 @@ import type { BriefingApiError } from '@/types/briefing';
 interface BriefingFlowProps {
   /** Token público da sessão (vem da URL: /briefing/[token]) */
   token: string;
-  /** UUID da Proposta — usado para link no dashboard após completion */
-  proposalId: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -111,7 +109,7 @@ function ErrorBanner({ error, onRetry }: ErrorBannerProps) {
  * 3. completionResult         → CompletionSummary
  * 4. padrão                   → BriefingProgress + QuestionCard + QuestionStepper
  */
-export function BriefingFlow({ token, sessionId }: BriefingFlowProps) {
+export function BriefingFlow({ token }: BriefingFlowProps) {
   // ---- Hook: operações assíncronas -----------------------------------------
   const { isLoading, isCompleting, error, completionResult, canComplete, submitAllAnswers, retryFetchQuestions } =
     useBriefing(token);
@@ -137,7 +135,7 @@ export function BriefingFlow({ token, sessionId }: BriefingFlowProps) {
   };
 
   const handleComplete = async () => {
-    await submitAllAnswers(sessionId);
+    await submitAllAnswers();
   };
 
   // ---- Render: fase de carregamento inicial --------------------------------
@@ -152,7 +150,7 @@ export function BriefingFlow({ token, sessionId }: BriefingFlowProps) {
 
   // ---- Render: briefing concluído -----------------------------------------
   if (completionResult) {
-    return <CompletionSummary completionResult={completionResult} proposalId={proposalId} />;
+    return <CompletionSummary completionResult={completionResult} />;
   }
 
   // ---- Render: guard — questions ainda vazias (edge case) -----------------

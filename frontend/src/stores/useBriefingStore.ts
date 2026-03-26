@@ -38,6 +38,8 @@ interface BriefingState {
   status: 'IN_PROGRESS' | 'COMPLETED';
   /** Score calculado pelo backend após completion. null enquanto não completado. */
   completionResult: CompletionResult | null;
+  /** ID da sessão de briefing (UUID interno para submissão). */
+  sessionId: string | null;
 
   // ---- UI ------------------------------------------------------------------
   /** true durante fetch de questions ou envio de respostas */
@@ -50,6 +52,8 @@ interface BriefingState {
   // ---- Actions -------------------------------------------------------------
   /** Define as perguntas após fetch bem-sucedido. */
   setQuestions: (questions: Question[]) => void;
+  /** Armazena o ID da sessão para submissão posterior. */
+  setSessionId: (sessionId: string) => void;
   /**
    * Registra ou atualiza a resposta de uma pergunta.
    * Aceita string vazia para limpar (ex: usuário apagou o campo).
@@ -86,6 +90,7 @@ const initialState = {
   currentIndex: 0,
   status: 'IN_PROGRESS' as const,
   completionResult: null,
+  sessionId: null,
   isLoading: false,
   isCompleting: false,
   error: null,
@@ -100,6 +105,9 @@ export const useBriefingStore = create<BriefingState>((set, get) => ({
 
   setQuestions: (questions) =>
     set({ questions, currentIndex: 0 }),
+
+  setSessionId: (sessionId) =>
+    set({ sessionId }),
 
   addAnswer: (questionId, text) => {
     // Map é mutável; criar nova instância para disparar re-render corretamente.

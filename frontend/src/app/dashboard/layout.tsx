@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useSessionStore from '@/stores/useSession';
-import { Navbar } from '@/components/protected/Navbar';
+import { DashboardNavbar } from '@/components/dashboard';
 
 export default function DashboardLayout({
   children,
@@ -30,7 +30,7 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-secondary-50">
-      <Navbar />
+      <DashboardNavbar />
       <main>{children}</main>
     </div>
   );

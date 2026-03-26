@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { BriefingFlow } from '@/components/briefing/BriefingFlow';
+import { BriefingPageClient } from './BriefingPageClient';
 import type { BriefingSession } from '@/types/briefing';
 
 // ---------------------------------------------------------------------------
@@ -138,7 +138,7 @@ export default async function BriefingPage({ params }: BriefingPageProps) {
 
         {/* Card do fluxo */}
         <div className="rounded-xl border border-secondary-200 bg-white px-6 py-8 shadow-sm md:px-10">
-          <BriefingFlow token={token} proposalId={session.proposalId || ''} />
+          <BriefingPageClient token={token} sessionId={session.id} />
         </div>
       </div>
     </main>

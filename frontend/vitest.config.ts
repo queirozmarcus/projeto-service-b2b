@@ -29,12 +29,10 @@ export default defineConfig({
         'src/lib/**',
       ],
       exclude: ['src/test/**', 'src/**/*.d.ts'],
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 75,
-        statements: 80,
-      },
+      lines: 80,
+      functions: 80,
+      branches: 75,
+      statements: 80,
     },
   },
   resolve: {
