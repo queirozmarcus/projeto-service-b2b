@@ -1,171 +1,292 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { ArrowRightIcon } from '@heroicons/react/24/outline';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { ArrowRightIcon, SparklesIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
-// ─── Product mockup: a clean flow diagram rendered in SVG-like HTML ──────────
-function ProductMockup() {
-  const steps = [
-    {
-      step: '01',
-      title: 'AI Discovery',
-      desc: 'Guided questions reveal the real scope',
-      color: 'border-primary-200 bg-primary-50',
-      badge: 'bg-primary-600',
-    },
-    {
-      step: '02',
-      title: 'Structured Briefing',
-      desc: 'Answers consolidated into clear deliverables',
-      color: 'border-secondary-200 bg-surface-raised',
-      badge: 'bg-ink-700',
-    },
-    {
-      step: '03',
-      title: 'Approved Scope',
-      desc: 'Client signs. Timestamp recorded. No disputes.',
-      color: 'border-emerald-200 bg-emerald-50',
-      badge: 'bg-emerald-600',
-    },
-  ];
-
+function ProposalMockup() {
   return (
-    <div className="relative">
-      {/* Offset shadow card */}
-      <div className="absolute inset-0 translate-x-4 translate-y-4 rounded-3xl bg-primary-100/60" />
+    <motion.div
+      initial={{ opacity: 0, y: 32 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="relative"
+    >
+      {/* Ambient glow */}
+      <div className="absolute -inset-8 bg-primary-500/8 blur-3xl rounded-full pointer-events-none animate-ambient-pulse" />
 
-      {/* Main card */}
-      <div className="relative rounded-3xl border border-secondary-200 bg-surface p-7 shadow-lg">
-        {/* Window chrome */}
-        <div className="mb-6 flex items-center gap-2 border-b border-secondary-100 pb-4">
-          <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-          <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-          <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-          <span className="ml-3 text-xs font-semibold tracking-wide text-secondary-400">
-            ScopeFlow — Active Project
+      {/* Outer card */}
+      <div className="relative rounded-2xl border border-dark-border bg-dark-surface shadow-2xl overflow-hidden">
+        {/* Title bar */}
+        <div className="flex items-center justify-between border-b border-dark-border px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500/60" />
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500/60" />
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/60" />
+          </div>
+          <span className="text-[10px] font-semibold tracking-[0.2em] text-white/20 uppercase">
+            Proposta #024
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold text-amber-400 uppercase tracking-wider">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+            Em Análise
           </span>
         </div>
 
-        {/* Steps */}
-        <div className="space-y-3">
-          {steps.map((s, i) => (
-            <div
-              key={i}
-              className={`flex items-start gap-4 rounded-2xl border p-4 ${s.color}`}
-            >
-              <span
-                className={`mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full ${s.badge} text-xs font-bold text-white`}
-              >
-                {s.step}
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-ink-800">{s.title}</p>
-                <p className="text-xs leading-relaxed text-secondary-500">{s.desc}</p>
+        {/* Content */}
+        <div className="p-5 space-y-5">
+          {/* Client info */}
+          <div>
+            <p className="text-[11px] font-semibold text-white/30 uppercase tracking-widest mb-1">Cliente</p>
+            <p className="text-base font-bold text-white">Acme Corp — Social Media Mensal</p>
+            <p className="text-[12px] text-white/40 mt-0.5 font-medium">R$ 3.500/mês · Início em Abril 2026</p>
+          </div>
+
+          {/* Deliverables */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold text-white/30 uppercase tracking-widest">Entregáveis</p>
+            {[
+              '16 posts/mês com copy e arte',
+              '4 Stories temáticos por semana',
+              '2 Reels mensais com roteiro',
+            ].map((item) => (
+              <div key={item} className="flex items-center gap-2">
+                <CheckCircleIcon className="h-3.5 w-3.5 flex-shrink-0 text-accent-500" />
+                <span className="text-[12px] text-white/70 font-medium">{item}</span>
               </div>
-              {i === 2 && (
-                <CheckCircleIcon className="ml-auto h-5 w-5 flex-shrink-0 text-emerald-500" />
-              )}
+            ))}
+          </div>
+
+          {/* Exclusions */}
+          <div className="space-y-2 rounded-xl border border-dark-border bg-dark-raised p-3">
+            <p className="text-[11px] font-semibold text-white/30 uppercase tracking-widest">Não inclui</p>
+            <div className="flex flex-wrap gap-2">
+              {['Gestão de anúncios', 'Fotografia', 'Edição de vídeo'].map((item) => (
+                <span key={item} className="rounded-md border border-white/8 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-white/40">
+                  {item}
+                </span>
+              ))}
             </div>
-          ))}
+          </div>
+
+          {/* Action row */}
+          <div className="flex items-center gap-3 border-t border-dark-border pt-4">
+            <button className="flex-1 rounded-lg border border-dark-border py-2.5 text-[12px] font-semibold text-white/40 hover:border-dark-border-hover hover:text-white/60 transition-colors">
+              Solicitar ajustes
+            </button>
+            <button className="flex-1 rounded-lg bg-primary-500 py-2.5 text-[12px] font-bold text-void shadow-[0_0_20px_rgba(245,166,35,0.3)] hover:bg-primary-400 transition-colors">
+              ✓ Aprovar proposta
+            </button>
+          </div>
         </div>
 
-        {/* Metrics strip */}
-        <div className="mt-5 grid grid-cols-3 gap-3 border-t border-secondary-100 pt-5">
+        {/* Stats row */}
+        <div className="border-t border-dark-border bg-dark-raised px-5 py-3 grid grid-cols-3 gap-4">
           {[
-            { value: '60%', label: 'Faster close' },
-            { value: '92%', label: 'Approval rate' },
-            { value: '4.8★', label: 'Avg rating' },
+            { value: '2.1x', label: 'mais conversão' },
+            { value: '24h', label: 'para aprovar' },
+            { value: '0', label: 'idas e vindas' },
           ].map((m) => (
             <div key={m.label} className="text-center">
-              <p className="text-lg font-black text-ink-800">{m.value}</p>
-              <p className="text-xs text-secondary-400">{m.label}</p>
+              <p className="text-sm font-black text-primary-400">{m.value}</p>
+              <p className="text-[10px] font-semibold text-white/25 uppercase tracking-tight">{m.label}</p>
             </div>
           ))}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-// ─── Hero ──────────────────────────────────────────────────────────────────────
-export function Hero() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
+function WaitlistForm() {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email) setSubmitted(true);
+  };
+
+  if (submitted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex items-center gap-3 rounded-xl border border-accent-500/30 bg-accent-500/10 px-5 py-3.5"
+      >
+        <CheckCircleIcon className="h-5 w-5 text-accent-400 flex-shrink-0" />
+        <p className="text-sm font-semibold text-accent-300">
+          Ótimo! Você está na lista. Avisaremos em breve.
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
-    <section className="relative overflow-hidden bg-canvas px-6 pb-28 pt-20">
-      {/*
-        Background: soft blue gradient blob — gives the section warmth without
-        being distracting. Positioned top-right behind the mockup.
-      */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-64 -top-64 h-[700px] w-[700px] rounded-full bg-primary-100/50 blur-3xl"
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="seu@email.com"
+        required
+        className="flex-1 rounded-xl border border-dark-border bg-dark-surface px-4 py-3 text-sm font-medium text-white placeholder-white/25 outline-none focus:border-primary-500/50 focus:ring-1 focus:ring-primary-500/20 transition-all"
       />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-32 bottom-0 h-96 w-96 rounded-full bg-secondary-200/40 blur-2xl"
-      />
+      <button
+        type="submit"
+        className="inline-flex items-center gap-2 rounded-xl bg-primary-500 hover:bg-primary-400 px-6 py-3 text-sm font-bold text-void shadow-[0_0_24px_rgba(245,166,35,0.35)] hover:shadow-[0_0_32px_rgba(245,166,35,0.5)] transition-all"
+      >
+        Entrar na lista
+        <ArrowRightIcon className="h-4 w-4" />
+      </button>
+    </form>
+  );
+}
 
-      <div className="relative mx-auto max-w-6xl">
-        <div className="grid items-center gap-16 lg:grid-cols-[1fr_440px]">
+export function Hero() {
+  return (
+    <section className="relative flex min-h-screen items-center overflow-hidden bg-void px-6 pb-24 pt-32">
+      {/* Background elements */}
+      <div className="pointer-events-none absolute inset-0">
+        {/* Amber top glow */}
+        <div className="absolute -top-40 left-1/2 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-primary-500/6 blur-[120px]" />
+        {/* Fine grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#FFFFFF06_1px,transparent_1px),linear-gradient(to_bottom,#FFFFFF06_1px,transparent_1px)] bg-[size:72px_72px]" />
+        {/* Radial fade at edges */}
+        <div className="absolute inset-0 [mask-image:radial-gradient(ellipse_80%_60%_at_50%_0%,#000_60%,transparent_100%)]" />
+      </div>
 
-          {/* ── Left: Headline + CTA ─────────────────────────────────── */}
+      <div className="relative mx-auto max-w-7xl w-full">
+        <div className="grid items-center gap-16 lg:grid-cols-[1fr_0.85fr] xl:gap-24">
+
+          {/* Left column — copy */}
           <div className="space-y-8">
-            {/* Section label */}
-            <p className="section-label">
-              AI-Powered Scope Management
-            </p>
+            {/* Badge */}
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-2 rounded-full border border-primary-500/25 bg-primary-500/8 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.2em] text-primary-400"
+            >
+              <SparklesIcon className="h-3.5 w-3.5" />
+              Briefing comercial com inteligência aplicada
+            </motion.div>
 
-            {/* Headline — Playfair, weight 900, generous size */}
-            <h1 className="font-display text-[52px] font-black leading-[1.08] tracking-tight text-ink-900 lg:text-[64px] xl:text-[72px]">
-              Turn Briefings into{' '}
-              <em className="not-italic text-primary-600">Approved</em>{' '}
-              Scopes
-            </h1>
+            {/* Headline */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+              className="font-display text-6xl font-black leading-[0.95] tracking-tight text-white sm:text-7xl lg:text-8xl"
+            >
+              Feche projetos com um escopo{' '}
+              <span className="relative">
+                <span className="font-display italic text-primary-400">claro, bonito</span>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.2, duration: 0.6 }}
+                  className="absolute inset-0 bg-gradient-to-r from-primary-400 via-primary-300 to-primary-400 bg-[length:200%_100%] opacity-20 blur-xl -z-10 rounded-lg"
+                />
+              </span>{' '}
+              <span className="text-white/80">e aprovado.</span>
+            </motion.h1>
 
-            {/* Subheadline */}
-            <p className="max-w-[44ch] text-lg leading-relaxed text-secondary-600">
-              Guide clients through AI-driven discovery. Get structured scopes,
-              traceable approvals, and zero rework — in one workflow.
-            </p>
+            {/* Subtext */}
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="max-w-[44ch] text-lg leading-relaxed text-white/50 font-medium"
+            >
+              Troque mensagens soltas, PDFs improvisados e retrabalho por uma jornada
+              elegante de descoberta, alinhamento e aprovação em minutos.
+            </motion.p>
 
-            {/* Primary CTA — single, strong */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            {/* Trust signals */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.28 }}
+              className="flex flex-wrap gap-2"
+            >
+              {[
+                'Diagnóstico guiado por IA',
+                'Escopo com linguagem executiva',
+                'Aprovação com rastreabilidade',
+              ].map((item) => (
+                <span
+                  key={item}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-white/8 bg-white/4 px-3 py-1.5 text-[12px] font-medium text-white/55"
+                >
+                  <span className="h-1 w-1 rounded-full bg-accent-400" />
+                  {item}
+                </span>
+              ))}
+            </motion.div>
+
+            {/* Waitlist form */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.35 }}
+              className="space-y-3 max-w-[480px]"
+            >
+              <WaitlistForm />
+              <p className="text-[11px] text-white/25 font-medium pl-1">
+                Sem cartão de crédito. Acesso antecipado gratuito por 14 dias.
+              </p>
+            </motion.div>
+
+            {/* CTA buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.38 }}
+              className="flex flex-wrap items-center gap-4"
+            >
               <Link
                 href="/auth/register"
-                className="group inline-flex items-center gap-2.5 rounded-xl bg-primary-600 px-8 py-4 text-base font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary-700 hover:shadow-lg active:translate-y-0"
+                className="group inline-flex items-center gap-2 rounded-xl bg-white/8 border border-white/12 hover:bg-white/12 px-6 py-3 text-sm font-semibold text-white transition-all"
               >
-                Start Free — No Card Needed
-                <ArrowRightIcon className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+                Criar conta agora
+                <ArrowRightIcon className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
-              <p className="text-sm text-secondary-500">14-day trial · Cancel anytime</p>
-            </div>
+              <Link
+                href="#how-it-works"
+                className="text-sm font-medium text-white/35 hover:text-white/60 transition-colors"
+              >
+                Ver como funciona →
+              </Link>
+            </motion.div>
 
-            {/* Social trust */}
-            <div className="flex items-center gap-3 pt-2">
+            {/* Social proof line */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.5 }}
+              className="flex items-center gap-4"
+            >
               <div className="flex -space-x-2.5">
-                {['M', 'J', 'A', 'R'].map((letter) => (
+                {['AC', 'RL', 'JP', 'MB', 'TF'].map((initials) => (
                   <div
-                    key={letter}
-                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-canvas bg-primary-600 text-xs font-bold text-white"
+                    key={initials}
+                    className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-void bg-dark-raised text-[9px] font-bold text-white/60"
                   >
-                    {letter}
+                    {initials}
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-secondary-600">
-                Trusted by <span className="font-semibold text-ink-800">500+</span> freelancers & agencies
+              <p className="text-[12px] font-medium text-white/35">
+                <span className="text-white/60 font-bold">+180 equipes</span> já usam ScopeFlow
               </p>
-            </div>
+            </motion.div>
           </div>
 
-          {/* ── Right: Product mockup ─────────────────────────────────── */}
-          <div>
-            <ProductMockup />
+          {/* Right column — product mockup */}
+          <div className="hidden lg:block">
+            <ProposalMockup />
           </div>
         </div>
       </div>

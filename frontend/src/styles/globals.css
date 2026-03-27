@@ -1,74 +1,80 @@
 @import "tailwindcss";
 
-/* ── Custom design tokens ──────────────────────────────────────────── */
+/* ── Design tokens ──────────────────────────────────────────────── */
 @theme {
-  --color-canvas: #f3f4f6;
-  --color-surface: #ffffff;
-  --color-surface-raised: #f8fafc;
+  /* Landing dark surfaces */
+  --color-void:        #09090E;
+  --color-pitch:       #0D0D14;
+  --color-dark-surface:  #10101A;
+  --color-dark-raised:   #18182A;
+  --color-dark-border:   #24243A;
+  --color-dark-border-hover: #3A3A58;
 
-  /* Primary — sky blue */
-  --color-primary-50: #f0f9ff;
-  --color-primary-100: #e0f2fe;
-  --color-primary-200: #bae6fd;
-  --color-primary-300: #7dd3fc;
-  --color-primary-400: #38bdf8;
-  --color-primary-500: #0ea5e9;
-  --color-primary-600: #0284c7;
-  --color-primary-700: #0369a1;
-  --color-primary-800: #075985;
-  --color-primary-900: #0c3d66;
+  /* Dashboard light surfaces */
+  --color-canvas:        #F5F5F0;
+  --color-surface:       #FFFFFF;
+  --color-surface-raised: #FAFAF8;
 
-  /* Secondary — cool gray slate */
-  --color-secondary-50: #f8fafc;
-  --color-secondary-100: #f1f5f9;
-  --color-secondary-200: #e2e8f0;
-  --color-secondary-300: #cbd5e1;
-  --color-secondary-400: #94a3b8;
-  --color-secondary-500: #64748b;
-  --color-secondary-600: #475569;
-  --color-secondary-700: #334155;
-  --color-secondary-800: #1e293b;
-  --color-secondary-900: #0f172a;
+  /* Amber / Primary */
+  --color-primary-50:  #FFFBEE;
+  --color-primary-100: #FFF4CC;
+  --color-primary-200: #FFE794;
+  --color-primary-300: #FFD452;
+  --color-primary-400: #FFBC20;
+  --color-primary-500: #F5A623;
+  --color-primary-600: #E08800;
+  --color-primary-700: #B56B00;
+  --color-primary-800: #834D00;
+  --color-primary-900: #503000;
 
-  /* Ink — professional text (not pure black) */
-  --color-ink-50: #f7f7f7;
-  --color-ink-100: #efefef;
-  --color-ink-200: #dfdfdf;
-  --color-ink-300: #c8c8c8;
-  --color-ink-400: #a8a8a8;
-  --color-ink-500: #6f6f6f;
-  --color-ink-600: #4f4f4f;
-  --color-ink-700: #3b3b3b;
-  --color-ink-800: #2c2c2c;
-  --color-ink-900: #1a1a1a;
+  /* Secondary / Cool slate */
+  --color-secondary-50:  #F8F8FC;
+  --color-secondary-100: #F0F0F8;
+  --color-secondary-200: #E0E0EE;
+  --color-secondary-300: #BCBCD8;
+  --color-secondary-400: #8888AA;
+  --color-secondary-500: #666680;
+  --color-secondary-600: #4E4E6A;
+  --color-secondary-700: #383856;
+  --color-secondary-800: #252540;
+  --color-secondary-900: #14142A;
 
-  /* Accent — emerald for success/positive states */
-  --color-accent-50: #f0fdf4;
-  --color-accent-100: #dcfce7;
-  --color-accent-200: #bbf7d0;
-  --color-accent-300: #86efac;
-  --color-accent-400: #4ade80;
-  --color-accent-500: #10b981;
+  /* Ink — professional text */
+  --color-ink-50:  #F8F8F8;
+  --color-ink-100: #EFEFEF;
+  --color-ink-200: #DCDCDC;
+  --color-ink-300: #BEBEBE;
+  --color-ink-400: #969696;
+  --color-ink-500: #6A6A6A;
+  --color-ink-600: #4A4A4A;
+  --color-ink-700: #323232;
+  --color-ink-800: #1E1E1E;
+  --color-ink-900: #0E0E0E;
+
+  /* Accent — emerald success */
+  --color-accent-50:  #EFFDF5;
+  --color-accent-100: #D8FBDF;
+  --color-accent-400: #34D399;
+  --color-accent-500: #10B981;
   --color-accent-600: #059669;
-  --color-accent-700: #047857;
-  --color-accent-800: #065f46;
-  --color-accent-900: #064e3b;
 
   /* Status */
-  --color-danger-50: #fef2f2;
-  --color-danger-500: #ef4444;
-  --color-danger-700: #b91c1c;
+  --color-danger-50:  #FEF2F2;
+  --color-danger-500: #EF4444;
+  --color-danger-700: #B91C1C;
 
   /* Typography */
-  --font-sans: var(--font-sans), system-ui, sans-serif;
-  --font-display: var(--font-display), system-ui, serif;
+  --font-sans:    var(--font-sans),    system-ui, sans-serif;
+  --font-display: var(--font-display), Georgia, serif;
 
   /* Shadows */
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06);
-  --shadow-card-hover: 0 4px 12px -2px rgb(0 0 0 / 0.08);
+  --shadow-card:        0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-card-hover:  0 4px 16px -4px rgb(0 0 0 / 0.12);
+  --shadow-amber:       0 0 40px rgb(245 166 35 / 0.18);
+  --shadow-amber-sm:    0 0 20px rgb(245 166 35 / 0.12);
 }
 
-/* ── Base ──────────────────────────────────────────────────────────── */
+/* ── Base ─────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
 }
@@ -81,69 +87,72 @@ body {
   font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
 }
 
-/* ── Form element defaults ──────────────────────────────────────────── */
-input,
-textarea,
-select {
+/* ── Form defaults ─────────────────────────────────────────────── */
+input, textarea, select {
   border-radius: 0.5rem;
   border: 1px solid var(--color-secondary-200);
   background-color: var(--color-surface);
   padding: 0.5rem 0.75rem;
   color: var(--color-ink-800);
 }
-
-input::placeholder,
-textarea::placeholder {
+input::placeholder, textarea::placeholder {
   color: var(--color-secondary-400);
 }
-
-input:focus,
-textarea:focus,
-select:focus {
+input:focus, textarea:focus, select:focus {
   outline: none;
   border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgb(14 165 233 / 0.15);
+  box-shadow: 0 0 0 3px rgb(245 166 35 / 0.15);
 }
-
 button {
   transition: all 0.2s;
 }
-
-/* ── Global link color ─────────────────────────────────────────────── */
 a {
   transition: color 0.15s;
 }
 
-/* ── Utility: section label ────────────────────────────────────────── */
-.section-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-primary-600);
-}
-
-/* ── Keyframe animations ──────────────────────────────────────────── */
+/* ── Keyframes ─────────────────────────────────────────────────── */
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(24px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(32px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+@keyframes ambientPulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.7; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes subtleFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 24px rgba(245,166,35,0.1); }
+  50%      { box-shadow: 0 0 32px rgba(245,166,35,0.15); }
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% center; }
+  50%      { background-position: 100% center; }
+}
 
-.animate-fade-in    { animation: fadeIn 0.6s ease-out forwards; }
-.animate-slide-up   { animation: slideUp 0.6s ease-out forwards; }
+.animate-fade-in        { animation: fadeIn 0.6s ease-out forwards; }
+.animate-slide-up       { animation: slideUp 0.6s ease-out forwards; }
 .animate-slide-in-right { animation: slideInRight 0.7s ease-out forwards; }
+.animate-ambient-pulse  { animation: ambientPulse 5s ease-in-out infinite; }
+.animate-subtle-float   { animation: subtleFloat 4s ease-in-out infinite; }
+.animate-glow           { animation: glow 3s ease-in-out infinite; }
+.animate-gradient-shift { animation: gradientShift 8s ease-in-out infinite; }
 
-/* ── Accessibility: reduced motion ──────────────────────────────────── */
+/* ── Accessibility ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

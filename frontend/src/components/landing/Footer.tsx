@@ -1,100 +1,88 @@
+'use client';
+
 import Link from 'next/link';
 
-interface FooterLink {
-  label: string;
-  href: string;
-}
-
-interface FooterSection {
-  title: string;
-  links: FooterLink[];
-}
-
-const DEFAULT_SECTIONS: FooterSection[] = [
+const NAV_LINKS = [
   {
-    title: 'Product',
+    heading: 'Produto',
     links: [
-      { label: 'Features', href: '#features' },
-      { label: 'Pricing', href: '#pricing' },
-      { label: 'Security', href: '#' },
-      { label: 'Roadmap', href: '#' },
+      ['Recursos', '#features'],
+      ['Como funciona', '#how-it-works'],
+      ['Planos', '#pricing'],
+      ['FAQ', '#faq'],
     ],
   },
   {
-    title: 'Company',
+    heading: 'Para quem',
     links: [
-      { label: 'About', href: '#' },
-      { label: 'Blog', href: '#' },
-      { label: 'Contact', href: '#' },
-      { label: 'Press', href: '#' },
+      ['Agências', '#'],
+      ['Consultorias', '#'],
+      ['Software houses', '#'],
+      ['Freelancers', '#'],
     ],
   },
   {
-    title: 'Support',
+    heading: 'Conta',
     links: [
-      { label: 'Help Center', href: '#' },
-      { label: 'Documentation', href: '#' },
-      { label: 'Status', href: '#' },
-    ],
-  },
-  {
-    title: 'Legal',
-    links: [
-      { label: 'Privacy Policy', href: '#' },
-      { label: 'Terms of Service', href: '#' },
-      { label: 'LGPD Compliance', href: '#' },
+      ['Criar conta', '/auth/register'],
+      ['Entrar', '/auth/login'],
+      ['Plano Enterprise', '#pricing'],
+      ['Contato', 'mailto:oi@scopeflow.app'],
     ],
   },
 ];
 
-interface FooterProps {
-  sections?: FooterSection[];
-  companyName?: string;
-  companyDescription?: string;
-}
-
-export function Footer({
-  sections = DEFAULT_SECTIONS,
-  companyName = 'ScopeFlow',
-  companyDescription = 'AI-powered briefing and scope management for freelancers and agencies.',
-}: FooterProps) {
-  const currentYear = new Date().getFullYear();
-
+export function Footer() {
   return (
-    <footer className="border-t border-secondary-200 bg-surface-raised px-6 py-16">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-12 grid gap-10 md:grid-cols-5">
-
-          {/* Brand column */}
-          <div className="md:col-span-1">
-            <div className="mb-4 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600">
-                <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2.5}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                  />
-                </svg>
+    <footer className="bg-void border-t border-dark-border px-6 py-20">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+          {/* Brand */}
+          <div className="space-y-5">
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="relative flex h-8 w-8 items-center justify-center">
+                <div className="absolute inset-0 rounded-lg bg-primary-500/15 blur-sm group-hover:bg-primary-500/25 transition-all" />
+                <div className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-primary-500/30 bg-primary-500/8 text-[10px] font-black text-primary-400">
+                  SF
+                </div>
               </div>
-              <span className="text-base font-bold text-ink-900">{companyName}</span>
+              <span className="font-display text-lg font-bold text-white tracking-tight">
+                Scope<span className="text-primary-400">Flow</span>
+              </span>
+            </Link>
+
+            <p className="max-w-xs text-sm leading-relaxed text-white/30 font-medium">
+              Plataforma para transformar conversa comercial em briefing estruturado,
+              escopo elegante e aprovação sem atrito.
+            </p>
+
+            <div className="flex gap-4">
+              {['LinkedIn', 'Instagram', 'GitHub'].map((social) => (
+                <Link
+                  key={social}
+                  href="#"
+                  className="text-[11px] font-semibold uppercase tracking-widest text-white/20 hover:text-primary-400 transition-colors"
+                >
+                  {social}
+                </Link>
+              ))}
             </div>
-            <p className="text-sm leading-relaxed text-secondary-500">{companyDescription}</p>
           </div>
 
-          {/* Link sections */}
-          {sections.map((section, index) => (
-            <div key={index}>
-              <h5 className="mb-4 text-sm font-semibold text-ink-700">{section.title}</h5>
-              <ul className="space-y-2.5">
-                {section.links.map((link, linkIndex) => (
-                  <li key={linkIndex}>
+          {/* Nav columns */}
+          {NAV_LINKS.map(({ heading, links }) => (
+            <div key={heading}>
+              <h4 className="mb-5 text-[11px] font-black uppercase tracking-[0.2em] text-white/30">
+                {heading}
+              </h4>
+              <ul className="space-y-3">
+                {links.map(([label, href]) => (
+                  <li key={label}>
                     <Link
-                      href={link.href}
-                      className="text-sm text-secondary-500 transition-colors hover:text-ink-800"
+                      href={href}
+                      className="text-sm font-medium text-white/35 hover:text-white/65 transition-colors"
                     >
-                      {link.label}
+                      {label}
                     </Link>
                   </li>
                 ))}
@@ -104,13 +92,21 @@ export function Footer({
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-secondary-200 pt-8 sm:flex-row">
-          <p className="text-sm text-secondary-400">
-            &copy; {currentYear} {companyName}. All rights reserved.
+        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-dark-border pt-8 sm:flex-row">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-white/20">
+            © 2026 ScopeFlow AI. Todos os direitos reservados.
           </p>
-          <p className="text-xs text-secondary-300">
-            Built for freelancers & agencies
-          </p>
+          <div className="flex gap-6">
+            {['Privacidade', 'Termos', 'LGPD'].map((item) => (
+              <Link
+                key={item}
+                href="#"
+                className="text-[11px] font-medium text-white/20 hover:text-white/40 transition-colors"
+              >
+                {item}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </footer>

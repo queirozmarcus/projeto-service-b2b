@@ -1,80 +1,77 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 export function LandingNavbar() {
-  const [scrolled, setScrolled] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const handleScroll = () => setIsScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <nav
-      className={`sticky top-0 z-50 bg-canvas transition-all duration-300 ${
-        scrolled
-          ? 'shadow-sm border-b border-secondary-200/80 backdrop-blur-sm'
-          : 'border-b border-transparent'
+    <motion.nav
+      initial={{ y: -16, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        isScrolled
+          ? 'bg-void/80 backdrop-blur-xl border-b border-dark-border'
+          : 'bg-transparent'
       }`}
     >
-      <div className="mx-auto max-w-6xl px-6 py-4">
-        <div className="flex items-center justify-between">
-
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5">
-            {/* Mark: stylized S */}
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-600 shadow-sm">
-              <svg className="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                />
-              </svg>
+      <div className="mx-auto max-w-7xl flex items-center justify-between px-6 py-4">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="relative flex h-8 w-8 items-center justify-center">
+            <div className="absolute inset-0 rounded-lg bg-primary-500/20 blur-md group-hover:bg-primary-500/30 transition-all" />
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-primary-500/40 bg-primary-500/10 text-[10px] font-black text-primary-400 tracking-tight">
+              SF
             </div>
-            <span className="text-[17px] font-bold tracking-tight text-ink-900">
-              ScopeFlow
-            </span>
+          </div>
+          <span className="font-display text-lg font-bold text-white tracking-tight">
+            Scope<span className="text-primary-400">Flow</span>
+          </span>
+        </Link>
+
+        {/* Nav links */}
+        <div className="hidden md:flex items-center gap-8">
+          {[
+            ['Recursos', '#features'],
+            ['Como Funciona', '#how-it-works'],
+            ['Planos', '#pricing'],
+            ['FAQ', '#faq'],
+          ].map(([label, href]) => (
+            <Link
+              key={label}
+              href={href}
+              className="text-[13px] font-medium text-white/50 hover:text-white/90 transition-colors tracking-wide"
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        {/* CTAs */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/auth/login"
+            className="hidden sm:block text-[13px] font-medium text-white/60 hover:text-white transition-colors"
+          >
+            Entrar
           </Link>
-
-          {/* Nav links — center */}
-          <div className="hidden items-center gap-7 md:flex">
-            {[
-              { href: '#features', label: 'Features' },
-              { href: '#pricing', label: 'Pricing' },
-              { href: '#social-proof', label: 'Testimonials' },
-            ].map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className="text-sm font-medium text-secondary-600 transition-colors hover:text-ink-900"
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Auth */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/auth/login"
-              className="hidden rounded-lg px-4 py-2 text-sm font-medium text-secondary-700 transition-colors hover:text-ink-900 sm:block"
-            >
-              Log in
-            </Link>
-            <Link
-              href="/auth/register"
-              className="rounded-lg bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow"
-            >
-              Get Started
-            </Link>
-          </div>
+          <Link
+            href="/auth/register"
+            className="inline-flex items-center gap-2 rounded-lg border border-primary-500/40 bg-primary-500/10 hover:bg-primary-500/20 px-4 py-2 text-[13px] font-semibold text-primary-300 hover:text-primary-200 transition-all"
+          >
+            Começar grátis
+          </Link>
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 }

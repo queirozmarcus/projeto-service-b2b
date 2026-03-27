@@ -1,91 +1,54 @@
 'use client';
 
-import { useEffect, useRef, useState, ReactNode } from 'react';
+import { motion } from 'framer-motion';
 
 interface FeatureCardProps {
-  icon: ReactNode;
+  icon: string | React.ReactNode;
   title: string;
   description: string;
-  index?: number;
-  size?: 'default' | 'large';
-  accentColor?: 'primary' | 'accent' | 'indigo';
 }
 
-const accentMap = {
-  primary: {
-    iconBg: 'bg-primary-50',
-    iconBorder: 'border-primary-100',
-    iconColor: 'text-primary-600',
-    hoverBorder: 'hover:border-primary-300',
-    bar: 'bg-primary-500',
-  },
-  accent: {
-    iconBg: 'bg-accent-50',
-    iconBorder: 'border-accent-100',
-    iconColor: 'text-accent-600',
-    hoverBorder: 'hover:border-accent-300',
-    bar: 'bg-accent-500',
-  },
-  indigo: {
-    iconBg: 'bg-indigo-50',
-    iconBorder: 'border-indigo-100',
-    iconColor: 'text-indigo-600',
-    hoverBorder: 'hover:border-indigo-300',
-    bar: 'bg-indigo-500',
-  },
-};
-
-export function FeatureCard({
-  icon,
-  title,
-  description,
-  index = 0,
-  size = 'default',
-  accentColor = 'primary',
-}: FeatureCardProps) {
-  const [isInView, setIsInView] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const colors = accentMap[accentColor];
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true);
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
+export function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
-    <div
-      ref={ref}
-      className={`group relative rounded-2xl border border-secondary-200 bg-white p-8 transition-all duration-300 ${colors.hoverBorder} hover:shadow-card-hover hover:-translate-y-0.5 ${
-        isInView ? 'animate-slide-up' : 'opacity-0'
-      } ${size === 'large' ? 'lg:p-10' : ''}`}
-      style={{ animationDelay: isInView ? `${index * 120}ms` : '0ms' }}
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 24 },
+        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+      }}
+      className="group relative rounded-xl border border-dark-border bg-dark-surface/40 backdrop-blur-sm p-6 transition-all duration-300 hover:border-primary-500/40 hover:bg-dark-surface/80 hover:shadow-[0_0_24px_rgba(245,166,35,0.08)]"
     >
-      {/* Icon */}
-      <div className={`mb-6 inline-flex rounded-xl border p-3 ${colors.iconBg} ${colors.iconBorder} ${colors.iconColor} transition-transform duration-300 group-hover:scale-110`}>
-        {icon}
-      </div>
+      {/* Top accent line reveals on hover */}
+      <div className="absolute top-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-primary-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-      {/* Content */}
-      <div className="space-y-3">
-        <h3 className={`font-display font-bold text-ink-800 ${size === 'large' ? 'text-2xl' : 'text-xl'}`}>
-          {title}
-        </h3>
-        <p className={`leading-relaxed text-secondary-600 ${size === 'large' ? 'text-base' : 'text-sm'}`}>
-          {description}
-        </p>
-      </div>
+      {/* Corner accent badge */}
+      <div className="absolute top-3 right-3 h-8 w-8 border border-primary-500/0 group-hover:border-primary-500/20 rounded-lg transition-colors duration-300" />
 
-      {/* Bottom accent bar — reveals on hover */}
-      <div className={`absolute bottom-0 left-8 right-8 h-0.5 scale-x-0 rounded-full ${colors.bar} transition-transform duration-300 origin-left group-hover:scale-x-100`} />
-    </div>
+      <div className="relative space-y-4">
+        {/* Icon with interaction */}
+        <motion.div
+          whileHover={{ scale: 1.12, rotate: 5 }}
+          className="inline-flex h-14 w-14 items-center justify-center rounded-lg border border-primary-500/20 bg-primary-500/8 text-2xl font-bold text-primary-400 transition-all duration-300 group-hover:border-primary-500/40 group-hover:bg-primary-500/15"
+        >
+          {icon}
+        </motion.div>
+
+        {/* Content */}
+        <div>
+          <h3 className="text-base font-bold text-white/90 mb-2 leading-tight group-hover:text-white transition-colors">
+            {title}
+          </h3>
+          <p className="text-sm leading-relaxed text-white/50 font-medium">
+            {description}
+          </p>
+        </div>
+
+        {/* Bottom divider — reveals with detail on hover */}
+        <div className="pt-2 mt-4 border-t border-dark-border opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-primary-500/40">
+            Saiba mais →
+          </p>
+        </div>
+      </div>
+    </motion.div>
   );
 }

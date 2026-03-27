@@ -2,123 +2,129 @@ import type { Metadata } from 'next';
 import {
   LandingNavbar,
   Hero,
+  ProblemSolution,
   FeatureGrid,
+  HowItWorks,
   PricingTable,
   SocialProof,
+  FAQ,
   CTASection,
   Footer,
 } from '@/components/landing';
 
 export const metadata: Metadata = {
-  title: 'ScopeFlow - AI-Powered Briefing & Scope Approval',
+  title: 'ScopeFlow — Briefing inteligente, escopos aprovados',
   description:
-    'Transform vague requirements into structured scopes with AI-powered briefing and approval workflows. Get clear agreements faster.',
+    'Transforme conversas vagas em escopos claros, aprovados e rastreáveis com uma experiência de briefing orientada por IA.',
   keywords: [
-    'AI briefing',
-    'scope management',
-    'project approval',
-    'B2B SaaS',
+    'briefing com IA',
+    'gestao de escopo',
+    'aprovacao de projeto',
+    'saas b2b',
     'freelancers',
-    'agencies',
+    'agencias',
+    'consultoria digital',
   ],
   openGraph: {
     type: 'website',
-    locale: 'en_US',
+    locale: 'pt_BR',
     url: 'https://scopeflow.app',
     siteName: 'ScopeFlow',
-    title: 'ScopeFlow - AI-Powered Briefing & Scope Approval',
+    title: 'ScopeFlow — Briefing inteligente, escopos aprovados',
     description:
-      'Transform vague requirements into structured scopes with AI-powered briefing and approval workflows.',
+      'Transforme conversas vagas em escopos claros, aprovados e rastreáveis com IA.',
     images: [
       {
         url: 'https://scopeflow.app/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'ScopeFlow - Transform Briefings into Approved Scopes',
+        alt: 'ScopeFlow — Briefing inteligente para escopos aprovados',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ScopeFlow - AI-Powered Briefing & Scope Approval',
-    description: 'Transform vague requirements into structured scopes with AI.',
+    title: 'ScopeFlow — Briefing inteligente, escopos aprovados',
+    description: 'Transforme briefing em escopo aprovado com IA.',
     images: ['https://scopeflow.app/og-image.png'],
   },
 };
 
 const FEATURES = [
   {
-    icon: '🎯',
-    title: 'AI-Powered Discovery',
+    icon: '01',
+    title: 'Descoberta guiada',
     description:
-      'Our AI asks contextual follow-up questions that reveal hidden requirements. No more vague briefs.',
+      'A IA conduz perguntas inteligentes para revelar objetivo, escopo, restrições e prioridades logo no primeiro contato.',
   },
   {
-    icon: '📋',
-    title: 'Instant Scope Generation',
+    icon: '02',
+    title: 'Escopo pronto para validar',
     description:
-      'Transform answers into structured scopes in seconds. Deliverables, timelines, assumptions—all ready.',
+      'Respostas viram um documento claro com entregáveis, premissas, cronograma e critérios de aprovação.',
   },
   {
-    icon: '✅',
-    title: 'Traceable Approvals',
+    icon: '03',
+    title: 'Aprovação sem ruído',
     description:
-      'Clients approve with their name, email, and timestamp. Audit trail included. No disputes later.',
+      'Cliente aprova com contexto e rastreabilidade. Menos retrabalho, menos discussão e mais previsibilidade comercial.',
   },
 ];
 
 const PLANS = [
   {
-    name: 'Freelancer',
-    price: 'R$ 29',
-    description: 'Perfect for solo professionals',
+    name: 'Starter',
+    price: 'R$ 49',
+    description: 'Para autônomos e pequenos estúdios',
     features: [
-      'Up to 10 projects/month',
-      'AI-powered discovery',
-      'Basic scope templates',
-      'Email support',
-      'Approval tracking',
+      'Até 15 briefings por mês',
+      'Fluxo guiado com IA',
+      'Escopo com entregáveis e premissas',
+      'Histórico de aprovações',
+      'Suporte por email',
     ],
   },
   {
-    name: 'Agency',
-    price: 'R$ 99',
-    description: 'For growing teams',
+    name: 'Growth',
+    price: 'R$ 149',
+    description: 'Para operações comerciais e equipes de entrega',
     features: [
-      'Unlimited projects',
-      'Advanced AI customization',
-      'Custom templates',
-      'Team collaboration (up to 10 members)',
-      'Priority support',
-      'Advanced analytics',
-      'Custom branding',
+      'Briefings ilimitados',
+      'Templates por serviço',
+      'Colaboração para equipe',
+      'Branding da sua operação',
+      'Prioridade no suporte',
+      'Relatórios de conversão',
+      'Aprovação compartilhável',
     ],
     highlight: true,
   },
   {
     name: 'Enterprise',
-    price: 'Contact us',
-    description: 'For large organizations',
+    price: 'Sob consulta',
+    description: 'Para times com processo, compliance e integrações',
     features: [
-      'Everything in Agency',
-      'Unlimited team members',
-      'Dedicated account manager',
-      'Custom integrations',
-      'SLA guarantee',
-      'Advanced security',
-      'White-label option',
+      'Tudo do plano Growth',
+      'SSO e governança',
+      'Integrações customizadas',
+      'Ambiente white-label',
+      'SLA e onboarding dedicado',
+      'Políticas avançadas de segurança',
     ],
   },
 ];
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen">
+    <main className="bg-void">
       <LandingNavbar />
       <Hero />
+      <ProblemSolution />
       <FeatureGrid features={FEATURES} />
+      <HowItWorks />
       <PricingTable plans={PLANS} />
       <SocialProof />
+      <FAQ />
       <CTASection />
       <Footer />
     </main>

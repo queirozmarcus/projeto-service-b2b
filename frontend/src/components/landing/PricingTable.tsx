@@ -1,88 +1,98 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { PricingCard } from './PricingCard';
 
 interface Plan {
   name: string;
   price: string;
-  description?: string;
+  description: string;
   features: string[];
   highlight?: boolean;
 }
 
 interface PricingTableProps {
   plans: Plan[];
-  title?: string;
-  subtitle?: string;
 }
 
-export function PricingTable({
-  plans,
-  title = 'Simple, Transparent Pricing',
-  subtitle = 'Start free. Upgrade as you grow.',
-}: PricingTableProps) {
-  const [inView, setInView] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) setInView(true); },
-      { threshold: 0.1 }
-    );
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, []);
-
+export function PricingTable({ plans }: PricingTableProps) {
   return (
-    <section id="pricing" className="bg-surface-raised px-6 py-20 lg:py-28">
-      <div ref={ref} className="mx-auto max-w-6xl">
+    <section id="pricing" className="relative overflow-hidden bg-void px-6 py-32 border-t border-dark-border">
+      {/* Background accents */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-0 bottom-0 h-[500px] w-[500px] -translate-x-1/3 rounded-full bg-primary-500/4 blur-[140px]" />
+        <div className="absolute right-0 top-1/3 h-96 w-96 rounded-full bg-secondary-500/3 blur-[120px]" />
+      </div>
 
+      <div className="relative mx-auto max-w-7xl">
         {/* Header */}
-        <div
-          className={`mb-16 text-center transition-all duration-700 ${
-            inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-          }`}
+        <div className="mb-20 space-y-6 max-w-3xl">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="flex items-center gap-3"
+          >
+            <span className="h-px w-8 bg-primary-500/40" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary-500/70">
+              Planos
+            </span>
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.05 }}
+            className="max-w-2xl font-display text-5xl font-black leading-tight text-white sm:text-6xl"
+          >
+            Preço direto,{' '}
+            <span className="font-display italic text-primary-400">posicionamento premium.</span>
+          </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="max-w-2xl text-base leading-relaxed text-white/40 font-medium"
+          >
+            Comece pequeno, padronize a operação e evolua para um fluxo comercial mais
+            maduro sem trocar de ferramenta.
+          </motion.p>
+        </div>
+
+        {/* Cards Grid */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-80px' }}
+          variants={{
+            hidden: {},
+            visible: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } },
+          }}
+          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
         >
-          <p className="section-label mb-4">Pricing</p>
-          <h2 className="font-display text-4xl font-black leading-tight text-ink-900 lg:text-5xl">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="mt-4 text-lg text-secondary-600">{subtitle}</p>
-          )}
-        </div>
-
-        {/*
-          Cards — highlighted card sits flush (no margin-top offset) and
-          is slightly taller due to its internal padding. Non-highlighted
-          cards get a small top margin to align vertically with the highlight card's content.
-        */}
-        <div className="grid gap-6 md:grid-cols-3 md:items-center">
-          {plans.map((plan, index) => (
-            <div
-              key={index}
-              className={`transition-all duration-700 ${
-                inView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              } ${plan.highlight ? '' : 'md:mt-8'}`}
-              style={{ transitionDelay: inView ? `${index * 100}ms` : '0ms' }}
-            >
-              <PricingCard
-                name={plan.name}
-                price={plan.price}
-                description={plan.description}
-                features={plan.features}
-                cta={plan.price === 'Contact us' ? 'Talk to Sales' : 'Get Started Free'}
-                ctaHref={plan.price === 'Contact us' ? '#' : '/auth/register'}
-                highlight={plan.highlight ?? false}
-              />
-            </div>
+          {plans.map((plan, i) => (
+            <PricingCard key={i} {...plan} />
           ))}
-        </div>
+        </motion.div>
 
-        <p className="mt-10 text-center text-sm text-secondary-400">
-          No credit card required. Cancel anytime.
-        </p>
+        {/* CTA section */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+          className="mt-20 rounded-xl border border-primary-500/20 bg-primary-500/5 p-8 text-center backdrop-blur-sm"
+        >
+          <p className="text-sm font-medium text-white/70 mb-2">
+            Todos os planos incluem <span className="text-primary-400 font-semibold">14 dias grátis</span>
+          </p>
+          <p className="text-xs text-white/40">
+            Sem cartão de crédito no início · Acesso completo · Cancele a qualquer momento
+          </p>
+        </motion.div>
       </div>
     </section>
   );

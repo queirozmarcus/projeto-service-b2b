@@ -1,9 +1,12 @@
 export { LandingNavbar } from './LandingNavbar';
 export { Hero } from './Hero';
+export { ProblemSolution } from './ProblemSolution';
 export { FeatureCard } from './FeatureCard';
 export { FeatureGrid } from './FeatureGrid';
+export { HowItWorks } from './HowItWorks';
 export { PricingCard } from './PricingCard';
 export { PricingTable } from './PricingTable';
 export { SocialProof } from './SocialProof';
+export { FAQ } from './FAQ';
 export { CTASection } from './CTASection';
 export { Footer } from './Footer';
