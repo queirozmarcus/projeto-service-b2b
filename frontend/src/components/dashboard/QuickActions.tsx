@@ -49,7 +49,7 @@ export function QuickActions({ onNewProposal, onNewBriefing }: QuickActionsProps
 
         const style =
           action.variant === 'primary'
-            ? `${base} border-primary-600 bg-primary-600 text-white shadow-sm hover:bg-primary-700 hover:shadow`
+            ? `${base} border-primary-400 bg-primary-500 text-ink-900 shadow-sm hover:bg-primary-400 hover:shadow`
             : action.variant === 'secondary'
             ? `${base} border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100`
             : `${base} border-secondary-200 bg-surface text-secondary-700 hover:border-secondary-300 hover:bg-secondary-50`;
@@ -66,7 +66,7 @@ export function QuickActions({ onNewProposal, onNewBriefing }: QuickActionsProps
                 <p className="text-sm font-semibold">{action.label}</p>
                 <p
                   className={`text-xs ${
-                    action.variant === 'primary' ? 'text-primary-200' : 'text-secondary-500'
+                    action.variant === 'primary' ? 'text-ink-700' : 'text-secondary-500'
                   }`}
                 >
                   {action.description}
@@ -99,7 +99,7 @@ export function QuickActions({ onNewProposal, onNewBriefing }: QuickActionsProps
               <p className="text-sm font-semibold">{action.label}</p>
               <p
                 className={`text-xs ${
-                  action.variant === 'primary' ? 'text-primary-200' : 'text-secondary-500'
+                  action.variant === 'primary' ? 'text-ink-700' : 'text-secondary-500'
                 }`}
               >
                 {action.description}

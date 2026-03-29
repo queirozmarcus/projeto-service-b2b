@@ -28,18 +28,13 @@ export function DashboardNavbar() {
 
         {/* Logo + nav links */}
         <div className="flex items-center gap-8">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-600">
-              <svg className="h-3.5 w-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                />
-              </svg>
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-primary-200 bg-primary-50 text-[10px] font-black text-primary-600">
+              SF
             </div>
-            <span className="text-base font-bold text-ink-900">ScopeFlow</span>
+            <span className="font-display text-base font-bold text-ink-900 tracking-tight">
+              Scope<span className="text-primary-600">Flow</span>
+            </span>
           </Link>
 
           <div className="hidden items-center gap-1 sm:flex">

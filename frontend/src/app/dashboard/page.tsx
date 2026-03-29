@@ -120,7 +120,7 @@ export default function DashboardPage() {
           {/* Primary action */}
           <a
             href="/dashboard/proposals/new"
-            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-primary-700 hover:shadow"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary-500 px-5 py-3 text-sm font-bold text-ink-900 shadow-sm transition-all hover:bg-primary-400 hover:shadow"
           >
             <DocumentPlusIcon className="h-4 w-4" />
             Nova Proposta

@@ -19,8 +19,8 @@ const statusConfig = {
   },
   SENT: {
     label: 'Enviado',
-    classes: 'bg-blue-50 text-blue-700',
-    dot: 'bg-blue-500',
+    classes: 'bg-primary-50 text-primary-700',
+    dot: 'bg-primary-500',
   },
   APPROVED: {
     label: 'Aprovado',
