@@ -1,7 +1,33 @@
 # Plano ScopeFlow AI — 10 Sprints até MVP em Produção
 **Data:** 2026-03-29
-**Status:** APROVADO
+**Status:** EM ANDAMENTO
 **Duração:** 10 sprints × 2 semanas = ~20 semanas
+
+---
+
+## Status de Execução
+
+| Sprint | Status | Concluído em | Observações |
+|--------|--------|-------------|-------------|
+| **Sprint 1** — Fix Foundations & CSS | ✅ CONCLUÍDO | 2026-03-29 | Tailwind v4 + PostCSS config, devDependencies corrigidas, build ✅ |
+| **Sprint 2** — Auth & Workspace UI | ⏳ PENDENTE | — | Aguardando início |
+| **Sprint 3** — Dashboard Core | ⏳ PENDENTE | — | — |
+| **Sprint 4** — Client & Service Catalog | ⏳ PENDENTE | — | — |
+| **Sprint 5** — Briefing Session UI | ⏳ PENDENTE | — | — |
+| **Sprint 6** — AI Integration | ⏳ PENDENTE | — | — |
+| **Sprint 7** — Proposal UI & PDF | ⏳ PENDENTE | — | — |
+| **Sprint 8** — Approval Flow | ⏳ PENDENTE | — | — |
+| **Sprint 9** — QA & Security | ⏳ PENDENTE | — | — |
+| **Sprint 10** — DevOps & Produção | ⏳ PENDENTE | — | — |
+
+## Próximo Passo (Sprint 2)
+
+```bash
+/dev-feature "auth completo: register, login, JWT refresh, workspace setup wizard"
+```
+
+**Agents:** `backend-dev` → `unit-test-engineer` → `integration-test-engineer`
+**Entregável:** Register/login funcionando, JWT com refresh, workspace setup wizard, rotas protegidas via middleware Next.js
 
 ---
 
