@@ -85,8 +85,18 @@ services:
       JWT_SECRET: dev-secret-key-change-in-production-min-32-chars
       JWT_EXPIRATION_MS: 900000
 
-      # AWS S3 (mock for local development)
+      # AWS (mock credentials para dev local — não acessam AWS real)
       AWS_S3_ENABLED: "false"
+      AWS_ACCESS_KEY_ID: local-dev-key-id
+      AWS_SECRET_ACCESS_KEY: local-dev-secret-key
+      AWS_REGION: us-east-1
+
+      # SMTP mock para dev local (JavaMailSender bean — sem envio real)
+      SPRING_MAIL_HOST: localhost
+      SPRING_MAIL_PORT: 1025
+
+      # Desabilita redirect HTTPS em dev local
+      APP_REQUIRES_HTTPS: "false"
 
       # OpenAI API (optional for local dev)
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -108,6 +118,7 @@ services:
     networks:
       - scopeflow-network
     restart: unless-stopped
+
 
 volumes:
   postgres_data:

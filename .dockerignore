@@ -1,0 +1,52 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Frontend artifacts
+frontend/node_modules/
+frontend/.next/
+frontend/playwright-report/
+frontend/test-results/
+frontend/coverage/
+frontend/tsconfig.tsbuildinfo
+
+# Backend artifacts
+backend/target/
+
+# Infrastructure as Code (not needed in image)
+k8s/
+infra/
+
+# Scripts
+scripts/
+*.sh
+
+# CI/CD
+.github/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Misnamed directory
+backend/~/

@@ -1,0 +1,28 @@
+# Build artifacts
+target/
+
+# Documentation
+*.md
+
+# Environment files
+.env
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# Test sources (not needed in runtime image)
+src/test/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
+logs/
+
+# Misnamed directory
+~/

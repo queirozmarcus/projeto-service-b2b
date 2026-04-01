@@ -196,7 +196,7 @@ npm run dev                                # http://localhost:3000
 npm run build                              # Production build
 npm run lint                               # ESLint
 npm run type-check                         # TypeScript strict mode
-npm run test                               # Jest tests
+npm run test                               # Vitest unit/component tests
 npm run test:e2e                           # Playwright E2E tests
 
 # Running specific tests

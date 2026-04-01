@@ -15,6 +15,9 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+.env.staging
+.env.production
+!.env.example
 
 # Java / Maven
 backend/target/
@@ -39,3 +42,17 @@ coverage/
 # Playwright
 test-results/
 playwright-report/
+
+# TypeScript incremental build
+tsconfig.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
+# Logs (all variants)
+*.log
+logs/
+
+# Maven wrapper downloads (not the wrapper scripts)
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Misnamed directory (created by erroneous `cd ~` inside container)
+backend/~/

@@ -11,7 +11,7 @@ AI-powered SaaS platform that helps small B2B service providers (freelancers, mi
 - **Briefing Flow:** Sequential questions → Gap detection → Completion (80%+ score required)
 - **Public Client Access:** Clients answer via public token (no auth required)
 - **Immutable Audit Trail:** All answers and AI generations recorded for compliance
-- **Scope Generation:** Completed briefings → Proposal context (async via Kafka)
+- **Scope Generation:** Completed briefings → Proposal context (async via RabbitMQ)
 
 ---
 
@@ -50,7 +50,7 @@ AI-powered SaaS platform that helps small B2B service providers (freelancers, mi
 - **Sealed Classes:** Type-safe domain entities (Java 21)
 - **Records:** Immutable DTOs and value objects
 - **Virtual Threads:** Async I/O without thread pool limits
-- **Outbox Pattern:** Event-driven communication (Kafka)
+- **Outbox Pattern:** Event-driven communication (RabbitMQ via AMQP)
 - **Testcontainers:** Real database for integration tests
 
 ---
@@ -164,7 +164,7 @@ npm run dev                                # Start dev server
 npm run build                              # Production build
 npm run lint                               # ESLint
 npm run type-check                         # TypeScript strict mode
-npm run test                               # Jest tests
+npm run test                               # Vitest unit/component tests
 npm run test:e2e                           # Playwright E2E tests
 ```
 
@@ -246,7 +246,7 @@ projeto-service-b2b/
 │   │   │   │       └── GlobalExceptionHandler.java
 │   │   │   └── out/
 │   │   │       ├── persistence/     # JPA entities + repositories
-│   │   │       └── messaging/       # Kafka producers/consumers
+│   │   │       └── messaging/       # RabbitMQ producers/consumers (AMQP)
 │   │   └── config/                  # Spring configuration
 │   └── src/main/resources/
 │       └── db/migration/            # Flyway migrations
