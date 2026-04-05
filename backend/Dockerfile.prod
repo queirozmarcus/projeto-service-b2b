@@ -1,71 +1,77 @@
-## Multi-stage Dockerfile for ScopeFlow Backend (Production)
-## Uses: Eclipse Temurin JDK 21 → JRE 21 Alpine
-## Image size: ~300MB (optimized)
+# Dockerfile.prod — variante de produção
+#
+# Diferença em relação ao Dockerfile padrão:
+#   - Inclui dumb-init como PID 1 para reencaminhar sinais corretamente
+#     em ambientes que não passam SIGTERM direto ao processo Java
+#     (e.g., alguns runtimes ECS/EC2 sem suporte a init nativo).
+#   - Em Kubernetes com terminationGracePeriodSeconds configurado,
+#     o Dockerfile padrão (sem dumb-init) é suficiente — o kubelet
+#     envia SIGTERM diretamente ao processo Java (PID 1 no container).
+#   - Use Dockerfile.prod se seu runtime de deploy não for Kubernetes
+#     ou se você quiser a camada extra de segurança do dumb-init.
+#
+# Para builds de imagem de produção via CI:
+#   docker build -f Dockerfile.prod -t scopeflow-api:$(git rev-parse --short HEAD) .
 
-# Stage 1: Build with Maven
+# Stage 1: Build — usa Maven wrapper para garantir versão controlada
 FROM eclipse-temurin:21-jdk-alpine AS builder
 LABEL stage=builder
 
 WORKDIR /build
 
-# Install Maven
-RUN apk add --no-cache maven
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
 
-# Copy pom.xml
-COPY pom.xml ./
+RUN ./mvnw dependency:go-offline -B -q
 
-# Download Maven dependencies (cached layer)
-RUN mvn dependency:resolve-plugins dependency:resolve -q
-
-# Copy source code
 COPY src ./src
+RUN ./mvnw clean package -DskipTests -B -q && \
+    java -Djarmode=tools -jar target/*.jar extract --layers --launcher
 
-# Build application (skip tests for faster build)
-RUN mvn clean package -Dmaven.test.skip=true -q && \
-    mv target/*.jar application.jar
-
-# Stage 2: Runtime with JRE only (minimal image)
+# Stage 2: Runtime mínimo com JRE
 FROM eclipse-temurin:21-jre-alpine
 
 LABEL maintainer="ScopeFlow <support@scopeflow.com>" \
-      description="ScopeFlow API - AI-powered B2B SaaS" \
-      version="1.0.0-sprint1"
+      description="ScopeFlow API - AI-powered B2B SaaS (production variant)" \
+      org.opencontainers.image.source="https://github.com/scopeflow/backend"
 
-# Install dumb-init (graceful shutdown handler)
+# dumb-init: processo PID 1 leve que reencaminha sinais Unix para o processo filho
+# Garante graceful shutdown em ambientes que não usam Kubernetes como runtime principal
 RUN apk add --no-cache dumb-init
 
-# Create non-root user for security
 RUN addgroup -g 1000 scopeflow && \
     adduser -D -u 1000 -G scopeflow scopeflow
 
 WORKDIR /app
 
-# Copy JAR from builder
-COPY --from=builder /build/application.jar .
-RUN chown -R scopeflow:scopeflow /app
+COPY --from=builder --chown=scopeflow:scopeflow /build/target/extracted/dependencies/ ./
+COPY --from=builder --chown=scopeflow:scopeflow /build/target/extracted/spring-boot-loader/ ./
+COPY --from=builder --chown=scopeflow:scopeflow /build/target/extracted/snapshot-dependencies/ ./
+COPY --from=builder --chown=scopeflow:scopeflow /build/target/extracted/application/ ./
 
-# Switch to non-root user
 USER scopeflow:scopeflow
 
-# JVM tuning for virtual threads + low-latency
-ENV JAVA_OPTS="-XX:+UseG1GC \
-    -XX:G1NewCollectionHeapPercent=30 \
-    -XX:G1ReservePercent=20 \
-    -XX:InitiatingHeapOccupancyPercent=35 \
-    -XX:MaxGCPauseMillis=200 \
-    -XX:+HeapDumpOnOutOfMemoryError \
-    -XX:HeapDumpPath=/tmp/heapdump.hprof"
-
-# Expose ports
 EXPOSE 8080
-EXPOSE 9010
 
-# Health check (Kubernetes readiness probe)
-HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
-    CMD wget --quiet --tries=1 --spider http://localhost:8080/api/v1/health/ready || exit 1
+STOPSIGNAL SIGTERM
 
-# Use dumb-init as entrypoint (handles signals properly)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost:8080/api/v1/health || exit 1
+
+# dumb-init como PID 1 — repassa SIGTERM para o processo Java filho
 ENTRYPOINT ["dumb-init", "--"]
 
-# Start application
-CMD ["java", "-jar", "application.jar"]
+# Flags JVM: ver comentário no Dockerfile padrão para explicação completa
+# JAVA_TOOL_OPTIONS é respeitado automaticamente pela JVM — permite override via env var no Kubernetes
+# sem precisar mudar o CMD (ex: injetar -agentlib:jdwp para debug pontual)
+CMD ["java", \
+    "-XX:+UseContainerSupport", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-XX:+UseG1GC", \
+    "-XX:MaxGCPauseMillis=200", \
+    "-XX:+HeapDumpOnOutOfMemoryError", \
+    "-XX:HeapDumpPath=/tmp/", \
+    "-Dspring.threads.virtual.enabled=true", \
+    "-Dspring.lifecycle.timeout-per-shutdown-phase=${SHUTDOWN_TIMEOUT:-20s}", \
+    "org.springframework.boot.loader.launch.JarLauncher"]

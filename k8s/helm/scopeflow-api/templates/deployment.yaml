@@ -1,0 +1,162 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "scopeflow-api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "scopeflow-api.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.hpa.enabled }}
+  # replicaCount só é gerenciado pelo Deployment quando HPA está desabilitado.
+  # Com HPA ativo, o controlador sobrescreve este campo — definir aqui causa conflito.
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "scopeflow-api.selectorLabels" . | nindent 6 }}
+  strategy:
+    # RollingUpdate: garante que pods saudáveis existam durante o deploy
+    # maxUnavailable=0 + maxSurge=1 = zero-downtime deploy
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "scopeflow-api.selectorLabels" . | nindent 8 }}
+      annotations:
+        # Força rollout quando o ConfigMap muda (hash do conteúdo)
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "scopeflow-api.serviceAccountName" . }}
+
+      # terminationGracePeriodSeconds: tempo total que o kubelet aguarda após SIGTERM
+      # Deve cobrir preStop sleep (5s) + spring shutdown timeout (20s) + margem
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+
+      # SecurityContext no nível do pod
+      securityContext:
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # SecurityContext no nível do container
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}
+            capabilities:
+              drop:
+                {{- toYaml .Values.securityContext.capabilities.drop | nindent 16 }}
+            # readOnlyRootFilesystem desabilitado: /tmp precisa ser gravável para heap dumps
+            # Se quiser readOnly, adicione um emptyDir em /tmp nos volumes abaixo
+            readOnlyRootFilesystem: false
+
+          # Env vars não-sensíveis vindas do ConfigMap
+          envFrom:
+            - configMapRef:
+                name: {{ include "scopeflow-api.fullname" . }}-config
+
+          # Env vars sensíveis vindas de Secrets externos (criados fora do chart)
+          env:
+            # Banco de dados
+            - name: SPRING_DATASOURCE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.databaseSecretName }}
+                  key: url
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.databaseSecretName }}
+                  key: username
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.databaseSecretName }}
+                  key: password
+
+            # JWT
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.jwtSecretName }}
+                  key: secret-key
+
+            # OpenAI
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.openaiSecretName }}
+                  key: api-key
+
+            # RabbitMQ
+            - name: SPRING_RABBITMQ_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.rabbitmqSecretName }}
+                  key: host
+            - name: SPRING_RABBITMQ_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.rabbitmqSecretName }}
+                  key: port
+            - name: SPRING_RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.rabbitmqSecretName }}
+                  key: username
+            - name: SPRING_RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalSecrets.rabbitmqSecretName }}
+                  key: password
+
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+          # Startup probe: aguarda a JVM + Spring Boot completar a inicialização
+          # Desativa liveness durante startup para evitar reinicializações prematuras
+          startupProbe:
+            {{- toYaml .Values.probes.startup | nindent 12 }}
+
+          # Liveness probe: reinicia o container se detectar deadlock ou OOM
+          livenessProbe:
+            {{- toYaml .Values.probes.liveness | nindent 12 }}
+
+          # Readiness probe: remove o pod do balanceador se dependências não estiverem ok
+          # (banco, RabbitMQ). Tráfego só chega quando esta probe passa.
+          readinessProbe:
+            {{- toYaml .Values.probes.readiness | nindent 12 }}
+
+          lifecycle:
+            preStop:
+              exec:
+                # Sleep de 5s antes do SIGTERM para garantir que o Ingress/LB
+                # remova o pod do pool antes do processo iniciar o shutdown.
+                # Evita 502/503 durante rolling updates.
+                command: ["/bin/sh", "-c", "sleep 5"]
+
+          volumeMounts:
+            # /tmp gravável para heap dumps — necessário com readOnlyRootFilesystem=true
+            - name: tmp-dir
+              mountPath: /tmp
+
+      volumes:
+        - name: tmp-dir
+          emptyDir: {}

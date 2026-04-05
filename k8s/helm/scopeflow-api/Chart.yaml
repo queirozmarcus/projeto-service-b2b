@@ -1,0 +1,22 @@
+apiVersion: v2
+name: scopeflow-api
+description: ScopeFlow API — backend Java 21 / Spring Boot 3.2 com virtual threads
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - scopeflow
+  - b2b
+  - saas
+  - ai
+  - spring-boot
+  - java21
+
+home: https://scopeflow.com
+sources:
+  - https://github.com/scopeflow/backend
+
+maintainers:
+  - name: ScopeFlow Team
+    email: support@scopeflow.com

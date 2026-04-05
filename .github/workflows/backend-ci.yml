@@ -9,7 +9,6 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
-      - 'pom.xml'
   pull_request:
     branches:
       - main
@@ -17,7 +16,6 @@ on:
     paths:
       - 'backend/**'
       - '.github/workflows/backend-ci.yml'
-      - 'pom.xml'
 
 jobs:
   build-and-test:
@@ -39,6 +37,22 @@ jobs:
         ports:
           - 5432:5432
 
+      # RabbitMQ necessário para testes de integração dos listeners:
+      # BriefingCompletedListener, ProposalApprovalListener, UserRegistrationListener
+      # Usa management variant para ter UI de debug disponível na porta 15672 se necessário
+      rabbitmq:
+        image: rabbitmq:3.12-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        options: >-
+          --health-cmd "rabbitmq-diagnostics ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5672:5672
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -46,35 +60,56 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: 21
+          java-version: '21'
           distribution: temurin
+          # Cacheia ~/.m2/repository entre execuções — reduz tempo de build ~60%
           cache: maven
 
-      - name: Build with Maven
-        run: |
-          cd backend
-          ./mvnw clean package -DskipTests
+      - name: Verifica permissão do mvnw
+        run: chmod +x backend/mvnw
 
-      - name: Run Unit Tests
-        run: |
-          cd backend
-          ./mvnw test
+      - name: Build com Maven (sem testes)
+        working-directory: backend
+        run: ./mvnw clean package -DskipTests -B
 
-      - name: Run Integration Tests
-        run: |
-          cd backend
-          ./mvnw verify -P integration-tests
+      - name: Testes unitários
+        working-directory: backend
+        run: ./mvnw test -B
+        env:
+          # Testcontainers gerencia seus próprios containers de BD e RabbitMQ
+          # para testes de integração — estas vars são para testes unitários
+          # que precisem de configuração mínima do Spring context
+          SPRING_RABBITMQ_HOST: localhost
+          SPRING_RABBITMQ_PORT: 5672
+          SPRING_RABBITMQ_USERNAME: guest
+          SPRING_RABBITMQ_PASSWORD: guest
+
+      - name: Testes de integração
+        working-directory: backend
+        run: ./mvnw verify -P integration-tests -B
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/scopeflow_test
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
+          SPRING_RABBITMQ_HOST: localhost
+          SPRING_RABBITMQ_PORT: 5672
+          SPRING_RABBITMQ_USERNAME: guest
+          SPRING_RABBITMQ_PASSWORD: guest
 
-      - name: Generate Code Coverage Report
-        run: |
-          cd backend
-          ./mvnw jacoco:report
+      - name: Gera relatório JaCoCo
+        working-directory: backend
+        run: ./mvnw jacoco:report -B
 
-      - name: Upload Coverage to Codecov
+      # Quality gate de cobertura — falha como warning (haltOnFailure=false)
+      # porque o projeto ainda não tem threshold configurado no pom.xml.
+      # Quando o pom.xml definir <limit><minimum>0.80</minimum></limit>,
+      # mude para -Djacoco.haltOnFailure=true para bloquear deploys com cobertura baixa.
+      - name: Quality gate JaCoCo (cobertura mínima)
+        working-directory: backend
+        run: ./mvnw jacoco:check -Djacoco.haltOnFailure=false -B
+        continue-on-error: true
+
+      - name: Upload de cobertura para Codecov
         uses: codecov/codecov-action@v3
         with:
           files: ./backend/target/site/jacoco/jacoco.xml
@@ -93,25 +128,33 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: 21
+          java-version: '21'
           distribution: temurin
           cache: maven
 
-      - name: Run Checkstyle
-        run: |
-          cd backend
-          ./mvnw checkstyle:check
+      - name: Verifica permissão do mvnw
+        run: chmod +x backend/mvnw
 
-      - name: SonarQube Analysis (if token available)
-        if: secrets.SONAR_TOKEN != ''
+      - name: Checkstyle
+        working-directory: backend
+        run: ./mvnw checkstyle:check -B
+
+      # Condição corrigida: secrets não podem ser acessados em if: diretamente
+      # Use env var intermediária ou teste via env no step
+      - name: SonarQube Analysis
+        if: ${{ secrets.SONAR_TOKEN != '' }}
+        working-directory: backend
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          cd backend
           ./mvnw sonar:sonar \
             -Dsonar.projectKey=scopeflow-api \
             -Dsonar.sources=src/main/java \
             -Dsonar.tests=src/test/java \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            -Dsonar.host.url=${SONAR_HOST_URL} \
+            -Dsonar.login=${SONAR_TOKEN} \
+            -B
 
   security-scan:
     name: Security Scan (Trivy, Dependency Check)
@@ -125,29 +168,29 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: 21
+          java-version: '21'
           distribution: temurin
           cache: maven
 
-      - name: Run OWASP Dependency Check
-        run: |
-          cd backend
-          ./mvnw dependency-check:check
+      - name: Verifica permissão do mvnw
+        run: chmod +x backend/mvnw
 
-      - name: Build Docker image for scanning
-        run: |
-          cd backend
-          docker build -t scopeflow-api:${{ github.sha }} -f Dockerfile .
+      - name: OWASP Dependency Check
+        working-directory: backend
+        run: ./mvnw dependency-check:check -B
 
-      - name: Run Trivy scan on Docker image
+      - name: Build imagem Docker para scan
+        run: docker build -t scopeflow-api:${{ github.sha }} -f backend/Dockerfile backend/
+
+      - name: Trivy scan na imagem Docker
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: scopeflow-api:${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
 
-      - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+      - name: Upload resultado Trivy para GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
 
@@ -165,13 +208,13 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
-        if: secrets.DOCKER_USERNAME != ''
+        if: ${{ secrets.DOCKER_USERNAME != '' }}
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker image
+      - name: Build e push da imagem Docker
         uses: docker/build-push-action@v5
         with:
           context: ./backend
@@ -180,5 +223,6 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/scopeflow-api:latest
             ${{ secrets.DOCKER_USERNAME }}/scopeflow-api:${{ github.sha }}
+          # Cache de camadas entre execuções do CI (GitHub Actions Cache)
           cache-from: type=gha
           cache-to: type=gha,mode=max

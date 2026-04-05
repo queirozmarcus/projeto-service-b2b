@@ -1,0 +1,21 @@
+{{- if .Values.pdb.enabled -}}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "scopeflow-api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "scopeflow-api.labels" . | nindent 4 }}
+spec:
+  # minAvailable garante que pelo menos N pods estejam disponíveis durante:
+  #   - node drain (manutenção, upgrade de node)
+  #   - rolling update do Deployment
+  #   - chaos engineering (involuntary disruption)
+  # IMPORTANTE: minAvailable deve ser < replicaCount para permitir rolling update.
+  # Com replicaCount=2 e minAvailable=1: sempre 1 pod disponível durante update.
+  # Com replicaCount=3 e minAvailable=2 (prod): 2 pods disponíveis durante update.
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "scopeflow-api.selectorLabels" . | nindent 6 }}
+{{- end }}

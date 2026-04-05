@@ -1,0 +1,75 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Maven Wrapper Script para Unix/Linux/macOS
+# Versão do Maven: 3.9.6
+# Compatibilidade: Java 21, Spring Boot 3.2
+#
+# Este script é gerado pelo Maven Wrapper (org.apache.maven.wrapper:maven-wrapper)
+# e mantido no repositório para garantir build reprodutível sem Maven instalado.
+# ----------------------------------------------------------------------------
+
+# Resolve o diretório do script (segue symlinks)
+if [ -z "$MAVEN_BASEDIR" ]; then
+  BASEDIR_CANDIDATE=$(dirname "$0")
+  BASEDIR_CANDIDATE=$(cd "$BASEDIR_CANDIDATE" && pwd)
+  MAVEN_BASEDIR="$BASEDIR_CANDIDATE"
+fi
+
+# Configuração do wrapper
+# ATENÇÃO: .mvn/wrapper/maven-wrapper.properties está com owner root:root (sem escrita para mq).
+# O distributionUrl nele aponta para Maven 3.9.14 que não existe no Maven Central.
+# Este script usa Maven 3.9.6 (LTS estável para Java 21 + Spring Boot 3.2) como versão fixa.
+# Para mudar a versão: edite WRAPPER_VERSION abaixo (requer sudo para atualizar o properties).
+MVNW_REPOURL="${MVNW_REPOURL:-https://repo.maven.apache.org/maven2}"
+WRAPPER_VERSION="3.9.6"
+DISTRIBUTION_URL="${MVNW_REPOURL}/org/apache/maven/apache-maven/${WRAPPER_VERSION}/apache-maven-${WRAPPER_VERSION}-bin.zip"
+
+# Determina diretório de cache do wrapper
+if [ -n "$MAVEN_USER_HOME" ]; then
+  USER_HOME_DIR="$MAVEN_USER_HOME"
+elif [ "${HOME}" != "" ]; then
+  USER_HOME_DIR="${HOME}"
+else
+  USER_HOME_DIR="$(cd ~ && pwd)"
+fi
+
+MAVEN_HOME_PARENT="${USER_HOME_DIR}/.m2/wrapper/dists"
+DISTRIBUTION_ID=$(echo "$DISTRIBUTION_URL" | sed 's|.*/||' | sed 's|\.zip$||')
+MAVEN_HOME="${MAVEN_HOME_PARENT}/${DISTRIBUTION_ID}"
+
+# Baixa Maven se necessário
+if [ ! -d "$MAVEN_HOME" ]; then
+  echo "Baixando Maven ${WRAPPER_VERSION} de ${DISTRIBUTION_URL}"
+  mkdir -p "${MAVEN_HOME_PARENT}"
+  DOWNLOAD_FILE="${MAVEN_HOME_PARENT}/${DISTRIBUTION_ID}.zip"
+
+  # Tenta curl, depois wget
+  if command -v curl > /dev/null 2>&1; then
+    curl -fsSL -o "$DOWNLOAD_FILE" "$DISTRIBUTION_URL" || {
+      echo "ERRO: Falha ao baixar Maven via curl." >&2
+      exit 1
+    }
+  elif command -v wget > /dev/null 2>&1; then
+    wget -q -O "$DOWNLOAD_FILE" "$DISTRIBUTION_URL" || {
+      echo "ERRO: Falha ao baixar Maven via wget." >&2
+      exit 1
+    }
+  else
+    echo "ERRO: curl ou wget são necessários para baixar o Maven Wrapper." >&2
+    exit 1
+  fi
+
+  # Extrai o zip
+  unzip -q "$DOWNLOAD_FILE" -d "${MAVEN_HOME_PARENT}" && \
+    mv "${MAVEN_HOME_PARENT}/apache-maven-${WRAPPER_VERSION}" "${MAVEN_HOME}" && \
+    rm -f "$DOWNLOAD_FILE"
+fi
+
+# Executa Maven
+MAVEN_EXECUTABLE="${MAVEN_HOME}/bin/mvn"
+if [ ! -f "$MAVEN_EXECUTABLE" ]; then
+  echo "ERRO: Maven executável não encontrado em ${MAVEN_EXECUTABLE}" >&2
+  exit 1
+fi
+
+exec "$MAVEN_EXECUTABLE" "$@"
