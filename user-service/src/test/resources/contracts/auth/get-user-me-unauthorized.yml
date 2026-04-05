@@ -1,0 +1,31 @@
+description: Get current user without valid JWT token
+name: shouldReturn401OnMissingJwt
+request:
+  method: GET
+  url: /api/v1/auth/me
+  headers:
+    Content-Type: application/json
+response:
+  status: 401
+  headers:
+    Content-Type: application/problem+json
+  body:
+    type: "https://api.scopeflow.com/errors/unauthorized"
+    title: "Unauthorized"
+    status: 401
+    detail: "Authentication required"
+    error_code: "AUTH-401"
+    error_id: "550e8400-e29b-41d4-a716-446655440000"
+    timestamp: "2025-01-15T10:30:00Z"
+  matchers:
+    body:
+      - path: $.error_code
+        type: by_equality
+      - path: $.status
+        type: by_equality
+      - path: $.error_id
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.timestamp
+        type: by_regex
+        value: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})"
