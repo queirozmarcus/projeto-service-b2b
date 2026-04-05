@@ -127,6 +127,102 @@ npm install
 npm run dev  # http://localhost:3000
 ```
 
+### Docker Compose (Infrastructure + Services)
+
+#### Starting Services
+
+```bash
+# Start entire stack (PostgreSQL + RabbitMQ + Redis + Traefik + monolith + user-service)
+docker compose up -d
+
+# Start only infrastructure (useful for local Spring Boot dev)
+docker compose up postgres rabbitmq redis traefik -d
+
+# Start specific service
+docker compose up user-service -d
+
+# Check service health
+docker compose ps
+docker compose logs user-service -f
+
+# Stop all services
+docker compose down
+
+# Stop and remove volumes (CAUTION: deletes all data)
+docker compose down -v
+```
+
+#### User Service (Strangler Fig Extraction)
+
+```bash
+# Build user-service image
+docker compose build user-service
+
+# Start user-service (requires postgres)
+docker compose up user-service -d
+
+# Verify health (direct access)
+curl http://localhost:8081/actuator/health/liveness
+curl http://localhost:8081/actuator/health/readiness
+
+# Verify health (via Traefik routing)
+curl http://localhost/api/v1/auth/health    # routed to user-service
+curl http://localhost/api/v1/workspaces      # routed to monolith
+
+# Check Traefik dashboard
+open http://localhost:8888/dashboard/
+# Or: curl http://localhost:8888/api/http/routers | jq
+
+# View logs
+docker compose logs user-service -f
+docker compose logs traefik -f
+
+# Restart service (e.g., after code changes)
+docker compose restart user-service
+
+# Rebuild and restart (after Dockerfile/pom.xml changes)
+docker compose up user-service --build -d
+```
+
+#### Troubleshooting Docker Compose
+
+| Issue | Diagnostic | Solution |
+|-------|-----------|----------|
+| **User-service won't start** | `docker compose logs user-service` | Check `DATABASE_URL` in `.env`, verify postgres is healthy (`docker compose ps`) |
+| **Traefik routing not working** | `docker inspect scopeflow-user-service \| grep -A5 Labels` | Verify Traefik labels are applied, check priority (user-service=100, monolith=50) |
+| **DB connection refused** | `docker compose exec postgres pg_isready` | Ensure postgres container is running and healthy |
+| **JWT token rejected** | Compare `JWT_SECRET` in monolith vs user-service logs | Both services MUST use identical `JWT_SECRET` from `.env` |
+| **Traefik dashboard 404** | `curl http://localhost:8888/api/http/routers` | Verify Traefik is running: `docker compose ps traefik` |
+| **Port conflict (8080/8081)** | `lsof -i :8080` or `netstat -tulpn \| grep 8080` | Stop conflicting process or change `USER_SERVICE_PORT` in `.env` |
+| **Container keeps restarting** | `docker compose logs user-service --tail=100` | Check for OOM, missing env vars, or health check failures |
+
+#### Traefik Routing Verification
+
+```bash
+# List all routers (should show user-service priority=100, monolith priority=50)
+curl -s http://localhost:8888/api/http/routers | jq '.[] | {name: .name, rule: .rule, priority: .priority, status: .status}'
+
+# Expected output:
+# {
+#   "name": "user-service@docker",
+#   "rule": "PathPrefix(`/api/v1/auth`)",
+#   "priority": 100,
+#   "status": "enabled"
+# }
+# {
+#   "name": "monolith@docker",
+#   "rule": "PathPrefix(`/api/`)",
+#   "priority": 50,
+#   "status": "enabled"
+# }
+
+# Test routing (should hit user-service)
+curl -v http://localhost/api/v1/auth/health 2>&1 | grep -i "x-powered-by\|server"
+
+# Test routing (should hit monolith)
+curl -v http://localhost/api/v1/briefings 2>&1 | grep -i "x-powered-by\|server"
+```
+
 ### Development Commands
 
 #### Backend (Spring Boot 3.2 + Java 21)
@@ -201,18 +297,53 @@ All APIs follow [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc945
 
 ## Testing
 
-**Import OpenAPI spec into Swagger UI:**
+### E2E Smoke Tests (Authentication Flow)
+
+**Quick start:**
+```bash
+# Run all E2E tests (both monolith and user-service modes)
+./run-e2e-tests.sh
+
+# Run only monolith mode
+./run-e2e-tests.sh --monolith
+
+# Run only user-service mode
+./run-e2e-tests.sh --user-service
+```
+
+**Test coverage:**
+- ✅ User registration → JWT generation
+- ✅ Login with valid/invalid credentials
+- ✅ Protected endpoint access (/auth/me, /workspaces)
+- ✅ JWT validation (format, claims, expiration)
+- ✅ Cross-service JWT compatibility (user-service → monolith)
+- ✅ RFC 9457 error responses
+
+**CI/CD:** Tests run automatically on GitHub Actions for all pushes/PRs. Deployment is blocked if any test fails.
+
+**Documentation:** Full E2E test guide available in [`tests/e2e/README.md`](tests/e2e/README.md)
+
+---
+
+### Integration Tests (Testcontainers)
+
+```bash
+./mvnw verify  # Run all integration tests with real PostgreSQL
+```
+
+---
+
+### Swagger UI (OpenAPI)
+
 ```bash
 ./mvnw spring-boot:run
 # Open: http://localhost:8080/swagger-ui.html
 ```
 
-**Integration Tests (with Testcontainers):**
-```bash
-./mvnw verify  # Run all integration tests with real PostgreSQL
-```
+---
 
-**Manual API Testing:**
+### Manual API Testing
+
 ```bash
 # Get JWT token first (from /api/v1/auth/login)
 export JWT_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."

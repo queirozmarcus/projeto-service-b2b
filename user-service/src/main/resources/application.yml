@@ -1,0 +1,115 @@
+spring:
+  application:
+    name: user-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/scopeflow}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      # NEVER auto-create schema -- migrations managed by monolith
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+
+  # Flyway DISABLED -- migrations managed by monolith (shared DB)
+  flyway:
+    enabled: false
+
+  # Graceful shutdown (mandatory for Strangler Fig zero-downtime)
+  lifecycle:
+    timeout-per-shutdown-phase: ${SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE:30s}
+
+  threads:
+    virtual:
+      enabled: true
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  # RabbitMQ -- disabled for now (user-service does not need messaging yet)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+server:
+  port: ${SERVER_PORT:8081}
+  shutdown: ${SERVER_SHUTDOWN:graceful}
+  servlet:
+    # MUST match monolith context-path for Traefik routing parity
+    context-path: /api/v1
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
+# Management endpoints (Spring Actuator)
+# Served on separate management port to avoid context-path interference with healthchecks
+management:
+  server:
+    port: 8082
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when-authorized
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+    db:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${SPRING_PROFILES_ACTIVE:local}
+
+# Logging (structured format with traceId)
+logging:
+  level:
+    root: INFO
+    com.scopeflow.user: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - traceId=%X{traceId} %msg%n'
+    dateformat: "yyyy-MM-dd HH:mm:ss.SSS,UTC"
+
+# JWT Configuration (SHARED secret with monolith -- tokens are cross-compatible)
+jwt:
+  secret: ${JWT_SECRET:your-secret-key-change-in-production-minimum-32-characters-long}
+  expiration: ${JWT_EXPIRATION_MS:900000}
+  refresh-expiration: 604800000
+
+# CORS Configuration
+cors:
+  allowed-origins:
+    - ${CORS_ORIGIN_LOCAL:http://localhost:3000}
+    - ${CORS_ORIGIN_PROD:https://app.scopeflow.com}
+
+# Cookie and HTTPS security
+app:
+  cookie:
+    secure: ${APP_COOKIE_SECURE:false}
+  requires-https: ${APP_REQUIRES_HTTPS:false}

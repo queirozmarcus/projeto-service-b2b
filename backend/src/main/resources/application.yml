@@ -121,6 +121,14 @@ jwt:
   expiration: 900000 # 15 minutes in milliseconds
   refresh-expiration: 604800000 # 7 days in milliseconds
 
+# Strangler Fig: Feature Flag for auth extraction
+# When true, monolith proxies auth requests to user-service
+# When false, monolith handles auth locally (default — safe rollback)
+auth:
+  service:
+    use-extracted: ${AUTH_SERVICE_EXTRACTED:false}
+    url: ${AUTH_SERVICE_URL:http://user-service:8081/api/v1}
+
 # AI Configuration
 openai:
   api-key: ${OPENAI_API_KEY:}

@@ -12,12 +12,11 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -49,28 +48,48 @@ public class AuthControllerV2 {
     @Value("${app.cookie.secure:true}")
     private boolean cookieSecure;
 
+    /**
+     * Strangler Fig feature flag: when true, proxies auth requests to user-service.
+     * Rollback: set to false and restart -- monolith handles auth locally.
+     */
+    @Value("${auth.service.use-extracted:false}")
+    private boolean useExtractedAuthService;
+
+    @Value("${auth.service.url:http://user-service:8081/api/v1}")
+    private String authServiceUrl;
+
     private final UserService userService;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final RestTemplate authServiceRestTemplate;
 
     public AuthControllerV2(
             UserService userService,
             JwtService jwtService,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            RestTemplate authServiceRestTemplate
     ) {
         this.userService = userService;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
+        this.authServiceRestTemplate = authServiceRestTemplate;
     }
 
     /**
      * POST /auth/register
      * Register a new user. Returns access token in body; refresh token via httpOnly cookie.
+     *
+     * Strangler Fig: when auth.service.use-extracted=true, proxies to user-service.
      */
     @PostMapping("/register")
     @RateLimit
     @Operation(summary = "Register new user account")
-    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
+        if (useExtractedAuthService) {
+            log.info("[StranglerFig] Proxying register to user-service: email={}", request.email());
+            return proxyPost("/auth/register", request);
+        }
+
         Email email = new Email(request.email());
         PasswordHash hash = new PasswordHash(passwordEncoder.encode(request.password()));
 
@@ -84,11 +103,18 @@ public class AuthControllerV2 {
     /**
      * POST /auth/login
      * Authenticate user. Returns access token in body; refresh token via httpOnly cookie.
+     *
+     * Strangler Fig: when auth.service.use-extracted=true, proxies to user-service.
      */
     @PostMapping("/login")
     @RateLimit
     @Operation(summary = "Authenticate and obtain tokens")
-    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        if (useExtractedAuthService) {
+            log.info("[StranglerFig] Proxying login to user-service: email={}", request.email());
+            return proxyPost("/auth/login", request);
+        }
+
         Email email = new Email(request.email());
 
         User user = userService.getUserByEmail(email)
@@ -110,11 +136,17 @@ public class AuthControllerV2 {
     /**
      * POST /auth/refresh
      * Exchange refresh token (from httpOnly cookie) for a new access token.
-     * The cookie is read automatically by the browser — no body param needed.
+     *
+     * Strangler Fig: when auth.service.use-extracted=true, proxies to user-service.
      */
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token using httpOnly cookie")
-    public ResponseEntity<AccessTokenResponse> refresh(HttpServletRequest request) {
+    public ResponseEntity<?> refresh(HttpServletRequest request) {
+        if (useExtractedAuthService) {
+            log.info("[StranglerFig] Proxying refresh to user-service");
+            return proxyPostWithCookies("/auth/refresh", null, request);
+        }
+
         String refreshToken = extractCookie(request, REFRESH_TOKEN_COOKIE);
 
         if (refreshToken == null || !jwtService.isRefreshToken(refreshToken)) {
@@ -148,32 +180,43 @@ public class AuthControllerV2 {
     /**
      * GET /auth/me
      * Return authenticated user's profile.
+     *
+     * Strangler Fig: when auth.service.use-extracted=true, proxies to user-service.
      */
     @GetMapping("/me")
     @Operation(summary = "Get current user profile")
-    public UserResponse me() {
+    public ResponseEntity<?> me(HttpServletRequest request) {
+        if (useExtractedAuthService) {
+            log.info("[StranglerFig] Proxying /me to user-service");
+            return proxyGetWithAuth("/auth/me", request);
+        }
+
         UUID userId = SecurityUtil.getUserId();
         User user = userService.getUserById(new UserId(userId))
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
-        return UserResponse.from(user);
+        return ResponseEntity.ok(UserResponse.from(user));
     }
 
     /**
      * POST /auth/logout
      * Clears the refresh token cookie. Client discards the access token from memory.
+     *
+     * Strangler Fig: when auth.service.use-extracted=true, proxies to user-service.
      */
     @PostMapping("/logout")
     @Operation(summary = "Logout: clears refresh token cookie")
-    public ResponseEntity<Void> logout() {
-        // Não exige autenticação: apenas invalida o cookie.
-        // Log opcional do userId se autenticado.
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        if (useExtractedAuthService) {
+            log.info("[StranglerFig] Proxying logout to user-service");
+            return proxyPostWithCookies("/auth/logout", null, request);
+        }
+
         try {
             log.info("User logged out: userId={}", SecurityUtil.getUserId());
         } catch (Exception e) {
             log.info("Logout called without active session (cookie-only logout)");
         }
 
-        // Invalidate cookie by setting max-age=0
         ResponseCookie clearCookie = ResponseCookie
                 .from(REFRESH_TOKEN_COOKIE, "")
                 .httpOnly(true)
@@ -237,5 +280,100 @@ public class AuthControllerV2 {
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
+    }
+
+    // ============ Strangler Fig: proxy helpers ============
+
+    /**
+     * Proxy a POST request to user-service.
+     * Forwards request body and returns response with headers (including Set-Cookie).
+     */
+    private ResponseEntity<?> proxyPost(String path, Object body) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+
+            ResponseEntity<String> response = authServiceRestTemplate.exchange(
+                    authServiceUrl + path, HttpMethod.POST, entity, String.class
+            );
+
+            HttpHeaders responseHeaders = new HttpHeaders();
+            // Forward Set-Cookie header from user-service (contains refresh token)
+            if (response.getHeaders().containsKey(HttpHeaders.SET_COOKIE)) {
+                responseHeaders.addAll(HttpHeaders.SET_COOKIE, response.getHeaders().get(HttpHeaders.SET_COOKIE));
+            }
+
+            return ResponseEntity.status(response.getStatusCode())
+                    .headers(responseHeaders)
+                    .body(response.getBody());
+        } catch (HttpClientErrorException e) {
+            log.warn("[StranglerFig] user-service returned error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            log.error("[StranglerFig] Failed to proxy to user-service, falling back to monolith", e);
+            throw new RuntimeException("User service unavailable", e);
+        }
+    }
+
+    /**
+     * Proxy a POST request with cookies (for refresh/logout).
+     */
+    private ResponseEntity<?> proxyPostWithCookies(String path, Object body, HttpServletRequest request) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            // Forward cookies from original request
+            String cookieHeader = request.getHeader("Cookie");
+            if (cookieHeader != null) {
+                headers.set("Cookie", cookieHeader);
+            }
+            HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+
+            ResponseEntity<String> response = authServiceRestTemplate.exchange(
+                    authServiceUrl + path, HttpMethod.POST, entity, String.class
+            );
+
+            HttpHeaders responseHeaders = new HttpHeaders();
+            if (response.getHeaders().containsKey(HttpHeaders.SET_COOKIE)) {
+                responseHeaders.addAll(HttpHeaders.SET_COOKIE, response.getHeaders().get(HttpHeaders.SET_COOKIE));
+            }
+
+            return ResponseEntity.status(response.getStatusCode())
+                    .headers(responseHeaders)
+                    .body(response.getBody());
+        } catch (HttpClientErrorException e) {
+            log.warn("[StranglerFig] user-service returned error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            log.error("[StranglerFig] Failed to proxy to user-service, falling back to monolith", e);
+            throw new RuntimeException("User service unavailable", e);
+        }
+    }
+
+    /**
+     * Proxy a GET request with Authorization header.
+     */
+    private ResponseEntity<?> proxyGetWithAuth(String path, HttpServletRequest request) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null) {
+                headers.set("Authorization", authHeader);
+            }
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<String> response = authServiceRestTemplate.exchange(
+                    authServiceUrl + path, HttpMethod.GET, entity, String.class
+            );
+
+            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        } catch (HttpClientErrorException e) {
+            log.warn("[StranglerFig] user-service returned error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+        } catch (Exception e) {
+            log.error("[StranglerFig] Failed to proxy to user-service, falling back to monolith", e);
+            throw new RuntimeException("User service unavailable", e);
+        }
     }
 }
