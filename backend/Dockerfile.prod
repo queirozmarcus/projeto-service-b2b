@@ -27,7 +27,7 @@ RUN ./mvnw dependency:go-offline -B -q
 
 COPY src ./src
 RUN ./mvnw clean package -DskipTests -B -q && \
-    java -Djarmode=tools -jar target/*.jar extract --layers --launcher
+    java -Djarmode=layertools -jar target/*.jar extract --destination target/extracted
 
 # Stage 2: Runtime mínimo com JRE
 FROM eclipse-temurin:21-jre-alpine
