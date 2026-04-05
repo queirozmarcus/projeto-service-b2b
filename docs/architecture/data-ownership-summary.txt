@@ -1,0 +1,235 @@
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║              DATA OWNERSHIP SUMMARY — SCOPEFLOW AI                            ║
+║                        Data Engineer Report                                   ║
+║                          2026-04-05                                           ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ INVENTÁRIO GERAL                                                              │
+├───────────────────────────────────────────────────────────────────────────────┤
+│ Total de tabelas:              17 (15 domain + 2 infra)                       │
+│ Bounded contexts:              4 (Briefing, Workspace, User, Proposal)        │
+│ Migrations aplicadas:          V1-V9 (Flyway)                                 │
+│ SGBD:                          PostgreSQL 16+                                 │
+│ ORM:                           Hibernate 6.x (JPA 3.1)                        │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ DISTRIBUIÇÃO POR CONTEXTO                                                     │
+├───────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│ Briefing        █████████████████████████████████████████  7 tabelas  (41%)  │
+│ Proposal        ████████████████████████                   4 tabelas  (24%)  │
+│ Infrastructure  ██████████████████                         3 tabelas  (18%)  │
+│ Workspace       ████████████                               2 tabelas  (12%)  │
+│ User            ██████                                     1 tabela   ( 6%)  │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ OWNERSHIP MAP                                                                 │
+├────────────────────────┬──────────────────────────────────────────────────────┤
+│ Context                │ Owned Tables                                         │
+├────────────────────────┼──────────────────────────────────────────────────────┤
+│ Briefing               │ briefing_sessions                                    │
+│                        │ briefing_questions                                   │
+│                        │ briefing_answers                                     │
+│                        │ ai_generations                                       │
+│                        │ briefing_activity_logs                               │
+│                        │ service_context_profiles                             │
+│                        │ service_context_questions                            │
+├────────────────────────┼──────────────────────────────────────────────────────┤
+│ Proposal               │ proposals                                            │
+│                        │ proposal_versions                                    │
+│                        │ approval_workflows                                   │
+│                        │ approvals                                            │
+├────────────────────────┼──────────────────────────────────────────────────────┤
+│ Workspace              │ workspaces                                           │
+│                        │ workspace_members                                    │
+├────────────────────────┼──────────────────────────────────────────────────────┤
+│ User                   │ users                                                │
+├────────────────────────┼──────────────────────────────────────────────────────┤
+│ Infrastructure         │ outbox_event (shared)                                │
+│                        │ idempotency_record (shared)                          │
+│                        │ activity_logs (shared)                               │
+└────────────────────────┴──────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ FOREIGN KEYS CROSS-CONTEXT                                                    │
+├────────────────────────┬────────────────────┬─────────┬──────────────────────┤
+│ From → To              │ FK Column          │ Action  │ Tipo                 │
+├────────────────────────┼────────────────────┼─────────┼──────────────────────┤
+│ Workspace → User       │ owner_id           │ RESTRICT│ Multi-tenancy (OK)   │
+│ Workspace → User       │ user_id (members)  │ CASCADE │ Membership M:N (OK)  │
+│ Proposal → Briefing    │ briefing_id        │ RESTRICT│ Causal (OK)          │
+└────────────────────────┴────────────────────┴─────────┴──────────────────────┘
+
+Total FKs cross-context: 3
+Risco de acoplamento:    BAIXO ✓ (todas justificadas e documentadas)
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ QUERIES CROSS-CONTEXT DETECTADAS                                              │
+├───────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│ Status: ✓ ZERO VIOLAÇÕES DETECTADAS                                          │
+│                                                                               │
+│ Metodologia:                                                                  │
+│ • Grep em todos os repositories JPA por JOIN, @Query, @ManyToOne             │
+│ • Análise de views (todas intra-contexto)                                    │
+│ • Code review de adapters de persistência                                    │
+│                                                                               │
+│ Resultado:                                                                    │
+│ • Nenhum JOIN entre tabelas de contextos diferentes                          │
+│ • Todos os @ManyToOne/@OneToMany são intra-aggregate                         │
+│ • Views fazem JOINs apenas dentro do mesmo contexto                          │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ CONFORMIDADE DE OWNERSHIP                                                     │
+├────────────────────────────────────────────────────────────────┬──────────────┤
+│ Critério                                                       │ Status       │
+├────────────────────────────────────────────────────────────────┼──────────────┤
+│ Cada tabela tem owner único                                    │ ✓ PASS 17/17 │
+│ Nenhum JOIN cross-context                                      │ ✓ PASS  0/0  │
+│ FKs cross-context apenas multi-tenancy ou causais             │ ✓ PASS  3/3  │
+│ Repositories isolados por contexto                             │ ✓ PASS  4/4  │
+│ Event-driven implementado (Outbox Pattern)                     │ ✓ PASS       │
+├────────────────────────────────────────────────────────────────┼──────────────┤
+│ CONFORMIDADE TOTAL                                             │ ✓ 100%       │
+└────────────────────────────────────────────────────────────────┴──────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ ESTIMATIVA DE VOLUME DE DADOS                                                 │
+├─────────────────────────────┬────────────────┬────────────┬──────────────────┤
+│ Tabela                      │ Taxa           │ Retenção   │ Observações      │
+├─────────────────────────────┼────────────────┼────────────┼──────────────────┤
+│ briefing_sessions           │ Média          │ Indefinida │ 1/briefing       │
+│ briefing_questions          │ Alta           │ Indefinida │ 8-12/sessão      │
+│ briefing_answers            │ Alta           │ Indefinida │ 8-12/sessão      │
+│ ai_generations              │ Alta ⚠️        │ 30 dias    │ Hot table        │
+│ briefing_activity_logs      │ Alta           │ 90 dias    │ 10-20/sessão     │
+│ service_context_profiles    │ Baixa          │ Indefinida │ 1-6/workspace    │
+│ service_context_questions   │ Baixa          │ Indefinida │ 5-15/profile     │
+│ workspaces                  │ Média          │ Indefinida │ 100-10K total    │
+│ workspace_members           │ Média          │ Indefinida │ 1-50/workspace   │
+│ users                       │ Alta           │ Indefinida │ 100-100K total   │
+│ proposals                   │ Média          │ Indefinida │ 1/briefing compl │
+│ proposal_versions           │ Média          │ Indefinida │ 1-5/proposal     │
+│ approval_workflows          │ Média          │ Indefinida │ 1/proposal       │
+│ approvals                   │ Média          │ Indefinida │ 1-3/workflow     │
+│ outbox_event                │ Alta ⚠️        │ 7 dias     │ Hot table        │
+│ idempotency_record          │ Alta           │ 30 dias    │ 1/evento         │
+│ activity_logs               │ Alta           │ 5 anos     │ LGPD compliance  │
+└─────────────────────────────┴────────────────┴────────────┴──────────────────┘
+
+⚠️ Tabelas HOT: ai_generations, outbox_event
+   Recomendação: Monitorar crescimento; particionamento futuro se necessário
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ ESTRATÉGIA DE SPLIT PARA MICROSSERVIÇOS                                       │
+├───────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│ CENÁRIO A (Recomendado): 4 Microsserviços                                    │
+│                                                                               │
+│   ┌─────────────────┐        ┌─────────────────┐                            │
+│   │ Briefing Service│───────▶│ Proposal Service│                            │
+│   └─────────────────┘  event └─────────────────┘                            │
+│           │                            │                                     │
+│           │                            │                                     │
+│   ┌───────▼─────────┐        ┌────────▼────────┐                            │
+│   │Workspace Service│        │  User Service   │                            │
+│   └─────────────────┘        └─────────────────┘                            │
+│                                                                               │
+│ Ordem de split sugerida:                                                     │
+│   1. Briefing Service  (mais isolado, alto volume writes)                   │
+│   2. Proposal Service  (remove FK briefing_id → evento)                     │
+│   3. User + Workspace  (low-churn, cache Redis)                             │
+│                                                                               │
+│ CENÁRIO B (Alternativo): 2 Microsserviços                                   │
+│                                                                               │
+│   ┌─────────────────────────────┐   ┌─────────────────────────────┐         │
+│   │ Core Service                │◀─▶│ Platform Service            │         │
+│   │ (Briefing + Proposal)       │   │ (Workspace + User)          │         │
+│   └─────────────────────────────┘   └─────────────────────────────┘         │
+│                                                                               │
+│   Vantagem:  Menos overhead; FK briefing_id permanece intra-service         │
+│   Desvantagem: Core fica grande; menor autonomia                            │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ GATILHOS PARA MIGRAÇÃO                                                        │
+├───────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│ Considere split quando 2+ critérios forem verdadeiros:                       │
+│                                                                               │
+│ □ Escala: 10K+ workspaces ativos OU 100K+ briefing sessions                 │
+│ □ Performance: Briefing impacta latência de Proposal (contenção)            │
+│ □ Equipe: 8+ devs (1 squad por serviço)                                     │
+│ □ Deploy: Necessidade de deploy independente                                │
+│ □ Resiliência: Failure isolation (Briefing down ≠ Proposal down)            │
+│                                                                               │
+│ Status atual: Monólito modular apropriado até 5K workspaces (~2-3 anos)     │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ PONTOS DE ATENÇÃO                                                             │
+├───────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│ ✓ Conformidade total de ownership (100%)                                    │
+│ ✓ Event-driven pronto (Outbox Pattern funcional)                            │
+│ ✓ Repositories isolados por contexto                                        │
+│ ⚠ Referências sem FK: client_id (Client pode virar bounded context futuro)  │
+│ ⚠ Overlap de audit: activity_logs vs briefing_activity_logs                 │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ PRÓXIMOS PASSOS                                                               │
+├───────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│ Imediatos (0-3 meses):                                                       │
+│   ✓ Inventário de schema completo                                           │
+│   ✓ Mapeamento de ownership                                                 │
+│   □ Testes de contrato (Pact) entre Briefing ↔ Proposal                     │
+│   □ Cache Redis para workspaces (preparação)                                │
+│                                                                               │
+│ Curto prazo (3-6 meses):                                                     │
+│   □ Monitorar pg_stat_statements (queries lentas)                           │
+│   □ API Gateway (Kong ou similar)                                           │
+│   □ Distributed tracing (Jaeger/Zipkin)                                     │
+│                                                                               │
+│ Médio prazo (6-12 meses):                                                    │
+│   □ Se atingir 5K workspaces: planejar split de Briefing Service           │
+│   □ Service mesh (Istio)                                                    │
+│   □ Migrar RabbitMQ → Kafka                                                 │
+│                                                                               │
+│ Longo prazo (12+ meses):                                                     │
+│   □ Split completo para 4 microsserviços (Cenário A)                        │
+│   □ CQRS/Event Sourcing para análises históricas                            │
+│   □ Sharding de briefing_sessions por workspace_id                          │
+│                                                                               │
+└───────────────────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║ CONCLUSÃO                                                                     ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║ O ScopeFlow AI está PRONTO para migração para microsserviços quando          ║
+║ necessário. Ownership de dados é 100% claro, zero queries cross-context      ║
+║ detectadas, e event-driven já implementado via Outbox Pattern.               ║
+║                                                                               ║
+║ Recomendação: Manter monólito modular até atingir 5K workspaces ativos       ║
+║ (2-3 anos), momento em que os benefícios de split superam o overhead.        ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+Documentos gerados:
+• docs/architecture/schema-inventory.md       (31 KB) — Inventário completo
+• docs/architecture/data-ownership.md         (24 KB) — Ownership + estratégia
+• docs/migration/README.md                    (12 KB) — Guia de migração
+
+Data Engineer: Claude Sonnet 4.5
+Data: 2026-04-05
