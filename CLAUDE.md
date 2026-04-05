@@ -4,511 +4,490 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ScopeFlow AI** is an AI-powered SaaS platform that helps small B2B service providers (freelancers, microagencies) streamline their sales process. The core mission: transform a confusing commercial conversation into a clear, approved, and raiseready scope using structured AI-assisted discovery, briefing consolidation, and proposal generation.
+**ScopeFlow AI** — AI-powered SaaS platform for B2B service providers (freelancers, microagencies) to transform client conversations into clear, approved scopes through structured AI-assisted discovery.
 
-### Key Problem Solved
-Small service providers (social media, design, landing pages, web) typically:
-- Conduct sales on WhatsApp with scattered audio notes
-- Use generic PDFs without clear scope
-- Have misaligned expectations → rework
-- Lack trackable approvals
+**Current Status:** Core briefing flow implemented and tested. User/Workspace domains complete. API design finalized but not all controllers implemented yet.
 
-ScopeFlow fixes this by guiding both service provider and client through a structured flow where IA adapts questions, consolidates briefing, suggests scope, and enables clear approval.
-
-### Target Audience
-- Freelancers and microagencies (marketing, design, social media, landing pages, web)
-- Expansion: consultants, small dev shops, video producers
-- Geographic: initially Brazil, then Latin America
+See [`README.md`](README.md) for tech stack, setup instructions, and API documentation.
 
 ---
 
-## Architecture & Tech Stack
+## Architecture: Hexagonal (Ports & Adapters) + DDD
 
-### Architectural Principles
-- **Monolith modular approach** for MVP (no microservices yet)
-- **IA as capability**, not separate system — integrated into product workflows
-- **Strong versioning** of all artifacts (briefing, scope, proposals)
-- **Human review obligatory** — IA assists but never auto-approves
-- **Low operational cost** initially — S3 for storage, Redis for async, PostgreSQL for data
+### Package Structure
 
-### Implemented Stack (MVP) — Spring Boot 3.2 + Java 21 ✅
-| Layer | Technology | Status | Notes |
-|-------|-----------|--------|-------|
-| **Frontend** | Next.js 15 + React 19 + TypeScript | ✅ Created | Tailwind v4, Radix UI, SWC minification |
-| **Backend** | Spring Boot 3.2 + Java 21 | ✅ Created | Virtual threads, sealed classes, records, LTS until 2031 |
-| **Database** | PostgreSQL 16-Alpine + Flyway | ✅ Created | JSONB support, 14 tables, audit trails, migrations |
-| **Storage** | AWS S3 (AWS SDK for Java) | 🔄 Planned | PDFs, logos, presigned URLs |
-| **Queue** | RabbitMQ 3.13-Alpine | ✅ Docker | Spring Integration for async: PDF, email, IA calls |
-| **Authentication** | Spring Security 6.x + JWT | 🔄 In AuthController | Workspace-scoped, RBAC, stateless |
-| **PDF Generation** | iText 8.0.1 + Virtual Threads | 🔄 Planned | Async processing, no blocking |
-| **LLM Integration** | OpenAI SDK for Java 0.18.0 | ✅ Dependency | Prompts versioned, structured JSON outputs |
-| **Observability** | Logback + SLF4J + Prometheus | ✅ Configured | Management endpoints on /actuator |
-| **Build Tool** | Maven 3.8+ | ✅ Created | Spring Boot parent 3.2.0, multi-module ready |
-| **Testing** | JUnit 5 + AssertJ + Testcontainers | ✅ Dependencies | Unit, integration, E2E via REST |
-| **CI/CD** | GitHub Actions | ✅ Created | Backend CI, Frontend CI, Deploy workflows |
-| **Containerization** | Docker multi-stage | ✅ Created | JRE Alpine backend, Node Alpine frontend |
-| **Infrastructure** | Docker Compose v3.9 | ✅ Created | PostgreSQL, RabbitMQ, Redis services |
-
-### Why Spring Boot 3.2 + Java 21?
-- **Virtual Threads:** Handle 1000+ async requests without thread pool limits; better than Node.js for I/O-heavy workloads
-- **Sealed Classes:** Type-safe domain entities (`Proposal permits ProposalDraft, ProposalPublished`)
-- **Records:** Immutable DTOs without Lombok boilerplate (e.g., `record BriefingAnswer(String id, String text)`)
-- **Structured Concurrency:** Parallel tasks with proper timeout/shutdown (Java 21 preview API)
-- **Spring Security:** Enterprise-grade authentication & authorization (vs custom JWT)
-- **Hibernate 6.x:** Full JSONB support, strong ORM maturity, proven at scale
-- **Java 21 LTS:** 8 years of support until September 2031
-
----
-
-## Core Domain & Key Concepts
-
-### Main Entities & Relationships
 ```
-User → Workspace (1-to-many)
-  ├─ Workspace has Members (with roles: owner, admin, member)
-  ├─ Clients (CRUD per workspace)
-  ├─ Services (service catalog: social media, landing page, etc.)
-  ├─ ServiceContextProfiles (tone, entitlements, exclusions per service)
-  ├─ ProposalTemplates (by service)
-  └─ Proposals
-       ├─ ProposalVersions (immutable history)
-       ├─ BriefingSessions (discovery flow)
-       │   └─ BriefingAnswers (client responses, structured)
-       ├─ AIGenerations (versioned IA outputs with prompts)
-       └─ Approvals (trackable: name, email, date, IP, version)
+backend/src/main/java/com/scopeflow/
+├── core/domain/              # Pure domain logic (zero Spring dependencies)
+│   ├── briefing/             # Briefing aggregate with sealed classes
+│   ├── workspace/            # Workspace aggregate
+│   └── user/                 # User aggregate
+├── application/              # Application services (orchestration)
+│   ├── port/out/             # Output ports (interfaces)
+│   ├── idempotency/          # Idempotency service
+│   ├── outbox/               # Outbox pattern for events
+│   └── listener/             # Domain event listeners
+├── adapter/
+│   ├── in/web/               # REST controllers (Spring MVC)
+│   │   └── briefing/
+│   │       ├── dto/          # Request/Response records
+│   │       └── mapper/       # Domain ↔ DTO mapping
+│   └── out/
+│       ├── persistence/      # JPA entities + repositories
+│       ├── pdf/              # PDF generation adapter
+│       └── email/            # Email service adapter
+└── config/                   # Spring configuration
 ```
 
-### Critical Data Flows
-1. **Discovery**: Service selected → IA generates questions → Client answers → System measures completeness → IA appraises gaps
-2. **Briefing Consolidation**: Answers → IA structures into objectives, context, risks, deliverables → Stored as JSONB
-3. **Scope Generation**: Briefing + ServiceContext → IA suggests scope, exclusions, assumptions → User edits → Version saved
-4. **Proposal**: Scope + Template → Rendered HTML/PDF → Shared via public link with token
-5. **Approval**: Client clicks "Approve" → System captures name, email, IP, timestamp, version hash → Event logged → Kickoff summary generated
+**Key Principle:** Domain layer (`core/domain/`) has **zero dependencies** on Spring, JPA, or external frameworks. All persistence, messaging, and external integrations happen through adapters.
+
+### Domain Model Design Patterns
+
+1. **Sealed Classes** (Java 21): Type-safe state modeling
+   ```java
+   sealed interface BriefingSession 
+       permits BriefingInProgress, BriefingCompleted, BriefingAbandoned {}
+   ```
+
+2. **Records**: Immutable value objects and DTOs
+   ```java
+   record AnswerText(String value) {
+       public AnswerText {
+           if (value == null || value.isBlank()) 
+               throw new IllegalArgumentException("Answer cannot be blank");
+       }
+   }
+   ```
+
+3. **Aggregate Roots**: `BriefingSession`, `Workspace`, `User` — always modified through their public methods, never directly
+
+4. **Domain Events**: Published via `@DomainEvents` + `@AfterDomainEventPublication`
+   ```java
+   public class BriefingSession {
+       @DomainEvents
+       Collection<Object> domainEvents() { return events; }
+       
+       @AfterDomainEventPublication
+       void clearEvents() { events.clear(); }
+   }
+   ```
 
 ---
 
-## Database Schema Highlights
+## Key Architectural Decisions
 
-### Key Tables
-- **users**: auth, workspace membership references
-- **workspaces**: tenant isolation, primary niche, tone settings
-- **workspace_members**: roles (owner, admin, member), permissions
-- **clients**: CRUD for each workspace
-- **service_catalog**: domain services (social media, landing page, etc.)
-- **service_context_profiles**: per-service templates, entitlements, exclusions, tone overrides
-- **proposal_templates**: HTML templates with Handlebars or similar placeholders
-- **briefing_sessions**: discovery flow instance; contains `public_token` for client
-- **briefing_answers**: structured responses (JSON) keyed by question_id, answerable_type
-- **ai_generations**: audit trail of all IA outputs (type, input JSON, output JSON, prompt version)
-- **proposals**: active proposal state, linked to client, service, briefing, workspace
-- **proposal_versions**: immutable snapshots (scope, entitlements, exclusions, price, timeline)
-- **approvals**: approval record (name, email, IP, approved_at, version_id reference)
-- **proposal_events**: audit log (created, viewed, approved, etc.)
-- **files**: S3 references (logo, attachment, proposal PDF, kickoff PDF)
+### 1. Why Java 21 over Java 8/11/17?
 
-All timestamps are UTC. Sensitive fields are segregated (no PII in JSONB unless necessary). Indexes on workspace_id, proposal_id, client_id for query performance.
+- **Virtual Threads**: Handle 1000+ concurrent HTTP requests without thread pool tuning
+- **Sealed Classes**: Type-safe state machines (e.g., `BriefingSession` states)
+- **Records**: Zero-boilerplate immutable DTOs
+- **Pattern Matching**: Cleaner domain logic (`switch` on sealed types)
+- **LTS Support**: Until September 2031
+
+### 2. Outbox Pattern for Events
+
+All domain events go through the **outbox table** before RabbitMQ to guarantee exactly-once delivery.
+
+**Flow:**
+1. Domain event saved in `outbox_events` table (same transaction as business data)
+2. Background job polls outbox → publishes to RabbitMQ
+3. On success: delete from outbox
+4. On failure: retry with exponential backoff
+
+**Implementation:** See `OutboxService`, `OutboxEventPublisher`, and migrations `V5__outbox_event_schema.sql`
+
+### 3. Idempotency for Public Endpoints
+
+Public endpoints (client-facing, no auth) use **idempotency keys** to prevent duplicate submissions.
+
+**How it works:**
+- Client sends `Idempotency-Key` header (UUID recommended)
+- First request: process + cache response for 24h
+- Duplicate requests: return cached response (409 Conflict if processing)
+
+**Implementation:** See `IdempotencyService`, `IdempotencyRepository`
+
+### 4. Multi-Tenancy via Workspace Scoping
+
+All data is **workspace-scoped**. Every query must filter by `workspace_id`.
+
+**Enforcement:**
+- Spring Security: JWT contains `workspaceId` claim
+- Repository methods: always include `workspaceId` parameter
+- Database indexes: compound indexes on `(workspace_id, id)`
+
+**Example:**
+```java
+// ❌ WRONG: Missing workspace filter
+List<Proposal> findAll();
+
+// ✅ CORRECT: Workspace-scoped
+List<Proposal> findByWorkspaceId(UUID workspaceId);
+```
+
+### 5. RFC 9457 Problem Details for All Errors
+
+All API errors return **Problem Details** JSON with:
+- `type`: URL to error documentation
+- `title`: Human-readable error summary
+- `status`: HTTP status code
+- `detail`: Specific error message
+- `errorCode`: Stable error code (e.g., `BRIEFING-001`)
+- `errorId`: Unique trace ID for debugging
+- `timestamp`: ISO 8601 timestamp
+
+**Implementation:** See `GlobalExceptionHandler` and README error codes section.
 
 ---
 
-## Development Workflow & Commands
+## Development Workflow
 
-### Prerequisites
-- **Java 21** (Eclipse Temurin recommended; GraalVM optional for native-image)
-- **Maven 3.8+** (or use embedded Maven wrapper)
-- **Node.js LTS** (for frontend development only)
-- **PostgreSQL 14+** locally (Docker Compose provided)
-- **RabbitMQ or Redis** (for async queue; Docker Compose provided)
-- **Docker & Docker Compose v2**
-- **OpenAI / Anthropic API key** (for IA integration)
+### Running Tests
 
-### First-Time Setup
 ```bash
-# Clone and install
-git clone <repo>
-cd projeto-service-b2b
+# Unit tests only (fast, no database)
+./mvnw test
 
-# Setup environment
-cp .env.example .env
-# Update .env: DATABASE_URL, OPENAI_API_KEY, JWT_SECRET, S3_BUCKET, RABBITMQ_URL, etc.
+# Integration tests (with Testcontainers — starts real PostgreSQL)
+./mvnw verify
 
-# Start infrastructure
-docker compose up -d  # PostgreSQL + RabbitMQ (or Redis) + (optional Redis cache)
+# Single test class
+./mvnw test -Dtest=WorkspaceTest
 
-# Backend: Run migrations (Liquibase or Flyway)
-cd backend
+# E2E flow tests (requires running app)
+./RUN-BRIEFING-TESTS.sh          # Full briefing flow
+./TEST-BRIEFING-SESSION.sh       # Specific session test
+./scripts/smoke-tests.sh         # Health checks
+
+# Coverage report
+./mvnw package jacoco:report
+# Open: target/site/jacoco/index.html
+```
+
+### Database Migrations
+
+**Never modify applied migrations** — Flyway will fail. Always create a new migration.
+
+```bash
+# Run pending migrations
 ./mvnw flyway:migrate
 
-# Backend: Seed database (optional: sample niche templates)
-./mvnw exec:java@seed-data
+# Check migration status
+./mvnw flyway:info
 
-# Start dev servers (separate terminals)
-# Terminal 1 - Backend
-cd backend
-./mvnw spring-boot:run
+# Repair failed migration (only if safe)
+./mvnw flyway:repair
 
-# Terminal 2 - Frontend
-cd frontend
-npm install
-npm run dev
+# Create new migration
+# 1. Add file: backend/src/main/resources/db/migration/V10__your_description.sql
+# 2. Run: ./mvnw flyway:migrate
 ```
 
-### Development Commands
+**Naming:** `V{n}__{description}.sql` — double underscore after version!
 
-#### Backend (Spring Boot 3.2 + Java 21)
-```bash
-# Prerequisites: Java 21, Maven 3.8+, PostgreSQL running
-cd backend
+### Testing Strategy
 
-# Start in dev mode
-./mvnw spring-boot:run                     # http://localhost:8080/api/v1
+1. **Unit Tests** (`*Test.java`): Domain logic, no Spring, no database
+   - Use AssertJ for fluent assertions
+   - Given-When-Then structure
+   - Example: `WorkspaceTest`, `BriefingSessionTest`
 
-# Build (creates uber JAR with all dependencies)
-./mvnw clean package                       # target/scopeflow-api-1.0.0-SNAPSHOT.jar
+2. **Integration Tests** (`*IntegrationTest.java`): With Testcontainers
+   - Real PostgreSQL via Docker
+   - `@SpringBootTest` + `@Testcontainers`
+   - Example: `BriefingControllerV1IntegrationTest`
 
-# Database Migrations (Flyway)
-./mvnw flyway:migrate                      # Run all pending migrations from V1__initial_schema.sql
-./mvnw flyway:repair                       # Fix failed migrations
+3. **E2E Tests** (Bash scripts): Full flow from API
+   - `RUN-BRIEFING-TESTS.sh`: User registration → briefing creation → answers → completion
+   - Validates HTTP status codes, response bodies, state transitions
 
-# Quality & Testing
-./mvnw test                                # All unit tests (JUnit 5 + AssertJ + Mockito)
-./mvnw verify                              # Unit + integration tests (with Testcontainers)
-./mvnw test -Dtest=ProposalServiceTest     # Single test class
-./mvnw checkstyle:check                    # Code quality (Checkstyle)
-./mvnw package jacoco:report               # Coverage report → target/site/jacoco/index.html
+**Coverage Targets:**
+- Domain logic: 100% (critical business rules)
+- Services: 90%+
+- Controllers: 80%+ (integration tests)
+- Adapters: 70%+
 
-# Java 21 Features
-# Virtual threads automatically used for async tasks
-# Sealed classes in domain layer (com.scopeflow.core.domain)
-# Records for DTOs (immutable, boilerplate-free)
+### Working with Domain Aggregates
 
-# Troubleshooting
-./mvnw help:describe -Dplugin=spring-boot  # Spring Boot plugin info
-./mvnw -DskipTests clean package           # Build without tests
-./mvnw dependency:tree                     # Show dependency tree
+**Golden Rule:** Always modify aggregates through their **public methods**, never by directly setting fields.
+
+**Example: BriefingSession**
+
+```java
+// ❌ WRONG: Bypassing domain logic
+briefingSession.status = BriefingStatus.COMPLETED;
+briefingSession.completedAt = Instant.now();
+
+// ✅ CORRECT: Using aggregate method
+briefingSession.complete();  // Validates 80%+ score, sets timestamp, publishes event
 ```
 
-#### Frontend (Next.js 15 + React 19)
-```bash
-cd frontend
+**Why?** Aggregate methods enforce invariants, publish domain events, and ensure consistency.
 
-# Development
-npm run dev                                # http://localhost:3000
-npm run build                              # Production build
-npm run lint                               # ESLint
-npm run type-check                         # TypeScript strict mode
-npm run test                               # Vitest unit/component tests
-npm run test:e2e                           # Playwright E2E tests
+### Adding a New Domain Entity
 
-# Running specific tests
-npm test -- ProposalForm.test.tsx
-npm run test:e2e -- --grep "briefing flow"
-```
+1. **Create domain class** in `core/domain/{aggregate}/`
+   - Use sealed classes for state variants
+   - Use records for value objects
+   - Zero Spring/JPA dependencies
 
-#### All-in-One
-```bash
-# Terminal 1: Start backend + PostgreSQL
-docker compose up -d && ./mvnw spring-boot:run
+2. **Define repository interface** in `core/domain/{aggregate}/`
+   ```java
+   public interface BriefingSessionRepository {
+       void save(BriefingSession session);
+       Optional<BriefingSession> findById(BriefingSessionId id);
+   }
+   ```
 
-# Terminal 2: Start frontend
-cd frontend && npm run dev
+3. **Create JPA entity** in `adapter/out/persistence/{aggregate}/`
+   - Implement the repository interface
+   - Map domain → JPA (constructor mapping)
 
-# Or use Make/scripts if provided in repo
-make dev                                   # Concurrent backend + frontend
-```
+4. **Create mapper** if complex
+   - Domain ↔ JPA conversion logic
+   - Keep mappers in adapter layer
+
+5. **Write tests**
+   - Unit test: domain logic
+   - Integration test: repository adapter with Testcontainers
+
+### Adding a New API Endpoint
+
+1. **Design OpenAPI spec first** in `docs/api/{domain}-api.yaml`
+   - Define request/response schemas
+   - Document error responses (RFC 9457)
+
+2. **Create DTOs** in `adapter/in/web/{domain}/dto/`
+   - Use records for immutability
+   - Add Jakarta validation annotations
+
+3. **Create controller** in `adapter/in/web/{domain}/`
+   - Inject application service
+   - Map DTOs ↔ domain objects
+   - Return `ResponseEntity<?>` with proper status codes
+
+4. **Write integration tests**
+   - `@SpringBootTest` + `@AutoConfigureMockMvc`
+   - Test happy path + error cases
+   - Verify RFC 9457 error format
+
+5. **Update Swagger UI**
+   - Restart app: `./mvnw spring-boot:run`
+   - Open: http://localhost:8080/swagger-ui.html
 
 ---
 
 ## Code Style & Conventions
 
-### Naming & Structure
-| Aspect | Convention | Example |
-|--------|-----------|---------|
-| **Packages (Backend Java)** | `src/main/java/com/scopeflow/{layer}/{domain}` | `adapter/in/web/AuthController.java` |
-| **Service Classes** | `{Entity}Service` with business logic | `BriefingService.java`, `ProposalService.java` |
-| **Controllers** | `{Entity}Controller` with DTOs as records | `AuthController.java` (with nested records) |
-| **Repositories** | `{Entity}Repository extends JpaRepository` | `ProposalRepository.java` (Spring Data JPA) |
-| **DTOs** | Records or immutable classes | `record ProposalResponse(UUID id, String status)` |
-| **Domain Entities** | Sealed classes for type safety | `sealed class Proposal permits ProposalDraft, ProposalPublished` |
-| **Components (Frontend)** | PascalCase, `src/components/{feature}` | `src/components/briefing/BriefingForm.tsx` |
-| **Hooks** | `src/hooks/use{Feature}.ts` | `src/hooks/useBriefing.ts` |
-| **Database** | Flyway migrations, snake_case tables | `V1__initial_schema.sql`, `users`, `briefing_sessions` |
-| **Packages** | `com.scopeflow.{layer}.{domain}` | `com.scopeflow.adapter.in.web`, `com.scopeflow.core.domain` |
+### Naming
 
-### Error Handling
-- Backend: throw domain-specific exceptions (`ProposalNotFoundException`, `BriefingIncompleteError`)
-- Frontend: catch, log, show user-friendly toast/modal
-- All errors logged with context: user_id, workspace_id, proposal_id where relevant
-- No sensitive data in error messages sent to client
+| Type | Convention | Example |
+|------|-----------|---------|
+| Domain entities | PascalCase, descriptive | `BriefingSession`, `Workspace` |
+| Value objects | PascalCase + type suffix | `AnswerText`, `PublicToken` |
+| DTOs | PascalCase + Request/Response | `CreateBriefingRequest`, `BriefingResponse` |
+| Services | PascalCase + Service | `BriefingService`, `WorkspaceService` |
+| Repositories | PascalCase + Repository | `BriefingSessionRepository` |
+| Exceptions | PascalCase + Exception | `BriefingNotFoundException` |
+| Error codes | DOMAIN-NNN | `BRIEFING-001`, `WORKSPACE-005` |
 
-### Testing Strategy
-- **Unit**: services, repositories, utilities (no DB, mock external calls)
-- **Integration**: with real DB (Testcontainers in Node.js or test PostgreSQL)
-- **E2E**: full flow from UI to DB (Playwright preferred for Next.js)
-- **Naming**: `describe('ProposalService', () => { it('should reject incomplete briefing', () => {...}))`
-- **Coverage targets**: 100% for auth/payment logic, 80%+ for domain, 60%+ for controllers
+### Domain Exceptions
 
-### Formatting
-- **Indentation**: 2 spaces
-- **Quotes**: Single quotes (`'`) for strings
-- **Semicolons**: Required
-- **Line length**: 100 chars soft, 120 hard
-- **Auto-format**: Prettier (`.prettierrc` configured)
-- **Linting**: ESLint with `@typescript-eslint` for type safety
+All domain exceptions must:
+1. Extend `RuntimeException` (or custom domain exception base)
+2. Include stable error code: `DOMAIN-NNN`
+3. Have clear message for users
 
----
-
-## Key Workflows & Decision Points
-
-### 1. Adding a New Service Type (e.g., "Branding")
-1. Add entry to `service_catalog` seed
-2. Create `ServiceContextProfile` with:
-   - Questions template (JSON list)
-   - Default entitlements (e.g., "logo", "brand guide")
-   - Default exclusions (e.g., "trademark research")
-   - Suggested timeline, pricing structure
-3. Optionally create `ProposalTemplate` if HTML rendering differs
-4. Test with BriefingSession flow: verify IA loads correct context
-5. Validate ProposalVersion generation includes new exclusions
-
-### 2. Modifying IA Prompts
-1. All prompts stored in `prompts/` folder with version tags (e.g., `briefing_questions_v1.md`)
-2. In `ai_generations` table, `prompt_version` field captures which version generated output
-3. New prompt → new version file → update backend to reference new version
-4. Never modify old prompt versions in-place (breaks auditability)
-5. Log prompt_version in all IA generation records for debugging
-
-### 3. Handling Approval Workflow
-- Client receives link: `/proposals/{proposal_id}/approve?token={public_token}`
-- Page displays:
-  - Proposal version HTML (read-only)
-  - Friendly summary (what's included, exclusions, timeline, price)
-  - Approval form (name, email)
-- On submit:
-  - Validate token, check expiry
-  - Save `Approval` record with IP, User-Agent
-  - Create `ProposalEvent` with type="approved"
-  - Trigger async job: generate kickoff PDF, send confirmation email
-  - Return success page with download links
-
-### 4. Handling PDF Generation
-- Backend service: `PdfService` (via puppeteer or pdfkit)
-- Receives: proposal template, scope JSON, client name, logo URL
-- Outputs: S3 file with key `{workspace_id}/{proposal_id}/{version_id}-proposal.pdf`
-- Store file reference in `files` table
-- If S3 fails: retry via queue (BullMQ), log failure
-- Never block approval on PDF failure (async, best-effort)
-
----
-
-## Testing & Quality Gates
-
-### Before Committing
-```bash
-npm run lint              # Fix ESLint/Prettier issues
-npm run type-check        # Catch TypeScript errors
-npm run test              # Unit tests pass
-```
-
-### Before PR/Merge
-```bash
-npm run test:integration  # DB logic correct
-npm run test:e2e          # Critical flows work end-to-end
-npm run coverage          # Verify coverage targets met
-```
-
-### CI/CD (GitHub Actions)
-1. Lint + type-check on PR
-2. Run tests (unit, integration, E2E)
-3. Build (Next.js, NestJS)
-4. Deploy to staging on merge to `develop`
-5. Manual approval to production
-
----
-
-## Security Practices
-
-### Authentication & Authorization
-- Users authenticate via email + password (bcrypt hash)
-- JWT tokens: access (15 min), refresh (7 days)
-- Workspace segregation: all queries filtered by workspace_id
-- Roles: owner (all), admin (all except members), member (read proposals only)
-
-### Data Privacy
-- Minimal collection: name, email, workspace context, briefing/proposal content
-- LGPD compliance: user can request data export, deletion
-- Briefing/proposal data: no marketing tracking, no third-party sharing
-- PDFs and files: S3 with private ACL, signed URLs for temporary access
-
-### API Security
-- Rate limiting on public endpoints (approval links, briefing submission)
-- CORS restricted to app domain
-- HTTPS enforced (TLS 1.2+)
-- Secrets never logged or cached in plain text (.env gitignored)
-
----
-
-## Observability & Logging
-
-### Critical Paths to Log
-- Authentication (login, token refresh, logout)
-- Briefing completion (questions asked, answers submitted, consolidation)
-- IA generation (calls, latency, success/failure)
-- PDF generation (request, S3 upload, errors)
-- Proposal approval (client info, IP, timestamp, version)
-
-### Log Format
-```json
-{
-  "timestamp": "2025-01-15T10:30:45Z",
-  "level": "info",
-  "service": "proposal-service",
-  "action": "proposal_approved",
-  "user_id": "uuid",
-  "workspace_id": "uuid",
-  "proposal_id": "uuid",
-  "duration_ms": 234,
-  "status": "success"
+**Example:**
+```java
+public class BriefingAlreadyCompletedException extends BriefingDomainException {
+    private static final String ERROR_CODE = "BRIEFING-002";
+    
+    public BriefingAlreadyCompletedException(BriefingSessionId id) {
+        super(ERROR_CODE, "Briefing %s is already completed".formatted(id.value()));
+    }
 }
 ```
 
-### Metrics to Track
-- Briefing completion rate (%)
-- Approval rate (%)
-- Time to approval (minutes)
-- IA generation latency (seconds)
-- PDF generation success rate (%)
-- Proposal edits before approval (count)
+### Testing Conventions
 
----
+**Test method naming:**
+```java
+// Pattern: should{ExpectedBehavior}_when{Condition}
+@Test
+void shouldThrowException_whenAnswerIsBlank() { ... }
 
-## Git Workflow
-
-### Branching Strategy
-- **main**: production-ready, always deployable
-- **develop**: staging, feature integration
-- **feature/**: `feature/briefing-ai`, `feature/approval-flow`
-- **bugfix/**: `bugfix/proposal-rendering`
-
-### Commit Message Format
-**Conventional Commits in Portuguese:**
-```
-feat(briefing): adiciona aprofundamento automático de respostas vagas
-
-Implementa lógica de IA para detectar respostas incompletas
-e gerar perguntas complementares. Reduz ambiguidade no briefing.
-
-Closes #42
+@Test
+void shouldCalculateProgress_whenMultipleAnswersExist() { ... }
 ```
 
-**Types**: `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `ci`
-
-### Before Pushing
-- Run tests locally: `npm run test`
-- Check lint: `npm run lint`
-- Review changes: `git diff` before staging
-- No secrets or large binaries in commits
-
----
-
-## Deployment & Operations
-
-### Environment Variables
-| Variable | Purpose | Example |
-|----------|---------|---------|
-| `DATABASE_URL` | PostgreSQL connection | `postgresql://user:pass@localhost:5432/scopeflow` |
-| `REDIS_URL` | BullMQ queue | `redis://localhost:6379` |
-| `OPENAI_API_KEY` | LLM calls | `sk-...` |
-| `JWT_SECRET` | Token signing | `<random-32-chars>` |
-| `S3_BUCKET` | AWS S3 bucket | `scopeflow-prod` |
-| `S3_REGION` | AWS region | `sa-east-1` |
-| `CORS_ORIGIN` | Frontend URL | `https://app.scopeflow.com` |
-| `NODE_ENV` | Environment | `development`, `staging`, `production` |
-
-### Scaling Considerations (Post-MVP)
-- **Read replicas** for analytics queries
-- **Connection pooling** (PgBouncer) if connection count spikes
-- **Caching**: Redis for user profiles, service contexts
-- **IA async queue**: scale workers based on generation latency
-- **CDN**: CloudFront for PDFs, logos, static assets
+**Structure:**
+```java
+@Test
+void testName() {
+    // Given (arrange)
+    var session = new BriefingSession(...);
+    
+    // When (act)
+    session.complete();
+    
+    // Then (assert)
+    assertThat(session.isCompleted()).isTrue();
+}
+```
 
 ---
 
-## Known Risks & Mitigations
+## Common Tasks & Patterns
 
-| Risk | Impact | Mitigation |
-|------|--------|-----------|
-| IA generates generic/irrelevant questions | Low engagement, low perceived value | Niche + service context well-defined; review outputs; A/B test prompts |
-| High IA API cost | Profitability risk | Use structured JSON, cache context, set generation limits per plan |
-| Proposal PDF fails | User frustration, support burden | Async generation, retry queue, graceful degradation (HTML fallback) |
-| Approval token exposed | Unauthorized approval | Short TTL (24h), rate limit, IP logging, secure token gen |
-| Low retention post-MVP | Revenue risk | Strong templates per niche, encourage reuse, measure NPS |
+### Task: Add a New Briefing Question Type
+
+1. Update `ServiceType` enum in `core/domain/briefing/ServiceType.java`
+2. Add migration: `V{n}__add_{service}_questions.sql`
+3. Insert seed data for questions in migration
+4. Update `ServiceContextQuestion` mapping if needed
+5. Test with E2E script: `./TEST-BRIEFING-SESSION.sh`
+
+### Task: Add a New Domain Event
+
+1. Create event record in `core/domain/{aggregate}/`
+   ```java
+   public record BriefingCompletedEvent(
+       BriefingSessionId sessionId,
+       UUID workspaceId,
+       Instant completedAt
+   ) {}
+   ```
+
+2. Publish from aggregate:
+   ```java
+   public void complete() {
+       // ... validation
+       this.events.add(new BriefingCompletedEvent(id, workspaceId, Instant.now()));
+   }
+   ```
+
+3. Create listener in `application/listener/`
+   ```java
+   @Component
+   public class BriefingCompletedListener {
+       @TransactionalEventListener
+       public void onBriefingCompleted(BriefingCompletedEvent event) {
+           // Handle event (save to outbox, trigger external call, etc.)
+       }
+   }
+   ```
+
+4. Test with integration test: verify event is published and handled
+
+### Task: Debug Outbox Events Not Publishing
+
+1. Check `outbox_events` table: `SELECT * FROM outbox_events WHERE published_at IS NULL;`
+2. Check logs: search for `OutboxEventPublisher`
+3. Verify RabbitMQ is running: `docker ps | grep rabbitmq`
+4. Check RabbitMQ management UI: http://localhost:15672 (guest/guest)
+5. Manually trigger publish: restart app or call republish endpoint
+
+### Task: Test with Real OpenAI API
+
+1. Set `OPENAI_API_KEY` in `.env`
+2. Ensure `application-local.yml` doesn't mock OpenAI client
+3. Run briefing flow: `./RUN-BRIEFING-TESTS.sh`
+4. Check `ai_generations` table for prompt/response audit trail
 
 ---
 
-## Quick Reference: Slash Commands
+## Troubleshooting
 
-When using Claude Code, these commands streamline development:
+### Issue: Flyway migration fails with checksum mismatch
+
+**Cause:** Migration file was modified after being applied.
+
+**Fix:**
+```bash
+# 1. Revert the file to original content
+git checkout HEAD~1 -- backend/src/main/resources/db/migration/V{n}__file.sql
+
+# 2. Create a new migration with your changes
+# backend/src/main/resources/db/migration/V{n+1}__your_fix.sql
+
+# 3. Run migrations
+./mvnw flyway:migrate
+```
+
+### Issue: Tests fail with "Container startup failed"
+
+**Cause:** Docker not running or insufficient resources.
+
+**Fix:**
+1. Verify Docker is running: `docker ps`
+2. Increase Docker memory: Docker Desktop → Settings → Resources → Memory (minimum 4GB)
+3. Clean up containers: `docker system prune -a`
+
+### Issue: JWT token expired during testing
+
+**Cause:** Token TTL is 15 minutes by default.
+
+**Fix:**
+```bash
+# Get fresh token before each test run
+export JWT_TOKEN=$(./scripts/get-test-token.sh)
+```
+
+Or increase TTL in `.env` (development only):
+```
+JWT_EXPIRATION_MS=3600000  # 1 hour
+```
+
+### Issue: Integration tests fail with "Port 5432 already in use"
+
+**Cause:** Testcontainers tries to use mapped port but PostgreSQL is already running locally.
+
+**Fix:** Testcontainers uses random ports automatically. This usually means a leftover container is running.
 
 ```bash
-# Check project structure
-/dev-review src/proposals/          # Code review on proposal module
-
-# Generate tests
-/qa-generate ProposalService        # Unit + integration tests
-
-# Audit dependencies & security
-/qa-security                        # OWASP check, dependency scan
-
-# Plan refactoring
-/dev-refactor BriefingSession       # Safe refactoring strategy
-
-# Full bootstrap alternative (if extending with microservices)
-/full-bootstrap user-service aws    # Create new service: scaffold + tests + IaC
+docker ps -a | grep testcontainers
+docker rm -f $(docker ps -aq --filter "label=org.testcontainers")
 ```
 
 ---
 
-## FAQ & Troubleshooting
+## Key Files & Documentation
 
-### Q: How do I reset the database in development?
-```bash
-docker compose down -v
-docker compose up -d
-npm run migrate
-npm run seed
-```
-
-### Q: Why is IA generation slow?
-Check:
-1. OpenAI API quota/throttling
-2. Prompt size (large briefing context can slow inference)
-3. Network latency (add timing logs)
-4. Redis queue backed up (check `npm run redis-cli` → `LLEN queue:ai_generation`)
-
-### Q: How do I test the approval flow locally?
-1. Create proposal via API or UI
-2. Get `public_token` from `briefing_sessions` table
-3. Visit: `http://localhost:3000/proposals/{proposal_id}/approve?token={token}`
-4. Submit approval form
-5. Check `approvals` and `proposal_events` tables for records
-
-### Q: How do I add a new field to ProposalVersion?
-1. Update `schema.prisma` (add field to model)
-2. `npx prisma migrate dev --name add_field_to_proposal_version`
-3. Update `ProposalVersionResponse` DTO
-4. Update test mocks
-5. Commit migration file
+| File | Purpose |
+|------|---------|
+| [`README.md`](README.md) | Setup instructions, tech stack, API endpoints |
+| [`docs/api/BRIEFING-API-GUIDE.md`](docs/api/BRIEFING-API-GUIDE.md) | Detailed API documentation with examples |
+| [`docs/api/briefing-api.yaml`](docs/api/briefing-api.yaml) | OpenAPI 3.1 specification |
+| [`docs/architecture/adr/`](docs/architecture/adr/) | Architecture Decision Records (ADRs) |
+| [`RUN-BRIEFING-TESTS.sh`](RUN-BRIEFING-TESTS.sh) | E2E test suite for complete briefing flow |
+| [`backend/src/main/resources/db/migration/`](backend/src/main/resources/db/migration/) | Flyway migrations (V1–V9 applied) |
+| [`docker-compose.yml`](docker-compose.yml) | PostgreSQL + RabbitMQ + Redis services |
 
 ---
 
-## Additional Resources
+## Environment Variables
 
-- **Product spec**: `scopeflow_ai_documento_master_completo.md` (2045 lines, full context)
-- **API contracts**: Same doc, section 31
-- **Database schema**: Same doc, section 30
-- **Wireframes**: Same doc, section 29
+See [`.env.example`](.env.example) for all required variables.
 
-For questions on product direction, refer to:
-- Roadmap: phase 1 (MVP), 2 (validation), 3 (expansion)
-- Success metrics: briefing completion rate, approval rate, time-to-approval
-- Initial market focus: microagencies + freelancers in marketing/design/social media/landing pages
+**Critical for local development:**
+- `DATABASE_URL` — PostgreSQL connection string
+- `JWT_SECRET` — Minimum 32 characters (generate: `openssl rand -hex 32`)
+- `OPENAI_API_KEY` — For AI integration (optional for local dev if mocked)
+
+**Optional:**
+- `SPRING_PROFILES_ACTIVE` — `dev`, `local`, `test`, `prod`
+- `RABBITMQ_HOST` — Defaults to `localhost`
+
+---
+
+## Product Context
+
+For deep product understanding, see [`scopeflow_ai_documento_master_completo.md`](scopeflow_ai_documento_master_completo.md) (2045 lines) — covers:
+- Full product spec
+- User personas
+- Wireframes
+- Pricing strategy
+- Roadmap (MVP → validation → expansion)
+
+**Note:** That document is the product vision. This CLAUDE.md focuses on the **current implementation**.
