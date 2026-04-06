@@ -35,8 +35,8 @@ RUN ./mvnw dependency:go-offline -B -q
 
 # Copiar código-fonte e compilar
 COPY src ./src
-RUN ./mvnw clean package -DskipTests -B -q && \
-    java -Djarmode=layertools -jar target/*.jar extract --destination target/extracted
+RUN ./mvnw clean package -Dmaven.test.skip=true -B -q && \
+    java -Djarmode=layertools -jar target/user-service-1.0.0-SNAPSHOT.jar extract --destination target/extracted
 
 # ================================
 # Stage 2: Runtime

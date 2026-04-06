@@ -32,15 +32,18 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final List<String> allowedOrigins;
     private final boolean requiresHttps;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtFilter,
+            JwtAuthenticationEntryPoint authenticationEntryPoint,
             @Value("${cors.allowed-origins:http://localhost:3000}") List<String> allowedOrigins,
             @Value("${app.requires-https:true}") boolean requiresHttps
     ) {
         this.jwtFilter = jwtFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
         this.allowedOrigins = allowedOrigins;
         this.requiresHttps = requiresHttps;
     }
@@ -67,6 +70,8 @@ public class SecurityConfig {
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(exception ->
+                        exception.authenticationEntryPoint(authenticationEntryPoint))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
