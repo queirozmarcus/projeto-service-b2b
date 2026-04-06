@@ -11,10 +11,6 @@ public class InvalidRoleException extends RuntimeException {
         super(message);
     }
 
-    public InvalidRoleException(String role) {
-        super("Invalid role: " + role);
-    }
-
     public String getErrorCode() {
         return ERROR_CODE;
     }

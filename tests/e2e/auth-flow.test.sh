@@ -421,7 +421,7 @@ main() {
 
   # Check service health
   log_info "Checking service health..."
-  if ! curl -sf "$BASE_URL/actuator/health/readiness" > /dev/null 2>&1; then
+  if ! curl -sf "$BASE_URL/api/v1/actuator/health/readiness" > /dev/null 2>&1; then
     echo -e "${RED}ERROR: Service is not ready at $BASE_URL${NC}"
     echo "Make sure the application is running: docker compose up -d"
     exit 1

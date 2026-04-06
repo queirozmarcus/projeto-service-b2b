@@ -20,7 +20,7 @@ public class AuthServiceProxyConfig {
     public RestTemplate authServiceRestTemplate(RestTemplateBuilder builder) {
         return builder
                 .setConnectTimeout(Duration.ofSeconds(5))
-                .setReadTimeout(Duration.ofSeconds(10))
+                .setReadTimeout(Duration.ofSeconds(30))  // Increased: user-service can take 20s+ after cold start
                 .build();
     }
 }

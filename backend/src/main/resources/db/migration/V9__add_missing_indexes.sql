@@ -24,14 +24,14 @@
 -- cliente dentro de um workspace (painel do operador).
 -- Impacto: listagens de sessões por cliente dentro de workspace passam de Seq Scan
 -- para Index Scan em tabelas grandes.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_briefing_sessions_workspace_client
+CREATE INDEX IF NOT EXISTS ix_briefing_sessions_workspace_client
     ON briefing_sessions(workspace_id, client_id);
 
 -- Composite workspace_id + status + created_at para suportar ORDER BY na query
 -- findByWorkspaceAndStatus: ORDER BY created_at DESC.
 -- O índice existente idx_briefing_sessions_workspace_id não cobre o ORDER BY,
 -- forçando sort em memória para workspaces com muitas sessões.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_briefing_sessions_workspace_status_created
+CREATE INDEX IF NOT EXISTS ix_briefing_sessions_workspace_status_created
     ON briefing_sessions(workspace_id, status, created_at DESC);
 
 -- ============================================================================
@@ -45,7 +45,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_briefing_sessions_workspace_status_cr
 -- que é uma busca de no máximo 1 linha (impacta cardinality estimate).
 -- NOTA: O índice abaixo pode conflitar com o existente se já for unique.
 -- O IF NOT EXISTS protege a idempotência.
-CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ix_briefing_sessions_public_token_unique
+CREATE UNIQUE INDEX IF NOT EXISTS ix_briefing_sessions_public_token_unique
     ON briefing_sessions(public_token);
 
 -- ============================================================================
@@ -54,7 +54,7 @@ CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS ix_briefing_sessions_public_token
 -- Problema: findByClientIdAndWorkspaceId faz Seq Scan usando dois índices separados
 -- (bitmap AND). Um índice composto é mais eficiente para este pattern.
 -- Hot path: listagem de proposals de um cliente específico em um workspace.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_proposals_workspace_client
+CREATE INDEX IF NOT EXISTS ix_proposals_workspace_client
     ON proposals(workspace_id, client_id)
     WHERE deleted_at IS NULL;
 
@@ -62,7 +62,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_proposals_workspace_client
 -- findByWorkspaceIdAndStatus com paginação ordenada por updated_at.
 -- O índice idx_proposals_workspace_status (V4) existe mas não inclui updated_at,
 -- causando sort stage adicional em queries paginadas.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_proposals_workspace_status_updated
+CREATE INDEX IF NOT EXISTS ix_proposals_workspace_status_updated
     ON proposals(workspace_id, status, updated_at DESC)
     WHERE deleted_at IS NULL;
 
@@ -84,7 +84,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_proposals_workspace_status_updated
 -- a versão mais recente de uma proposal.
 -- O índice idx_proposal_versions_proposal_created_at da migration V4 já cobre isso;
 -- garantindo que a entity reflita o mesmo índice composto correto.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_proposal_versions_proposal_created_desc
+CREATE INDEX IF NOT EXISTS ix_proposal_versions_proposal_created_desc
     ON proposal_versions(proposal_id, created_at DESC);
 
 -- ============================================================================
@@ -94,7 +94,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_proposal_versions_proposal_created_de
 -- initiated_at WHERE status IN ('PENDING', 'IN_PROGRESS'). Para o job de lembretes
 -- que ordena por iniciação mais antiga, este índice já é adequado. Nenhum adicional.
 -- Para dashboards que listam workflows por status, cobrindo status + completed_at:
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_approval_workflows_status_completed
+CREATE INDEX IF NOT EXISTS ix_approval_workflows_status_completed
     ON approval_workflows(status, completed_at DESC);
 
 -- ============================================================================
@@ -104,7 +104,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_approval_workflows_status_completed
 -- A query que verifica se todos os approvers de um workflow decidiram
 -- (SELECT * FROM approvals WHERE workflow_id = ? AND status = 'PENDING')
 -- usa bitmap AND entre dois índices. Um índice composto elimina isso.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_approvals_workflow_status
+CREATE INDEX IF NOT EXISTS ix_approvals_workflow_status
     ON approvals(workflow_id, status);
 
 -- ============================================================================
@@ -113,7 +113,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_approvals_workflow_status
 -- Problema: idx_outbox_event_aggregate (V5) indexa (aggregate_type, aggregate_id).
 -- Queries de replay/debug que filtram apenas por aggregate_id (sem type) fazem
 -- Seq Scan. Um índice em aggregate_id isolado cobre esse caso.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_outbox_event_aggregate_id
+CREATE INDEX IF NOT EXISTS ix_outbox_event_aggregate_id
     ON outbox_event(aggregate_id);
 
 -- ============================================================================
@@ -129,11 +129,11 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_outbox_event_aggregate_id
 -- Problema: idx_activity_logs_workspace_id e idx_activity_logs_created_at existem
 -- separados (V2). Queries de auditoria filtram por workspace e ordenam por data;
 -- o planner usa bitmap AND ou ignora um dos índices.
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_activity_logs_workspace_created
+CREATE INDEX IF NOT EXISTS ix_activity_logs_workspace_created
     ON activity_logs(workspace_id, created_at DESC);
 
 -- Composite para queries por user + workspace (quem fez o quê em qual workspace):
-CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_activity_logs_workspace_user
+CREATE INDEX IF NOT EXISTS ix_activity_logs_workspace_user
     ON activity_logs(workspace_id, user_id, created_at DESC);
 
 -- ============================================================================
