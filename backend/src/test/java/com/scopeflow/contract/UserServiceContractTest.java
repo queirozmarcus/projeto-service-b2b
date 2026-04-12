@@ -4,7 +4,7 @@ import com.scopeflow.adapter.in.web.auth.dto.LoginRequest;
 import com.scopeflow.adapter.in.web.auth.dto.LoginResponse;
 import com.scopeflow.adapter.in.web.user.dto.CreateInvitedUserRequest;
 import com.scopeflow.adapter.in.web.user.dto.UserResponse;
-import com.scopeflow.core.domain.user.Role;
+import com.scopeflow.core.domain.workspace.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -194,8 +194,8 @@ class UserServiceContractTest {
 
         CreateInvitedUserRequest request = new CreateInvitedUserRequest(
                 "invited@example.com",
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440000"),
-                Role.MEMBER
+                Role.MEMBER,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
         );
 
         // When: creating invited user
@@ -227,8 +227,8 @@ class UserServiceContractTest {
 
         CreateInvitedUserRequest request = new CreateInvitedUserRequest(
                 "test@example.com", // duplicate email (test user already exists)
-                UUID.fromString("550e8400-e29b-41d4-a716-446655440000"),
-                Role.MEMBER
+                Role.MEMBER,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
         );
 
         // When: creating invited user with duplicate email

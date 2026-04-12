@@ -2,8 +2,6 @@ package com.scopeflow.config;
 
 import com.scopeflow.core.domain.briefing.*;
 import com.scopeflow.core.domain.proposal.*;
-import com.scopeflow.core.domain.user.UserRepository;
-import com.scopeflow.core.domain.user.UserService;
 import com.scopeflow.core.domain.workspace.WorkspaceMemberRepository;
 import com.scopeflow.core.domain.workspace.WorkspaceRepository;
 import com.scopeflow.core.domain.workspace.WorkspaceService;
@@ -27,11 +25,6 @@ public class DomainServiceConfig {
             AIGenerationRepository aiGenerationRepository
     ) {
         return new BriefingService(sessionRepository, questionRepository, answerRepository, aiGenerationRepository);
-    }
-
-    @Bean
-    public UserService userService(UserRepository userRepository) {
-        return new UserService(userRepository);
     }
 
     @Bean

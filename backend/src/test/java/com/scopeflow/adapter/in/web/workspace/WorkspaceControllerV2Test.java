@@ -14,9 +14,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.RestTemplate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -33,6 +35,9 @@ class WorkspaceControllerV2Test {
 
     @MockBean
     private WorkspaceService workspaceService;
+
+    @MockBean
+    private RestTemplate authServiceRestTemplate;
 
     @Test
     @DisplayName("POST /workspaces returns 400 when name missing")
@@ -87,8 +92,8 @@ class WorkspaceControllerV2Test {
     @WithMockUser(roles = "OWNER")
     void removeMember_shouldReturn409_whenLastOwner() throws Exception {
         // Given
-        given(workspaceService.removeMember(any(), any()))
-                .willThrow(new CannotRemoveLastOwnerException("Cannot remove the only OWNER"));
+        doThrow(new CannotRemoveLastOwnerException("Cannot remove the only OWNER"))
+                .when(workspaceService).removeMember(any(), any());
 
         // When / Then
         mockMvc.perform(delete("/workspaces/00000000-0000-0000-0000-000000000001/members/00000000-0000-0000-0000-000000000002"))

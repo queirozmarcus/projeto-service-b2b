@@ -7,14 +7,10 @@
 #   - Logs reduzidos: Security e Web em WARN (menos ruído em prod)
 #
 # Para ativar: SPRING_PROFILES_ACTIVE=production
-# Para rollback imediato sem redeploy: AUTH_SERVICE_EXTRACTED=false
-#   (env var definida no K8s/ECS sobrescreve o valor abaixo)
 # ============================================================
 
-# Strangler Fig: Cut-over para user-service em PRODUÇÃO
 auth:
   service:
-    use-extracted: true
     url: ${AUTH_SERVICE_URL:http://user-service:8081/api/v1}
 
 # Cookies HTTPS obrigatório em produção

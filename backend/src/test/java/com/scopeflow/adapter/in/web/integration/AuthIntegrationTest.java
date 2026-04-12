@@ -2,9 +2,14 @@ package com.scopeflow.adapter.in.web.integration;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -13,16 +18,35 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests for AuthControllerV2.
  *
  * Full Spring Boot context + Testcontainers PostgreSQL + real Flyway migrations.
- * Tests verify the entire auth slice: HTTP → Controller → UserService → JPA → DB.
+ * Auth requests are proxied to user-service; RestTemplate is mocked to simulate
+ * user-service responses without requiring the service to be running.
+ *
+ * Tests verify: HTTP routing, header forwarding (Set-Cookie), Bean Validation,
+ * security filter (JWT auth for protected endpoints).
  */
 @DisplayName("Auth REST Integration")
 class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
 
+    @MockBean
+    private RestTemplate authServiceRestTemplate;
+
     // ============ POST /auth/register ============
 
     @Test
-    @DisplayName("POST /auth/register creates user and returns tokens")
+    @DisplayName("POST /auth/register proxies to user-service and returns 201 with tokens")
     void register_shouldReturn201_withTokens() throws Exception {
+        String upstreamBody = """
+            {"accessToken":"test-access-tok","expiresIn":900,
+             "userId":"00000000-0000-0000-0000-000000000001",
+             "email":"newuser@example.com","fullName":"New User"}
+            """;
+        HttpHeaders upstreamHeaders = new HttpHeaders();
+        upstreamHeaders.add(HttpHeaders.SET_COOKIE, "refreshToken=rt; HttpOnly; Path=/; SameSite=Lax");
+
+        given(authServiceRestTemplate.exchange(
+                contains("/auth/register"), eq(HttpMethod.POST), any(), eq(String.class)
+        )).willReturn(ResponseEntity.status(HttpStatus.CREATED).headers(upstreamHeaders).body(upstreamBody));
+
         String body = """
             {
               "email": "newuser@example.com",
@@ -37,7 +61,6 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
                         .content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                // Refresh token is NOT in the body — delivered via Set-Cookie (httpOnly)
                 .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andExpect(header().exists("Set-Cookie"))
                 .andExpect(header().string("Set-Cookie", containsString("refreshToken=")))
@@ -46,10 +69,17 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("POST /auth/register returns 409 when email already registered")
+    @DisplayName("POST /auth/register forwards 409 from user-service when email already registered")
     void register_shouldReturn409_whenEmailAlreadyTaken() throws Exception {
-        // Pre-create user with same email
-        createActiveUser(java.util.UUID.randomUUID(), "existing@example.com");
+        String problemJson = """
+            {"type":"https://api.scopeflow.com/errors/email-already-registered",
+             "title":"Email Already Registered","status":409,"error_code":"USER-001"}
+            """;
+
+        given(authServiceRestTemplate.exchange(
+                contains("/auth/register"), eq(HttpMethod.POST), any(), eq(String.class)
+        )).willThrow(HttpClientErrorException.create(
+                HttpStatus.CONFLICT, "Conflict", new HttpHeaders(), problemJson.getBytes(), null));
 
         String body = """
             {
@@ -62,13 +92,11 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
         mockMvc.perform(post("/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.title").value("Email Already Registered"))
-                .andExpect(jsonPath("$.status").value(409));
+                .andExpect(status().isConflict());
     }
 
     @Test
-    @DisplayName("POST /auth/register returns 400 when password too weak")
+    @DisplayName("POST /auth/register returns 400 from Bean Validation when password too weak (no proxy)")
     void register_shouldReturn400_whenPasswordTooWeak() throws Exception {
         String body = """
             {
@@ -86,7 +114,7 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("POST /auth/register returns 400 when email missing")
+    @DisplayName("POST /auth/register returns 400 from Bean Validation when email missing (no proxy)")
     void register_shouldReturn400_whenEmailMissing() throws Exception {
         String body = """
             {
@@ -104,20 +132,19 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
     // ============ POST /auth/login ============
 
     @Test
-    @DisplayName("POST /auth/login returns 200 with tokens on valid credentials")
+    @DisplayName("POST /auth/login proxies to user-service and returns 200 with tokens")
     void login_shouldReturn200_withTokens() throws Exception {
-        // Register user first via API to ensure password is properly hashed
-        String registerBody = """
-            {
-              "email": "login@example.com",
-              "password": "Password1!",
-              "fullName": "Login User"
-            }
+        String upstreamBody = """
+            {"accessToken":"login-tok","expiresIn":900,
+             "userId":"00000000-0000-0000-0000-000000000001",
+             "email":"login@example.com","fullName":"Login User"}
             """;
-        mockMvc.perform(post("/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerBody))
-                .andExpect(status().isCreated());
+        HttpHeaders upstreamHeaders = new HttpHeaders();
+        upstreamHeaders.add(HttpHeaders.SET_COOKIE, "refreshToken=rt; HttpOnly; Path=/; SameSite=Lax");
+
+        given(authServiceRestTemplate.exchange(
+                contains("/auth/login"), eq(HttpMethod.POST), any(), eq(String.class)
+        )).willReturn(ResponseEntity.ok().headers(upstreamHeaders).body(upstreamBody));
 
         String loginBody = """
             {
@@ -131,7 +158,6 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
                         .content(loginBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").isNotEmpty())
-                // Refresh token is NOT in the body — delivered via Set-Cookie (httpOnly)
                 .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andExpect(header().exists("Set-Cookie"))
                 .andExpect(header().string("Set-Cookie", containsString("refreshToken=")))
@@ -140,42 +166,22 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("POST /auth/login returns 401 when password is wrong")
-    void login_shouldReturn401_whenPasswordWrong() throws Exception {
-        // Register first
-        String registerBody = """
-            {
-              "email": "wrongpass@example.com",
-              "password": "Password1!",
-              "fullName": "User"
-            }
+    @DisplayName("POST /auth/login forwards 401 from user-service when credentials invalid")
+    void login_shouldReturn401_whenInvalidCredentials() throws Exception {
+        String problemJson = """
+            {"type":"https://api.scopeflow.com/errors/invalid-credentials",
+             "title":"Invalid Credentials","status":401,"error_code":"AUTH-401"}
             """;
-        mockMvc.perform(post("/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerBody))
-                .andExpect(status().isCreated());
+
+        given(authServiceRestTemplate.exchange(
+                contains("/auth/login"), eq(HttpMethod.POST), any(), eq(String.class)
+        )).willThrow(HttpClientErrorException.create(
+                HttpStatus.UNAUTHORIZED, "Unauthorized", new HttpHeaders(), problemJson.getBytes(), null));
 
         String loginBody = """
             {
               "email": "wrongpass@example.com",
               "password": "WrongPass999!"
-            }
-            """;
-
-        mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginBody))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.title").value("Invalid Credentials"));
-    }
-
-    @Test
-    @DisplayName("POST /auth/login returns 401 when email not found")
-    void login_shouldReturn401_whenEmailNotFound() throws Exception {
-        String loginBody = """
-            {
-              "email": "notfound@example.com",
-              "password": "Password1!"
             }
             """;
 
@@ -195,29 +201,23 @@ class AuthIntegrationTest extends ScopeFlowIntegrationTestBase {
     }
 
     @Test
-    @DisplayName("GET /auth/me returns 200 with user info when authenticated")
+    @DisplayName("GET /auth/me proxies with Authorization header and returns user profile")
     void me_shouldReturn200_whenAuthenticated() throws Exception {
-        // Register and get token
-        String registerBody = """
-            {
-              "email": "metest@example.com",
-              "password": "Password1!",
-              "fullName": "Me User"
-            }
-            """;
+        // Create a real user + workspace to generate a valid JWT (auth filter validates locally)
+        var auth = setupAuthenticatedUser();
 
-        var result = mockMvc.perform(post("/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerBody))
-                .andExpect(status().isCreated())
-                .andReturn();
+        String upstreamBody = """
+            {"id":"%s","email":"%s","fullName":"Test User","status":"ACTIVE",
+             "createdAt":"2024-01-01T00:00:00Z"}
+            """.formatted(auth.userId(), TEST_USER_EMAIL);
 
-        String responseJson = result.getResponse().getContentAsString();
-        String accessToken = objectMapper.readTree(responseJson).get("accessToken").asText();
+        given(authServiceRestTemplate.exchange(
+                contains("/auth/me"), eq(HttpMethod.GET), any(), eq(String.class)
+        )).willReturn(ResponseEntity.ok(upstreamBody));
 
         mockMvc.perform(get("/auth/me")
-                        .header("Authorization", "Bearer " + accessToken))
+                        .header("Authorization", auth.authorizationHeader()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("metest@example.com"));
+                .andExpect(jsonPath("$.email").value(TEST_USER_EMAIL));
     }
 }

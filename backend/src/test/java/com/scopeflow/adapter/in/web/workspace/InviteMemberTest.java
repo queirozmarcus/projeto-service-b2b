@@ -5,7 +5,6 @@ import com.scopeflow.adapter.in.web.GlobalExceptionHandler;
 import com.scopeflow.adapter.in.web.workspace.dto.InviteMemberRequest;
 import com.scopeflow.config.TestSecurityConfig;
 import com.scopeflow.config.WithScopeFlowUser;
-import com.scopeflow.core.domain.user.*;
 import com.scopeflow.core.domain.workspace.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,15 +13,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.http.*;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
+import static com.scopeflow.core.domain.workspace.Role.MEMBER;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doThrow;
@@ -32,14 +31,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * Unit tests for C2: inviteMember real logic in WorkspaceControllerV2.
+ * Unit tests for inviteMember in WorkspaceControllerV2.
  *
- * Tests: invite new user (creates UserInactive), invite existing user (adds to workspace),
+ * Tests: invite new user (creates via user-service), invite existing user (lookup by email),
  * role enforcement, validation, duplicate member handling.
  */
 @WebMvcTest(WorkspaceControllerV2.class)
 @Import({GlobalExceptionHandler.class, TestSecurityConfig.class})
-@DisplayName("WorkspaceControllerV2 — inviteMember (C2)")
+@DisplayName("WorkspaceControllerV2 — inviteMember")
 class InviteMemberTest {
 
     @Autowired
@@ -52,33 +51,38 @@ class InviteMemberTest {
     private WorkspaceService workspaceService;
 
     @MockBean
-    private UserService userService;
-
-    @MockBean
-    private PasswordEncoder passwordEncoder;
+    private RestTemplate authServiceRestTemplate;
 
     private static final UUID WORKSPACE_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final UUID EXISTING_USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000099");
     private static final String INVITE_URL = "/workspaces/" + WORKSPACE_ID + "/members/invite";
 
-    // ============ C2: invite new user (not yet registered) ============
+    // ============ Invite new user (not yet registered) ============
 
     @Nested
     @DisplayName("Invite new user (not yet registered)")
     class InviteNewUserTests {
 
         @Test
-        @DisplayName("POST invite returns 201 when inviting new user — creates UserInactive")
+        @DisplayName("POST invite returns 201 when user does not exist — creates via user-service")
         @WithScopeFlowUser(role = "OWNER", workspaceId = "00000000-0000-0000-0000-000000000002")
         void shouldReturn201_whenInvitingNewUser() throws Exception {
-            // Given — user does NOT exist
-            given(userService.getUserByEmail(any(Email.class))).willReturn(Optional.empty());
-            given(passwordEncoder.encode(any())).willReturn("$2a$hashed");
-            // saveInvitedUser is void — no stub needed
-            // inviteMember is void — no stub needed
+            // GET /users/by-email → 404
+            given(authServiceRestTemplate.exchange(
+                    contains("/users/by-email/"), eq(HttpMethod.GET), any(), eq(String.class)
+            )).willThrow(HttpClientErrorException.create(
+                    HttpStatus.NOT_FOUND, "Not Found", new HttpHeaders(), "{}".getBytes(), null));
 
-            InviteMemberRequest request = new InviteMemberRequest("newuser@example.com", Role.MEMBER);
+            // POST /users/invited → 201 with new user id
+            String createdBody = """
+                    {"id":"%s","email":"newuser@example.com","status":"INACTIVE","fullName":"Newuser"}
+                    """.formatted(EXISTING_USER_ID);
+            given(authServiceRestTemplate.exchange(
+                    contains("/users/invited"), eq(HttpMethod.POST), any(), eq(String.class)
+            )).willReturn(ResponseEntity.status(HttpStatus.CREATED).body(createdBody));
 
-            // When / Then
+            InviteMemberRequest request = new InviteMemberRequest("newuser@example.com", MEMBER);
+
             mockMvc.perform(post(INVITE_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -88,46 +92,57 @@ class InviteMemberTest {
         }
 
         @Test
-        @DisplayName("POST invite calls saveInvitedUser when email is not registered")
+        @DisplayName("POST invite calls workspaceService.inviteMember with userId from user-service response")
         @WithScopeFlowUser(role = "OWNER", workspaceId = "00000000-0000-0000-0000-000000000002")
-        void shouldCallSaveInvitedUser_whenEmailNotRegistered() throws Exception {
-            // Given
-            given(userService.getUserByEmail(any(Email.class))).willReturn(Optional.empty());
-            given(passwordEncoder.encode(any())).willReturn("$2a$hashed");
+        void shouldCallInviteMember_withCorrectUserId() throws Exception {
+            // GET /users/by-email → 404
+            given(authServiceRestTemplate.exchange(
+                    contains("/users/by-email/"), eq(HttpMethod.GET), any(), eq(String.class)
+            )).willThrow(HttpClientErrorException.create(
+                    HttpStatus.NOT_FOUND, "Not Found", new HttpHeaders(), "{}".getBytes(), null));
 
-            InviteMemberRequest request = new InviteMemberRequest("fresh@example.com", Role.MEMBER);
+            // POST /users/invited → 201
+            String createdBody = """
+                    {"id":"%s","email":"fresh@example.com","status":"INACTIVE","fullName":"Fresh"}
+                    """.formatted(EXISTING_USER_ID);
+            given(authServiceRestTemplate.exchange(
+                    contains("/users/invited"), eq(HttpMethod.POST), any(), eq(String.class)
+            )).willReturn(ResponseEntity.status(HttpStatus.CREATED).body(createdBody));
+
+            InviteMemberRequest request = new InviteMemberRequest("fresh@example.com", MEMBER);
 
             mockMvc.perform(post(INVITE_URL)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)));
 
-            // Then — saveInvitedUser was called (new user was created)
-            then(userService).should().saveInvitedUser(any(UserInactive.class));
+            then(workspaceService).should().inviteMember(
+                    eq(new WorkspaceId(WORKSPACE_ID)),
+                    argThat(uid -> uid.value().equals(EXISTING_USER_ID)),
+                    eq(MEMBER)
+            );
         }
     }
+
+    // ============ Invite existing user ============
 
     @Nested
     @DisplayName("Invite existing user")
     class InviteExistingUserTests {
 
         @Test
-        @DisplayName("POST invite returns 201 when user already exists — skips user creation")
+        @DisplayName("POST invite returns 201 when user already exists in user-service")
         @WithScopeFlowUser(role = "OWNER", workspaceId = "00000000-0000-0000-0000-000000000002")
         void shouldReturn201_whenUserAlreadyExists() throws Exception {
-            // Given — user already registered
-            UUID existingUserId = UUID.randomUUID();
-            UserActive existingUser = new UserActive(
-                    new UserId(existingUserId),
-                    new Email("existing@example.com"),
-                    new PasswordHash("$2a$hash"),
-                    "Existing User", null,
-                    Instant.now(), Instant.now()
-            );
-            given(userService.getUserByEmail(any(Email.class))).willReturn(Optional.of(existingUser));
+            // GET /users/by-email → 200 with existing user
+            String existingBody = """
+                    {"id":"%s","email":"existing@example.com","status":"ACTIVE","fullName":"Existing"}
+                    """.formatted(EXISTING_USER_ID);
+            given(authServiceRestTemplate.exchange(
+                    contains("/users/by-email/"), eq(HttpMethod.GET), any(), eq(String.class)
+            )).willReturn(ResponseEntity.ok(existingBody));
 
             InviteMemberRequest request = new InviteMemberRequest("existing@example.com", Role.ADMIN);
 
-            // When / Then
             mockMvc.perform(post(INVITE_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -136,50 +151,47 @@ class InviteMemberTest {
         }
 
         @Test
-        @DisplayName("POST invite does NOT call saveInvitedUser when user already exists")
+        @DisplayName("POST invite does NOT call POST /users/invited when user already exists")
         @WithScopeFlowUser(role = "OWNER", workspaceId = "00000000-0000-0000-0000-000000000002")
-        void shouldNotCallSaveInvitedUser_whenUserExists() throws Exception {
-            // Given — user exists
-            UUID existingUserId = UUID.randomUUID();
-            UserActive existingUser = new UserActive(
-                    new UserId(existingUserId),
-                    new Email("existing@example.com"),
-                    new PasswordHash("$2a$hash"),
-                    "Existing User", null,
-                    Instant.now(), Instant.now()
-            );
-            given(userService.getUserByEmail(any(Email.class))).willReturn(Optional.of(existingUser));
+        void shouldNotCreateUser_whenUserExists() throws Exception {
+            String existingBody = """
+                    {"id":"%s","email":"existing@example.com","status":"ACTIVE","fullName":"Existing"}
+                    """.formatted(EXISTING_USER_ID);
+            given(authServiceRestTemplate.exchange(
+                    contains("/users/by-email/"), eq(HttpMethod.GET), any(), eq(String.class)
+            )).willReturn(ResponseEntity.ok(existingBody));
 
-            InviteMemberRequest request = new InviteMemberRequest("existing@example.com", Role.MEMBER);
+            InviteMemberRequest request = new InviteMemberRequest("existing@example.com", MEMBER);
 
             mockMvc.perform(post(INVITE_URL)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(request)));
 
-            // Then — saveInvitedUser was NOT called (existing user, no new user created)
-            then(userService).should(never()).saveInvitedUser(any());
+            // POST /users/invited must NEVER be called when user already exists
+            then(authServiceRestTemplate).should(never()).exchange(
+                    contains("/users/invited"), eq(HttpMethod.POST), any(), eq(String.class)
+            );
         }
     }
 
+    // ============ Role enforcement ============
+
     @Nested
-    @DisplayName("Role enforcement (C2)")
+    @DisplayName("Role enforcement")
     class RoleEnforcementTests {
 
         @Test
         @DisplayName("POST invite returns 403 when caller is MEMBER (not OWNER/ADMIN)")
         @WithScopeFlowUser(role = "MEMBER", workspaceId = "00000000-0000-0000-0000-000000000002")
         void shouldReturn403_whenCallerIsMember() throws Exception {
-            // Given — MEMBER role cannot invite
-            InviteMemberRequest request = new InviteMemberRequest("someone@example.com", Role.MEMBER);
+            InviteMemberRequest request = new InviteMemberRequest("someone@example.com", MEMBER);
 
-            // When / Then
             mockMvc.perform(post(INVITE_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isForbidden());
 
-            // No user lookup or workspace mutation should happen
-            verifyNoInteractions(userService);
+            verifyNoInteractions(authServiceRestTemplate);
             verifyNoInteractions(workspaceService);
         }
 
@@ -187,13 +199,15 @@ class InviteMemberTest {
         @DisplayName("POST invite returns 201 when caller is ADMIN (allowed to invite)")
         @WithScopeFlowUser(role = "ADMIN", workspaceId = "00000000-0000-0000-0000-000000000002")
         void shouldReturn201_whenCallerIsAdmin() throws Exception {
-            // Given
-            given(userService.getUserByEmail(any(Email.class))).willReturn(Optional.empty());
-            given(passwordEncoder.encode(any())).willReturn("$2a$hashed");
+            String existingBody = """
+                    {"id":"%s","email":"newteam@example.com","status":"ACTIVE","fullName":"Team"}
+                    """.formatted(EXISTING_USER_ID);
+            given(authServiceRestTemplate.exchange(
+                    contains("/users/by-email/"), eq(HttpMethod.GET), any(), eq(String.class)
+            )).willReturn(ResponseEntity.ok(existingBody));
 
-            InviteMemberRequest request = new InviteMemberRequest("newteam@example.com", Role.MEMBER);
+            InviteMemberRequest request = new InviteMemberRequest("newteam@example.com", MEMBER);
 
-            // When / Then
             mockMvc.perform(post(INVITE_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
@@ -201,65 +215,65 @@ class InviteMemberTest {
         }
     }
 
+    // ============ Validation ============
+
     @Nested
-    @DisplayName("Validation (C2)")
+    @DisplayName("Validation")
     class ValidationTests {
 
         @Test
-        @DisplayName("POST invite returns 400 when email is invalid format")
+        @DisplayName("POST invite returns 400 when email is invalid format (Bean Validation, no proxy)")
         @WithScopeFlowUser(role = "OWNER", workspaceId = "00000000-0000-0000-0000-000000000002")
         void shouldReturn400_whenEmailIsInvalidFormat() throws Exception {
-            // Given — invalid email
             String invalidBody = "{\"email\": \"not-an-email\", \"role\": \"MEMBER\"}";
 
-            // When / Then
             mockMvc.perform(post(INVITE_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(invalidBody))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.type")
                             .value("https://api.scopeflow.com/errors/validation-error"));
+
+            verifyNoInteractions(authServiceRestTemplate);
         }
 
         @Test
-        @DisplayName("POST invite returns 400 when email is missing")
+        @DisplayName("POST invite returns 400 when email is missing (Bean Validation, no proxy)")
         @WithScopeFlowUser(role = "OWNER", workspaceId = "00000000-0000-0000-0000-000000000002")
         void shouldReturn400_whenEmailIsMissing() throws Exception {
-            // Given
             String invalidBody = "{\"role\": \"MEMBER\"}";
 
-            // When / Then
             mockMvc.perform(post(INVITE_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(invalidBody))
                     .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(authServiceRestTemplate);
         }
     }
 
+    // ============ Duplicate member ============
+
     @Nested
-    @DisplayName("Duplicate member (C2)")
+    @DisplayName("Duplicate member")
     class DuplicateMemberTests {
 
         @Test
         @DisplayName("POST invite returns 409 when member already belongs to workspace")
         @WithScopeFlowUser(role = "OWNER", workspaceId = "00000000-0000-0000-0000-000000000002")
         void shouldReturn409_whenMemberAlreadyInWorkspace() throws Exception {
-            // Given — user exists
-            UUID existingUserId = UUID.randomUUID();
-            UserActive existingUser = new UserActive(
-                    new UserId(existingUserId),
-                    new Email("duplicate@example.com"),
-                    new PasswordHash("$2a$hash"),
-                    "Dup User", null,
-                    Instant.now(), Instant.now()
-            );
-            given(userService.getUserByEmail(any(Email.class))).willReturn(Optional.of(existingUser));
+            String existingBody = """
+                    {"id":"%s","email":"duplicate@example.com","status":"ACTIVE","fullName":"Dup"}
+                    """.formatted(EXISTING_USER_ID);
+            given(authServiceRestTemplate.exchange(
+                    contains("/users/by-email/"), eq(HttpMethod.GET), any(), eq(String.class)
+            )).willReturn(ResponseEntity.ok(existingBody));
+
             doThrow(new MemberAlreadyExistsException("User already a member of this workspace"))
                     .when(workspaceService).inviteMember(any(), any(), any());
 
-            InviteMemberRequest request = new InviteMemberRequest("duplicate@example.com", Role.MEMBER);
+            InviteMemberRequest request = new InviteMemberRequest("duplicate@example.com", MEMBER);
 
-            // When / Then
             mockMvc.perform(post(INVITE_URL)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))

@@ -8,10 +8,10 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 
 /**
- * Configuration for proxying auth requests to the extracted user-service.
+ * Configuration for proxying auth and user requests to user-service.
  *
- * Used only when auth.service.use-extracted=true (Strangler Fig pattern).
  * RestTemplate configured with timeouts to prevent cascading failures.
+ * Connect timeout: 5s. Read timeout: 30s (user-service cold start can take 20s+).
  */
 @Configuration
 public class AuthServiceProxyConfig {

@@ -4,7 +4,6 @@ import java.time.Instant;
 
 /**
  * Domain event: User registered (created a new account).
- * Published when UserActive is created via UserService.registerUser().
  *
  * Immutable record for event sourcing.
  */
