@@ -2,43 +2,32 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-
-export interface Proposal {
-  id: string;
-  clientName: string;
-  serviceType: string;
-  status: 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED';
-  createdAt: string;
-}
+import type { Proposal, ProposalStatus } from '@/types/proposal';
+import useDashboardStore from '@/stores/useDashboardStore';
 
 interface ProposalListProps {
   proposals?: Proposal[];
   isLoading?: boolean;
-  onDelete?: (id: string) => Promise<void>;
 }
+
+const statusConfig: Record<ProposalStatus, { label: string; color: string }> = {
+  DRAFT:     { label: 'Rascunho',  color: 'bg-secondary-100 text-secondary-800' },
+  PUBLISHED: { label: 'Publicado', color: 'bg-blue-100 text-blue-800' },
+  APPROVED:  { label: 'Aprovado',  color: 'bg-green-100 text-green-800' },
+  REJECTED:  { label: 'Rejeitado', color: 'bg-red-100 text-red-800' },
+};
 
 export function ProposalList({
   proposals = [],
   isLoading = false,
-  onDelete,
 }: ProposalListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const statusConfig = {
-    DRAFT: { label: 'Rascunho', color: 'bg-secondary-100 text-secondary-800' },
-    SENT: { label: 'Enviado', color: 'bg-blue-100 text-blue-800' },
-    APPROVED: {
-      label: 'Aprovado',
-      color: 'bg-green-100 text-green-800',
-    },
-    REJECTED: { label: 'Rejeitado', color: 'bg-red-100 text-red-800' },
-  };
+  const deleteProposal = useDashboardStore((s) => s.deleteProposal);
 
   const handleDelete = async (id: string) => {
-    if (!onDelete) return;
     setDeletingId(id);
     try {
-      await onDelete(id);
+      await deleteProposal(id);
     } finally {
       setDeletingId(null);
     }
@@ -69,7 +58,7 @@ export function ProposalList({
     return (
       <div className="rounded-xl border border-secondary-200 bg-surface p-12 text-center">
         <p className="text-secondary-600">
-          Nenhuma proposta criada. Começe criando sua primeira!
+          Nenhuma proposta criada. Comece criando sua primeira!
         </p>
         <Link
           href="/dashboard/proposals/new"
@@ -85,9 +74,7 @@ export function ProposalList({
     <div className="space-y-3">
       {proposals.map((proposal) => {
         const config = statusConfig[proposal.status];
-        const formattedDate = new Date(proposal.createdAt).toLocaleDateString(
-          'pt-BR'
-        );
+        const formattedDate = new Date(proposal.createdAt).toLocaleDateString('pt-BR');
 
         return (
           <div
@@ -96,11 +83,10 @@ export function ProposalList({
           >
             <div className="flex-1">
               <h3 className="font-semibold text-secondary-900">
-                {proposal.clientName}
+                {proposal.proposalName}
               </h3>
-              <div className="mt-1 flex flex-col gap-1 text-sm text-secondary-600 sm:flex-row sm:gap-4">
-                <span>{proposal.serviceType}</span>
-                <span className="text-secondary-500">{formattedDate}</span>
+              <div className="mt-1 flex flex-col gap-1 text-sm text-secondary-500 sm:flex-row sm:gap-4">
+                <span>{formattedDate}</span>
               </div>
             </div>
 

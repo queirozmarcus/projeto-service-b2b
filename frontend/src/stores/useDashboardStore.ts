@@ -1,21 +1,25 @@
 import { create } from 'zustand';
-import type { Proposal } from '@/components/dashboard/ProposalList';
+import { proposalApi } from '@/lib/proposalApi';
+import type { Proposal, ProposalStatus, ListProposalsParams } from '@/types/proposal';
 
 export interface DashboardState {
   proposals: Proposal[];
-  statusFilter: 'ALL' | 'DRAFT' | 'SENT' | 'APPROVED' | 'REJECTED';
+  statusFilter: 'ALL' | ProposalStatus;
   sortBy: 'date' | 'status' | 'client';
   isLoading: boolean;
-  error: string | null;
+  fetchError: string | null;
 
   setProposals: (proposals: Proposal[]) => void;
   setStatusFilter: (filter: DashboardState['statusFilter']) => void;
   setSortBy: (sortBy: DashboardState['sortBy']) => void;
   setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
+  setFetchError: (error: string | null) => void;
   addProposal: (proposal: Proposal) => void;
   removeProposal: (id: string) => void;
-  updateProposal: (id: string, proposal: Partial<Proposal>) => void;
+  updateProposal: (id: string, updates: Partial<Proposal>) => void;
+
+  fetchProposals: (params?: ListProposalsParams) => Promise<void>;
+  deleteProposal: (id: string) => Promise<void>;
 
   getFilteredProposals: () => Proposal[];
 }
@@ -25,10 +29,10 @@ const useDashboardStore = create<DashboardState>((set, get) => ({
   statusFilter: 'ALL',
   sortBy: 'date',
   isLoading: false,
-  error: null,
+  fetchError: null,
 
   setProposals: (proposals: Proposal[]) =>
-    set({ proposals, error: null }),
+    set({ proposals, fetchError: null }),
 
   setStatusFilter: (statusFilter: DashboardState['statusFilter']) =>
     set({ statusFilter }),
@@ -37,7 +41,7 @@ const useDashboardStore = create<DashboardState>((set, get) => ({
 
   setLoading: (isLoading: boolean) => set({ isLoading }),
 
-  setError: (error: string | null) => set({ error }),
+  setFetchError: (fetchError: string | null) => set({ fetchError }),
 
   addProposal: (proposal: Proposal) =>
     set((state) => ({
@@ -56,6 +60,32 @@ const useDashboardStore = create<DashboardState>((set, get) => ({
       ),
     })),
 
+  fetchProposals: async (params?: ListProposalsParams) => {
+    const { setLoading, setProposals, setFetchError } = get();
+    setLoading(true);
+    try {
+      const page = await proposalApi.list(params);
+      setProposals(page.content);
+      setFetchError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao carregar propostas.';
+      setFetchError(message);
+    } finally {
+      setLoading(false);
+    }
+  },
+
+  deleteProposal: async (id: string) => {
+    const { removeProposal, setFetchError } = get();
+    try {
+      await proposalApi.remove(id);
+      removeProposal(id);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Erro ao deletar proposta.';
+      setFetchError(message);
+    }
+  },
+
   getFilteredProposals: () => {
     const state = get();
     let filtered = state.proposals;
@@ -64,11 +94,10 @@ const useDashboardStore = create<DashboardState>((set, get) => ({
       filtered = filtered.filter((p) => p.status === state.statusFilter);
     }
 
-    // Sort proposals
-    filtered.sort((a, b) => {
+    filtered = [...filtered].sort((a, b) => {
       switch (state.sortBy) {
         case 'client':
-          return a.clientName.localeCompare(b.clientName);
+          return a.proposalName.localeCompare(b.proposalName);
         case 'status':
           return a.status.localeCompare(b.status);
         case 'date':

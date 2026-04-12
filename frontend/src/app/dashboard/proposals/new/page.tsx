@@ -5,7 +5,19 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeftIcon, DocumentPlusIcon } from '@heroicons/react/24/outline';
 import useDashboardStore from '@/stores/useDashboardStore';
-import type { Proposal } from '@/components/dashboard/ProposalList';
+// TODO(Sprint 5): substituir por CreateProposalPayload e chamada real à API.
+// Tipo local temporário — será removido quando o formulário chamar proposalApi.create().
+type LocalDraftProposal = {
+  id: string;
+  proposalName: string;
+  clientId: string;
+  briefingId: string;
+  status: 'DRAFT';
+  createdAt: string;
+  workspaceId: string;
+  updatedAt: string;
+  scope: null;
+};
 
 const SERVICE_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'SOCIAL_MEDIA', label: 'Social Media Management' },
@@ -36,15 +48,21 @@ export default function NewProposalPage() {
     e.preventDefault();
     if (!validate()) return;
 
-    const proposal: Proposal = {
+    // TODO(Sprint 5): construir CreateProposalPayload e chamar proposalApi.create()
+    const proposal: LocalDraftProposal = {
       id: crypto.randomUUID(),
-      clientName: clientName.trim(),
-      serviceType,
+      proposalName: clientName.trim(),
+      clientId: '',
+      briefingId: '',
+      workspaceId: '',
       status: 'DRAFT',
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      scope: null,
     };
 
-    useDashboardStore.getState().addProposal(proposal);
+    // cast necessário até Sprint 5 reimplementar com chamada real à API
+    useDashboardStore.getState().addProposal(proposal as import('@/types/proposal').Proposal);
     router.push('/dashboard');
   }
 

@@ -3,15 +3,16 @@
 import Link from 'next/link';
 import { ChevronLeftIcon } from '@heroicons/react/20/solid';
 import useDashboardStore from '@/stores/useDashboardStore';
+import type { ProposalStatus } from '@/types/proposal';
 
-const statusConfig = {
+const statusConfig: Record<ProposalStatus, { label: string; classes: string; dot: string }> = {
   DRAFT: {
     label: 'Rascunho',
     classes: 'bg-secondary-100 text-secondary-700',
     dot: 'bg-secondary-400',
   },
-  SENT: {
-    label: 'Enviado',
+  PUBLISHED: {
+    label: 'Publicado',
     classes: 'bg-primary-50 text-primary-700',
     dot: 'bg-primary-500',
   },
@@ -25,15 +26,6 @@ const statusConfig = {
     classes: 'bg-red-50 text-red-700',
     dot: 'bg-red-500',
   },
-};
-
-const SERVICE_TYPE_LABELS: Record<string, string> = {
-  SOCIAL_MEDIA: 'Social Media Management',
-  LANDING_PAGE: 'Landing Page Design',
-  WEB_DESIGN: 'Web Design',
-  BRANDING: 'Branding',
-  VIDEO_PRODUCTION: 'Video Production',
-  CONSULTING: 'Consulting',
 };
 
 interface DetailCardProps {
@@ -83,12 +75,11 @@ export default function ProposalDetailPage({
   }
 
   const config = statusConfig[proposal.status];
-  const serviceLabel =
-    SERVICE_TYPE_LABELS[proposal.serviceType] ?? proposal.serviceType;
-  const formattedDate = new Date(proposal.createdAt).toLocaleDateString(
-    'pt-BR',
-    { day: '2-digit', month: 'long', year: 'numeric' }
-  );
+  const formattedDate = new Date(proposal.createdAt).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8 space-y-8">
@@ -104,7 +95,7 @@ export default function ProposalDetailPage({
         <span>Propostas</span>
         <span>/</span>
         <span className="truncate font-medium text-ink-900">
-          {proposal.clientName}
+          {proposal.proposalName}
         </span>
       </nav>
 
@@ -112,7 +103,7 @@ export default function ProposalDetailPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <h1 className="font-display text-3xl font-bold text-ink-900">
-            {proposal.clientName}
+            {proposal.proposalName}
           </h1>
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${config.classes}`}
@@ -133,8 +124,8 @@ export default function ProposalDetailPage({
 
       {/* Detail cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <DetailCard label="Tipo de Serviço">
-          <p className="text-sm font-semibold text-ink-900">{serviceLabel}</p>
+        <DetailCard label="Nome da Proposta">
+          <p className="text-sm font-semibold text-ink-900">{proposal.proposalName}</p>
         </DetailCard>
 
         <DetailCard label="Status">
@@ -172,7 +163,7 @@ export default function ProposalDetailPage({
               href="#"
               className="inline-flex items-center gap-2 rounded-xl bg-primary-500 px-5 py-2.5 text-sm font-semibold text-ink-900 shadow-sm transition-colors hover:bg-primary-400"
             >
-              Enviar ao Cliente
+              Publicar Proposta
             </Link>
           </div>
         </div>

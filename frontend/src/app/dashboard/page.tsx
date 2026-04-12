@@ -11,89 +11,20 @@ import {
 } from '@/components/dashboard';
 import { DocumentPlusIcon } from '@heroicons/react/24/outline';
 
-const mockProposals = [
-  {
-    id: 'p1',
-    clientName: 'Acme Corp',
-    serviceType: 'Social Media',
-    status: 'APPROVED' as const,
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'p2',
-    clientName: 'XYZ Design',
-    serviceType: 'Landing Page',
-    status: 'DRAFT' as const,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'p3',
-    clientName: 'Tech Startup',
-    serviceType: 'Branding',
-    status: 'SENT' as const,
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-];
-
-const mockStats = [
-  {
-    id: 'active',
-    label: 'Propostas Ativas',
-    value: 5,
-    trend: '+2',
-    trendDirection: 'up' as const,
-  },
-  {
-    id: 'completed',
-    label: 'Briefings Completos',
-    value: 8,
-    trend: '+3',
-    trendDirection: 'up' as const,
-  },
-  {
-    id: 'approval',
-    label: 'Taxa de Aprovação',
-    value: '87%',
-    trend: '+5%',
-    trendDirection: 'up' as const,
-  },
-  {
-    id: 'clients',
-    label: 'Novos Clientes',
-    value: 3,
-    trend: '+1',
-    trendDirection: 'neutral' as const,
-  },
-];
-
-const mockActivities = [
-  {
-    id: 'a1',
-    type: 'approved' as const,
-    description: 'Proposta de Acme Corp aprovada',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'a2',
-    type: 'sent' as const,
-    description: 'Proposta enviada para Tech Startup',
-    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'a3',
-    type: 'created' as const,
-    description: 'Nova proposta criada para XYZ Design',
-    timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
-  },
+const placeholderStats = [
+  { id: 'active',    label: 'Propostas Ativas',   value: '—', trend: '', trendDirection: 'neutral' as const },
+  { id: 'completed', label: 'Briefings Completos', value: '—', trend: '', trendDirection: 'neutral' as const },
+  { id: 'approval',  label: 'Taxa de Aprovação',   value: '—', trend: '', trendDirection: 'neutral' as const },
+  { id: 'clients',   label: 'Novos Clientes',      value: '—', trend: '', trendDirection: 'neutral' as const },
 ];
 
 export default function DashboardPage() {
   const { user } = useSessionStore();
-  const { setProposals, isLoading } = useDashboardStore();
+  const { isLoading, fetchProposals, getFilteredProposals } = useDashboardStore();
 
   useEffect(() => {
-    setProposals(mockProposals);
-  }, [setProposals]);
+    fetchProposals();
+  }, [fetchProposals]);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -101,6 +32,8 @@ export default function DashboardPage() {
     if (hour < 18) return 'Boa tarde';
     return 'Boa noite';
   };
+
+  const recentProposals = getFilteredProposals();
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -128,7 +61,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ── Stats ──────────────────────────────────────────────── */}
-        <StatsGrid stats={mockStats} isLoading={isLoading} />
+        <StatsGrid stats={placeholderStats} isLoading={isLoading} />
 
         {/* ── Quick Actions (secondary, below stats) ─────────────── */}
         <div>
@@ -144,14 +77,14 @@ export default function DashboardPage() {
             <h2 className="mb-5 font-display text-xl font-black text-ink-900">
               Propostas Recentes
             </h2>
-            <ProposalList proposals={mockProposals} isLoading={isLoading} />
+            <ProposalList proposals={recentProposals} isLoading={isLoading} />
           </div>
 
           <div>
             <h2 className="mb-5 font-display text-xl font-black text-ink-900">
               Atividade Recente
             </h2>
-            <RecentActivity activities={mockActivities} isLoading={isLoading} />
+            <RecentActivity activities={[]} isLoading={isLoading} />
           </div>
         </div>
       </div>

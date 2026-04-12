@@ -9,15 +9,15 @@ import type { DashboardState } from '@/stores/useDashboardStore';
 type StatusFilter = DashboardState['statusFilter'];
 
 const FILTER_OPTIONS: { label: string; value: StatusFilter }[] = [
-  { label: 'Todos', value: 'ALL' },
-  { label: 'Rascunho', value: 'DRAFT' },
-  { label: 'Enviado', value: 'SENT' },
-  { label: 'Aprovado', value: 'APPROVED' },
+  { label: 'Todos',     value: 'ALL' },
+  { label: 'Rascunho',  value: 'DRAFT' },
+  { label: 'Publicado', value: 'PUBLISHED' },
+  { label: 'Aprovado',  value: 'APPROVED' },
   { label: 'Rejeitado', value: 'REJECTED' },
 ];
 
 export default function ProposalsPage() {
-  const { statusFilter, isLoading, setStatusFilter, removeProposal, getFilteredProposals } =
+  const { statusFilter, isLoading, setStatusFilter, getFilteredProposals } =
     useDashboardStore();
 
   const filtered = getFilteredProposals();
@@ -60,11 +60,7 @@ export default function ProposalsPage() {
       </div>
 
       {/* Proposal list */}
-      <ProposalList
-        proposals={filtered}
-        isLoading={isLoading}
-        onDelete={async (id) => removeProposal(id)}
-      />
+      <ProposalList proposals={filtered} isLoading={isLoading} />
     </div>
   );
 }
