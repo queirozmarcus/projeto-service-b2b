@@ -1,23 +1,23 @@
 # values-prod.yaml — overrides para ambiente de produção
 # Aplicar sobre values.yaml:
-#   helm upgrade --install scopeflow-api ./k8s/helm/scopeflow-api \
-#     -f k8s/helm/scopeflow-api/values-prod.yaml \
+#   helm upgrade --install user-service ./k8s/helm/user-service \
+#     -f k8s/helm/user-service/values-prod.yaml \
 #     --set image.tag=$RELEASE_TAG \
 #     --namespace production
 
 replicaCount: 3
 
 image:
-  repository: scopeflow/scopeflow-api
+  repository: scopeflow/user-service
   pullPolicy: IfNotPresent
 
 resources:
   requests:
-    cpu: 500m
+    cpu: 250m
     memory: 512Mi
   limits:
-    cpu: 2000m
-    memory: 2Gi
+    cpu: 1000m
+    memory: 1Gi
 
 hpa:
   minReplicas: 3
@@ -29,5 +29,4 @@ pdb:
 
 config:
   springProfilesActive: "production"
-  authServiceExtracted: "false"
-  authServiceUrl: "http://user-service:8081/api/v1"
+  flywayEnabled: "false"

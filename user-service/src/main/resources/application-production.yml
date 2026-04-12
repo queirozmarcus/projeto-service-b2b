@@ -1,0 +1,33 @@
+# ============================================================
+# Production profile — ScopeFlow user-service
+#
+# Flyway DESABILITADO: banco de dados é compartilhado com o monólito.
+# O monólito é o único owner das migrations (Flyway roda apenas lá).
+# Habilitar Flyway aqui causaria conflito de versão no schema compartilhado.
+#
+# Para ativar: SPRING_PROFILES_ACTIVE=production
+# Porta padrão 8081, sobrescrita via SERVER_PORT env var no K8s se necessário.
+# ============================================================
+
+server:
+  port: ${SERVER_PORT:8081}
+
+# Flyway DESABILITADO — banco compartilhado, monólito gerencia todas as migrations
+spring:
+  flyway:
+    enabled: false
+
+# Cookies HTTPS obrigatório em produção
+app:
+  cookie:
+    secure: true
+  requires-https: true
+
+# Logs produção — INFO por padrão, sem DEBUG
+logging:
+  level:
+    root: INFO
+    com.scopeflow.user: INFO
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN

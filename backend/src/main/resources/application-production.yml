@@ -1,0 +1,32 @@
+# ============================================================
+# Production profile — ScopeFlow monolith
+#
+# Diferenças em relação ao application-staging.yml:
+#   - Cookies com secure=true obrigatório (produção é HTTPS)
+#   - app.requires-https=true para forçar redirect HTTP → HTTPS
+#   - Logs reduzidos: Security e Web em WARN (menos ruído em prod)
+#
+# Para ativar: SPRING_PROFILES_ACTIVE=production
+# Para rollback imediato sem redeploy: AUTH_SERVICE_EXTRACTED=false
+#   (env var definida no K8s/ECS sobrescreve o valor abaixo)
+# ============================================================
+
+# Strangler Fig: Cut-over para user-service em PRODUÇÃO
+auth:
+  service:
+    use-extracted: true
+    url: ${AUTH_SERVICE_URL:http://user-service:8081/api/v1}
+
+# Cookies HTTPS obrigatório em produção
+app:
+  cookie:
+    secure: true
+  requires-https: true
+
+# Logs produção — INFO por padrão, sem DEBUG
+logging:
+  level:
+    root: INFO
+    com.scopeflow: INFO
+    org.springframework.security: WARN
+    org.springframework.web: WARN

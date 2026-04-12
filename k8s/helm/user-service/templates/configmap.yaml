@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "scopeflow-api.fullname" . }}-config
+  name: {{ include "user-service.fullname" . }}-config
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "scopeflow-api.labels" . | nindent 4 }}
+    {{- include "user-service.labels" . | nindent 4 }}
 data:
   # Perfil Spring ativo — determina qual application-{profile}.yml carregar
   SPRING_PROFILES_ACTIVE: {{ .Values.config.springProfilesActive | quote }}
@@ -16,7 +16,7 @@ data:
   # Substitui Tomcat thread pool por virtual threads gerenciadas pela JVM
   SPRING_THREADS_VIRTUAL_ENABLED: {{ .Values.config.springThreadsVirtualEnabled | quote }}
 
-  # Graceful shutdown: cada fase (web, messaging) tem este tempo para drenar conexões
+  # Graceful shutdown: cada fase (web) tem este tempo para drenar conexões
   # antes que o container seja encerrado. Deve ser < terminationGracePeriodSeconds.
   SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE: {{ .Values.config.springLifecycleTimeoutPerShutdownPhase | quote }}
 
@@ -29,10 +29,6 @@ data:
   # Detalhes de health: only para usuários autorizados (evita vazamento de info em produção)
   MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: {{ .Values.config.managementEndpointHealthShowDetails | quote }}
 
-  # Strangler Fig: habilita proxy do monólito para o user-service
-  # false = monólito resolve auth internamente (padrão e rollback seguro)
-  # true  = monólito proxia /auth/* e /users/* para AUTH_SERVICE_URL
-  AUTH_SERVICE_EXTRACTED: {{ .Values.config.authServiceExtracted | quote }}
-
-  # URL base do user-service (usado quando AUTH_SERVICE_EXTRACTED=true)
-  AUTH_SERVICE_URL: {{ .Values.config.authServiceUrl | quote }}
+  # Flyway desabilitado: banco compartilhado — monólito gerencia todas as migrations.
+  # O user-service NUNCA deve rodar migrations durante o Strangler Fig.
+  FLYWAY_ENABLED: {{ .Values.config.flywayEnabled | quote }}
