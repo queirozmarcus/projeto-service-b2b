@@ -553,18 +553,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * Thrown when Resilience4j rejects the call because the circuit is OPEN.
      * Distinct from ServiceUnavailableException: the circuit itself blocked the call
      * without ever reaching the remote service.
+     *
+     * Covers all named circuit breakers: user-service, ses, openai, s3, etc.
      */
     @ExceptionHandler(CallNotPermittedException.class)
     public ResponseEntity<ProblemDetail> handleCircuitBreakerOpen(
             CallNotPermittedException ex,
             WebRequest request
     ) {
+        String circuitName = ex.getCausingCircuitBreakerName();
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
         problemDetail.setType(URI.create(PROBLEM_BASE_URL + "circuit-breaker-open"));
         problemDetail.setTitle("Service Temporarily Unavailable");
-        problemDetail.setDetail("user-service is temporarily unavailable. Please try again in a few moments.");
+        problemDetail.setDetail("'" + circuitName + "' is temporarily unavailable. Please try again in a few moments.");
         problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
-        addCustomProperties(problemDetail, "USER-012");
+        addCustomProperties(problemDetail, "SVC-503");
 
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)

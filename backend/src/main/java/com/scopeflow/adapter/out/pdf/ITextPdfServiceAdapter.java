@@ -14,6 +14,21 @@ import org.springframework.stereotype.Component;
  * Scheduled for Phase 4 (after Sprint 5 authentication is stable).
  *
  * For now: returns mock presigned URLs for testing approval flow.
+ *
+ * TODO (Phase 4 — S3 integration):
+ * When this adapter starts uploading PDFs to S3 via AWS SDK, add:
+ * - @CircuitBreaker(name = "s3", fallbackMethod = "{method}Fallback")
+ * - Fallback throwing ServiceUnavailableException("s3", ex)
+ * - resilience4j.circuitbreaker.instances.s3 config in application.yml
+ *   (suggested: slidingWindowSize=10, failureRateThreshold=50, waitDurationInOpenState=30s)
+ *
+ * TODO (Phase 4 — OpenAI integration):
+ * When OpenAIAssistantAdapter is implemented (AIAssistantPort), add:
+ * - @CircuitBreaker(name = "openai", fallbackMethod = "{method}Fallback")
+ * - @Retry(name = "openai") for transient network errors
+ * - Fallback throwing ServiceUnavailableException("openai", ex)
+ * - resilience4j.circuitbreaker.instances.openai config in application.yml
+ *   (suggested: slidingWindowSize=10, failureRateThreshold=50, waitDurationInOpenState=60s — AI has higher latency)
  */
 @Component
 public class ITextPdfServiceAdapter implements PdfService {

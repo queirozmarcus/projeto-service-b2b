@@ -141,7 +141,7 @@ aws:
   access-key-id: ${AWS_ACCESS_KEY_ID:}
   secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
 
-# Resilience4j: circuit breaker + retry para chamadas ao user-service
+# Resilience4j: circuit breaker + retry para chamadas a serviços externos
 resilience4j:
   circuitbreaker:
     instances:
@@ -151,6 +151,27 @@ resilience4j:
         waitDurationInOpenState: 30s
         permittedNumberOfCallsInHalfOpenState: 3
         registerHealthIndicator: true
+      ses:
+        # AWS SES: janela menor (emails são fire-and-forget, falhas costumam ser quota/auth)
+        slidingWindowSize: 5
+        failureRateThreshold: 60
+        waitDurationInOpenState: 30s
+        permittedNumberOfCallsInHalfOpenState: 2
+        registerHealthIndicator: true
+      # TODO (Phase 4 — quando OpenAIAssistantAdapter for implementado):
+      # openai:
+      #   slidingWindowSize: 10
+      #   failureRateThreshold: 50
+      #   waitDurationInOpenState: 60s   # AI tem latência alta, aguardar mais antes de tentar half-open
+      #   permittedNumberOfCallsInHalfOpenState: 2
+      #   registerHealthIndicator: true
+      # TODO (Phase 4 — quando ITextPdfServiceAdapter integrar S3):
+      # s3:
+      #   slidingWindowSize: 10
+      #   failureRateThreshold: 50
+      #   waitDurationInOpenState: 30s
+      #   permittedNumberOfCallsInHalfOpenState: 3
+      #   registerHealthIndicator: true
   retry:
     instances:
       user-service:

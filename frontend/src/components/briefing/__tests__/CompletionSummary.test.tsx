@@ -57,7 +57,7 @@ const exactBorderResult: CompletionResult = {
   message: 'Briefing completed successfully! Good job.',
 };
 
-const SESSION_ID = 'session-test-uuid-abc123';
+const PROPOSAL_ID = 'session-test-uuid-abc123';
 
 // ---------------------------------------------------------------------------
 // Suite
@@ -74,32 +74,32 @@ describe('CompletionSummary', () => {
   // -------------------------------------------------------------------------
 
   it('should always display the "Briefing Completed!" heading', () => {
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByRole('heading', { level: 1, name: 'Briefing Completed!' })).toBeInTheDocument();
   });
 
   it('should display the completeness score as a percentage', () => {
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     // Score como texto: "95%" (ver CompletionSummary.tsx)
     expect(screen.getByText('95%')).toBeInTheDocument();
   });
 
   it('should display the message returned by the backend', () => {
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByText(highScoreResult.message)).toBeInTheDocument();
   });
 
   it('should display the thank-you paragraph about proposal preparation', () => {
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByText(/thank you for taking the time/i)).toBeInTheDocument();
   });
 
   it('should display "Completeness Score" label above the percentage', () => {
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByText(/completeness score/i)).toBeInTheDocument();
   });
@@ -109,19 +109,19 @@ describe('CompletionSummary', () => {
   // -------------------------------------------------------------------------
 
   it('should display score in green color class for score >= 80%', () => {
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByText('95%')).toHaveClass('text-green-600');
   });
 
   it('should display score in green color class at exact 80% boundary', () => {
-    render(<CompletionSummary completionResult={exactBorderResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={exactBorderResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByText('80%')).toHaveClass('text-green-600');
   });
 
   it('should display celebration emoji for score >= 80%', () => {
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     // role="img" com aria-label="Celebration" — ver CompletionSummary.tsx
     expect(screen.getByRole('img', { name: 'Celebration' })).toBeInTheDocument();
@@ -132,25 +132,25 @@ describe('CompletionSummary', () => {
   // -------------------------------------------------------------------------
 
   it('should display low score (60%) in orange color class', () => {
-    render(<CompletionSummary completionResult={lowScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={lowScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByText('60%')).toHaveClass('text-orange-500');
   });
 
   it('should display thumbs-up emoji for score < 80%', () => {
-    render(<CompletionSummary completionResult={lowScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={lowScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByRole('img', { name: 'Thumbs up' })).toBeInTheDocument();
   });
 
   it('should display the low score message from backend', () => {
-    render(<CompletionSummary completionResult={lowScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={lowScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByText(/low score/i)).toBeInTheDocument();
   });
 
   it('should NOT show celebration emoji for low score', () => {
-    render(<CompletionSummary completionResult={lowScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={lowScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.queryByRole('img', { name: 'Celebration' })).not.toBeInTheDocument();
   });
@@ -161,14 +161,14 @@ describe('CompletionSummary', () => {
 
   it('should show "we will reach out" message for unauthenticated user', () => {
     mockSession(false);
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.getByText(/we.ll reach out shortly/i)).toBeInTheDocument();
   });
 
   it('should NOT show dashboard link for unauthenticated user', () => {
     mockSession(false);
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(
       screen.queryByRole('link', { name: /review proposal in dashboard/i }),
@@ -181,7 +181,7 @@ describe('CompletionSummary', () => {
 
   it('should show dashboard link for authenticated user', () => {
     mockSession(true);
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     const link = screen.getByRole('link', { name: /review proposal in dashboard/i });
     expect(link).toBeInTheDocument();
@@ -189,24 +189,24 @@ describe('CompletionSummary', () => {
 
   it('should link to correct proposal URL using sessionId', () => {
     mockSession(true);
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     const link = screen.getByRole('link', { name: /review proposal in dashboard/i });
-    expect(link).toHaveAttribute('href', `/dashboard/proposals/${SESSION_ID}`);
+    expect(link).toHaveAttribute('href', `/dashboard/proposals/${PROPOSAL_ID}`);
   });
 
   it('should NOT show "we will reach out" for authenticated user', () => {
     mockSession(true);
-    render(<CompletionSummary completionResult={highScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={highScoreResult} proposalId={PROPOSAL_ID} />);
 
     expect(screen.queryByText(/we.ll reach out shortly/i)).not.toBeInTheDocument();
   });
 
   it('should show dashboard link even for low score when authenticated', () => {
     mockSession(true);
-    render(<CompletionSummary completionResult={lowScoreResult} sessionId={SESSION_ID} />);
+    render(<CompletionSummary completionResult={lowScoreResult} proposalId={PROPOSAL_ID} />);
 
     const link = screen.getByRole('link', { name: /review proposal in dashboard/i });
-    expect(link).toHaveAttribute('href', `/dashboard/proposals/${SESSION_ID}`);
+    expect(link).toHaveAttribute('href', `/dashboard/proposals/${PROPOSAL_ID}`);
   });
 });

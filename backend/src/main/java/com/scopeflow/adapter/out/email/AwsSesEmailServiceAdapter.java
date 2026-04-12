@@ -2,6 +2,8 @@ package com.scopeflow.adapter.out.email;
 
 import com.scopeflow.application.port.out.EmailService;
 import com.scopeflow.application.port.out.EmailException;
+import com.scopeflow.core.domain.user.ServiceUnavailableException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,13 @@ import software.amazon.awssdk.services.sesv2.model.SendEmailResponse;
  * - Network failure: IOException (listener retries)
  * - Template error: TemplateRenderingException (log, fallback to plain text)
  *
+ * Circuit Breaker "ses":
+ * - Opens after 60% failure rate in sliding window of 5 calls
+ * - Remains open for 30s before attempting half-open
+ * - Half-open: 2 probe calls before closing
+ * - Fallback: throws ServiceUnavailableException → GlobalExceptionHandler returns 503
+ * - No @Retry: SES errors are usually quota/auth issues (not transient network), retried by RabbitMQ
+ *
  * Performance:
  * - SES latency: ~500ms per email
  * - Async execution: virtual threads (non-blocking)
@@ -68,6 +77,7 @@ public class AwsSesEmailServiceAdapter implements EmailService {
     }
 
     @Override
+    @CircuitBreaker(name = "ses", fallbackMethod = "sendWelcomeEmailFallback")
     public void sendWelcomeEmail(String email, String fullName, UUID workspaceId) throws EmailException {
         try {
             String subject = "Welcome to ScopeFlow!";
@@ -79,6 +89,8 @@ public class AwsSesEmailServiceAdapter implements EmailService {
 
             logger.info("Welcome email sent to: {} (fullName: {}, workspaceId: {})", email, fullName, workspaceId);
 
+        } catch (ServiceUnavailableException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Failed to send welcome email to: {}", email, e);
             throw new EmailException("Failed to send welcome email", e);
@@ -86,6 +98,7 @@ public class AwsSesEmailServiceAdapter implements EmailService {
     }
 
     @Override
+    @CircuitBreaker(name = "ses", fallbackMethod = "sendProposalApprovedEmailFallback")
     public void sendProposalApprovedEmail(String email, String pdfUrl, UUID proposalId) throws EmailException {
         try {
             String subject = "Your Proposal Has Been Approved!";
@@ -97,6 +110,8 @@ public class AwsSesEmailServiceAdapter implements EmailService {
 
             logger.info("Proposal approved email sent to: {} (proposalId: {})", email, proposalId);
 
+        } catch (ServiceUnavailableException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Failed to send proposal approved email to: {}", email, e);
             throw new EmailException("Failed to send proposal approved email", e);
@@ -104,6 +119,7 @@ public class AwsSesEmailServiceAdapter implements EmailService {
     }
 
     @Override
+    @CircuitBreaker(name = "ses", fallbackMethod = "sendBriefingCompletionEmailFallback")
     public void sendBriefingCompletionEmail(String email, UUID sessionId) throws EmailException {
         try {
             String subject = "Complete Your Briefing";
@@ -115,10 +131,45 @@ public class AwsSesEmailServiceAdapter implements EmailService {
 
             logger.info("Briefing completion email sent to: {} (sessionId: {})", email, sessionId);
 
+        } catch (ServiceUnavailableException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("Failed to send briefing completion email to: {}", email, e);
             throw new EmailException("Failed to send briefing completion email", e);
         }
+    }
+
+    // ============ Fallbacks (circuit breaker open) ============
+
+    /**
+     * Chamado quando o circuit breaker "ses" está aberto para sendWelcomeEmail.
+     * Lança ServiceUnavailableException → GlobalExceptionHandler retorna 503.
+     */
+    @SuppressWarnings("unused")
+    public void sendWelcomeEmailFallback(String email, String fullName, UUID workspaceId, Exception ex)
+            throws EmailException {
+        logger.warn("Circuit breaker open for ses (sendWelcomeEmail): recipient={}", email);
+        throw new ServiceUnavailableException("ses", ex);
+    }
+
+    /**
+     * Chamado quando o circuit breaker "ses" está aberto para sendProposalApprovedEmail.
+     */
+    @SuppressWarnings("unused")
+    public void sendProposalApprovedEmailFallback(String email, String pdfUrl, UUID proposalId, Exception ex)
+            throws EmailException {
+        logger.warn("Circuit breaker open for ses (sendProposalApprovedEmail): recipient={}", email);
+        throw new ServiceUnavailableException("ses", ex);
+    }
+
+    /**
+     * Chamado quando o circuit breaker "ses" está aberto para sendBriefingCompletionEmail.
+     */
+    @SuppressWarnings("unused")
+    public void sendBriefingCompletionEmailFallback(String email, UUID sessionId, Exception ex)
+            throws EmailException {
+        logger.warn("Circuit breaker open for ses (sendBriefingCompletionEmail): recipient={}", email);
+        throw new ServiceUnavailableException("ses", ex);
     }
 
     /**
