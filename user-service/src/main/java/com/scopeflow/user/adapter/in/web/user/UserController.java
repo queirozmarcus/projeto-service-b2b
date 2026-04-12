@@ -95,7 +95,7 @@ public class UserController {
                 .collect(StringBuilder::new,
                         (sb, c) -> {
                             if (sb.isEmpty() || sb.charAt(sb.length() - 1) == ' ') {
-                                sb.append(Character.toUpperCase(c));
+                                sb.append((char) Character.toUpperCase(c));
                             } else {
                                 sb.append((char) c);
                             }

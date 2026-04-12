@@ -122,6 +122,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(pd);
     }
 
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ProblemDetail> handleSecurityException(
+            SecurityException ex, WebRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        pd.setType(URI.create(PROBLEM_BASE_URL + "unauthorized"));
+        pd.setTitle("Unauthorized");
+        pd.setDetail("Authentication required");
+        pd.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(pd, "AUTH-401");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(pd);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleGenericException(Exception ex, WebRequest request) {
         ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);

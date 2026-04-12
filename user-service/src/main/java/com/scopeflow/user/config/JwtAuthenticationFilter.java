@@ -55,6 +55,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             Claims claims = jwtService.validateAndExtract(token);
 
+            if (claims == null) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             // Reject refresh tokens used as access tokens
             if ("refresh".equals(claims.get("type", String.class))) {
                 filterChain.doFilter(request, response);

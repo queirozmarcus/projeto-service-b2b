@@ -39,12 +39,12 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
 
         Map<String, Object> problemDetails = new HashMap<>();
-        problemDetails.put("type", "about:blank");
+        problemDetails.put("type", "https://api.scopeflow.com/errors/unauthorized");
         problemDetails.put("title", "Unauthorized");
         problemDetails.put("status", 401);
-        problemDetails.put("detail", "Authentication failed: " + authException.getMessage());
-        problemDetails.put("errorCode", "AUTH-001");
-        problemDetails.put("errorId", UUID.randomUUID().toString());
+        problemDetails.put("detail", "Authentication required");
+        problemDetails.put("error_code", "AUTH-401");
+        problemDetails.put("error_id", UUID.randomUUID().toString());
         problemDetails.put("timestamp", Instant.now().toString());
 
         objectMapper.writeValue(response.getOutputStream(), problemDetails);

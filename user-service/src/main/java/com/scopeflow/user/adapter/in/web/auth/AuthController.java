@@ -186,10 +186,21 @@ public class AuthController {
 
     private String extractCookie(HttpServletRequest request, String name) {
         Cookie[] cookies = request.getCookies();
-        if (cookies == null) return null;
-        return Arrays.stream(cookies)
-                .filter(c -> name.equals(c.getName()))
-                .map(Cookie::getValue)
+        if (cookies != null) {
+            return Arrays.stream(cookies)
+                    .filter(c -> name.equals(c.getName()))
+                    .map(Cookie::getValue)
+                    .findFirst()
+                    .orElse(null);
+        }
+        // Fallback: parse raw Cookie header (used in test environments where getCookies()
+        // may not reflect headers set directly — e.g. Spring MockMvc via RestAssured)
+        String cookieHeader = request.getHeader(HttpHeaders.COOKIE);
+        if (cookieHeader == null) return null;
+        return Arrays.stream(cookieHeader.split(";"))
+                .map(String::trim)
+                .filter(part -> part.startsWith(name + "="))
+                .map(part -> part.substring(name.length() + 1))
                 .findFirst()
                 .orElse(null);
     }
