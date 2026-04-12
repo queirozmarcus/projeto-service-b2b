@@ -206,7 +206,8 @@ public class BriefingService {
             gaps.add("Need " + remaining + " more answer" + (remaining == 1 ? "" : "s") + " to reach minimum threshold");
         }
 
-        return new GapAnalysis(score, gaps);
+        GapAnalysis result = new GapAnalysis(score, gaps);
+        return Objects.requireNonNull(result, "detectGaps() returned null result");
     }
 
     /**

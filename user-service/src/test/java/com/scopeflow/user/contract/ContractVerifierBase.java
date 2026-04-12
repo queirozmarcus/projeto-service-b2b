@@ -139,7 +139,7 @@ public abstract class ContractVerifierBase {
         PasswordHash passwordHash = new PasswordHash("$2a$10$hashed_password_mock");
         Instant createdAt = Instant.parse("2025-01-15T10:30:00Z");
 
-        return new UserActive(userId, email, passwordHash, TEST_FULL_NAME, TEST_PHONE, createdAt);
+        return new UserActive(userId, email, passwordHash, TEST_FULL_NAME, TEST_PHONE, createdAt, createdAt);
     }
 
     private UserInactive createInvitedUser() {
@@ -149,6 +149,6 @@ public abstract class ContractVerifierBase {
         String displayName = "Invited";
         Instant createdAt = Instant.parse("2025-01-15T10:30:00Z");
 
-        return new UserInactive(userId, email, passwordHash, displayName, null, createdAt);
+        return new UserInactive(userId, email, passwordHash, displayName, null, createdAt, createdAt);
     }
 }

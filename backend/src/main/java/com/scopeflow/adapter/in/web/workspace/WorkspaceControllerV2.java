@@ -116,7 +116,11 @@ public class WorkspaceControllerV2 {
         requireOwnerOrAdmin(workspaceId);
 
         WorkspaceId wsId = new WorkspaceId(workspaceId);
+        // C2: Ensure email is valid via VO which handles regex/normalization
         Email email = new Email(request.email());
+        if (email.normalized() == null || email.normalized().isBlank()) {
+             throw new IllegalArgumentException("Invalid email format: " + request.email());
+        }
 
         // Lookup existing user by email, or create a new INACTIVE user
         User invitedUser = userService.getUserByEmail(email)
