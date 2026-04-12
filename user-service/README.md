@@ -104,7 +104,7 @@ Uses Spring Cloud Contract (provider-side verification).
 
 **Run contract tests:**
 ```bash
-./mvnw test -Dtest="*ContractVerifierTest" -pl user-service
+./mvnw test -Dtest="com.scopeflow.user.contract.*" --no-transfer-progress
 ```
 
 **Run all tests including contracts:**
