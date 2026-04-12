@@ -8,6 +8,7 @@
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/proposal/ProposalPublished.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/BriefingInProgress.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/out/persistence/workspace/JpaWorkspaceRepositoryAdapter.java
+/home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/user/ServiceUnavailableException.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/BriefingService.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/user/UserRegistered.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/BriefingAbandoned.java
@@ -46,6 +47,7 @@
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/BriefingCompletedEvent.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/proposal/ProposalRepository.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/config/JwtService.java
+/home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/application/port/out/UserServiceClient.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/BriefingDomainException.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/user/UserInactive.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/in/web/auth/dto/AccessTokenResponse.java
@@ -82,7 +84,6 @@
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/in/web/auth/dto/TokenResponse.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/proposal/ProposalNotFoundException.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/out/persistence/workspace/JpaWorkspaceMember.java
-/home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/user/UserService.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/ClientId.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/InvalidAnswerException.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/user/UserDeleted.java
@@ -137,6 +138,7 @@
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/BriefingAbandonedEvent.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/AIGenerationRepository.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/workspace/WorkspaceMemberRepository.java
+/home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/out/userservice/UserServiceRestAdapter.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/GenerationType.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/workspace/WorkspaceService.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/proposal/ProposalId.java

@@ -92,6 +92,7 @@ com/scopeflow/adapter/in/web/proposal/ProposalControllerV2.class
 com/scopeflow/adapter/in/web/briefing/dto/BriefingDetailResponse.class
 com/scopeflow/adapter/in/web/proposal/dto/UpdateScopeRequest.class
 com/scopeflow/adapter/in/web/auth/dto/RegisterRequest.class
+com/scopeflow/adapter/out/userservice/UserServiceRestAdapter.class
 com/scopeflow/adapter/in/web/auth/dto/AccessTokenResponse.class
 com/scopeflow/core/domain/briefing/AnswerText.class
 com/scopeflow/adapter/in/web/proposal/dto/ApprovalResponse.class
@@ -116,6 +117,7 @@ com/scopeflow/adapter/in/web/briefing/dto/AbandonBriefingRequest.class
 com/scopeflow/config/JwtAuthenticationFilter.class
 com/scopeflow/core/domain/workspace/MemberAlreadyExistsException.class
 com/scopeflow/core/domain/briefing/ClientId.class
+com/scopeflow/core/domain/user/ServiceUnavailableException.class
 com/scopeflow/core/domain/proposal/ApprovalTokenExpiredException.class
 com/scopeflow/config/OpenApiConfig.class
 com/scopeflow/adapter/in/web/proposal/dto/InitiateApprovalRequest.class
@@ -123,7 +125,6 @@ com/scopeflow/adapter/out/persistence/user/JpaUserRepositoryAdapter.class
 com/scopeflow/adapter/out/persistence/user/JpaUserSpringRepository.class
 com/scopeflow/application/port/out/EmailException.class
 com/scopeflow/core/domain/user/InvalidRoleException.class
-com/scopeflow/core/domain/user/UserService.class
 com/scopeflow/ScopeflowApplication.class
 com/scopeflow/core/domain/proposal/InvalidProposalStateException.class
 com/scopeflow/core/domain/proposal/ApprovalWorkflow.class
@@ -133,6 +134,7 @@ com/scopeflow/config/WebMvcConfig.class
 com/scopeflow/core/domain/briefing/BriefingCompleted.class
 com/scopeflow/core/domain/proposal/ProposalRejected.class
 com/scopeflow/core/domain/proposal/Approval.class
+com/scopeflow/application/port/out/UserServiceClient.class
 com/scopeflow/adapter/in/web/briefing/dto/BriefingResponse.class
 com/scopeflow/core/domain/briefing/GapAnalysis.class
 com/scopeflow/core/domain/workspace/MemberNotFoundException.class
