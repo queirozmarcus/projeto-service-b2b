@@ -10,19 +10,18 @@
 
 -- ============================================================================
 -- DROP V1 DRAFT TABLES (reverse dependency order)
+-- NOTE: briefing_sessions, briefing_questions, briefing_answers are NOT dropped here
+-- because V3 already created them with the correct hexagonal domain schema.
+-- Only tables not covered by V2/V3 are dropped (V1 legacy drafts only).
 -- ============================================================================
 DROP TABLE IF EXISTS kickoff_summaries CASCADE;
 DROP TABLE IF EXISTS project_artifacts CASCADE;
-DROP TABLE IF EXISTS activity_logs CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS approvals CASCADE;
 DROP TABLE IF EXISTS approval_workflows CASCADE;
 DROP TABLE IF EXISTS proposal_versions CASCADE;
 DROP TABLE IF EXISTS proposals CASCADE;
 DROP TABLE IF EXISTS project_services CASCADE;
-DROP TABLE IF EXISTS briefing_answers CASCADE;
-DROP TABLE IF EXISTS briefing_questions CASCADE;
-DROP TABLE IF EXISTS briefing_sessions CASCADE;
 DROP TABLE IF EXISTS projects CASCADE;
 DROP TABLE IF EXISTS services CASCADE;
 

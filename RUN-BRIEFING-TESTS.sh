@@ -8,6 +8,7 @@ set -e
 BASE_URL="http://localhost:8080/api/v1"
 TIMESTAMP=$(date +%s)
 TEST_EMAIL="test-briefing-${TIMESTAMP}@example.com"
+#TEST_EMAIL="test-briefing-@example.com"
 TEST_PASS="TestPassword123!"
 
 echo "╔════════════════════════════════════════════════════════╗"
