@@ -15,10 +15,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -58,7 +62,12 @@ class UserControllerIntegrationTest {
         registry.add("spring.datasource.password", postgres::getPassword);
     }
 
-    @Autowired private MockMvc mockMvc;
+    // MockMvc é reconstruído no @BeforeEach com contextPath explícito.
+    // Mesma razão de AuthControllerIntegrationTest: @AutoConfigureMockMvc não
+    // propaga server.servlet.context-path para o Spring Security no MOCK env.
+    private MockMvc mockMvc;
+
+    @Autowired private WebApplicationContext webApplicationContext;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private JpaUserSpringRepository userRepository;
     @Autowired private JwtService jwtService;
@@ -68,7 +77,12 @@ class UserControllerIntegrationTest {
     private static final String TEST_PASSWORD_HASH = "$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
     @BeforeEach
-    void cleanDatabase() {
+    void setup() {
+        this.mockMvc = MockMvcBuilders
+                .webAppContextSetup(webApplicationContext)
+                .apply(SecurityMockMvcConfigurers.springSecurity())
+                .defaultRequest(MockMvcRequestBuilders.get("/").contextPath("/api/v1"))
+                .build();
         userRepository.deleteAll();
     }
 

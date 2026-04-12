@@ -1,23 +1,24 @@
-description: User login with invalid credentials
-name: shouldReturn401OnInvalidCredentials
+description: Register with an email that already exists
+name: shouldReturn409OnDuplicateEmailRegistration
 request:
   method: POST
-  url: /auth/login
+  url: /auth/register
   headers:
     Content-Type: application/json
   body:
     email: "test@example.com"
-    password: "WrongPassword"
+    password: "ValidPassword123!"
+    fullName: "Duplicate User"
 response:
-  status: 401
+  status: 409
   headers:
     Content-Type: application/problem+json
   body:
-    type: "https://api.scopeflow.com/errors/invalid-credentials"
-    title: "Invalid Credentials"
-    status: 401
-    detail: "Invalid email or password"
-    error_code: "AUTH-401"
+    type: "https://api.scopeflow.com/errors/email-already-registered"
+    title: "Email Already Registered"
+    status: 409
+    detail: "Email already registered: test@example.com"
+    error_code: "USER-001"
     error_id: "550e8400-e29b-41d4-a716-446655440000"
     timestamp: "2025-01-15T10:30:00Z"
   matchers:

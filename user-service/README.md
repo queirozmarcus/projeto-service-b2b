@@ -97,6 +97,30 @@ User Service é o **primeiro microsserviço extraído** do monólito ScopeFlow v
 
 ---
 
+## Contract Tests
+
+Contract tests validate the API contracts between user-service (provider) and consumers (monolith).
+Uses Spring Cloud Contract (provider-side verification).
+
+**Run contract tests:**
+```bash
+./mvnw test -Dtest="*ContractVerifierTest" -pl user-service
+```
+
+**Run all tests including contracts:**
+```bash
+./mvnw verify -pl user-service
+```
+
+**Contracts location:** `src/test/resources/contracts/`
+- `auth/` (6 contracts): register, login, refresh, me, logout
+- `users/` (5 contracts): by-email lookup, invited user creation
+
+**Quality gate:** Contract tests must pass before any deployment.
+A failing contract = a broken API guarantee for consumers.
+
+---
+
 ## Como Executar
 
 ### Build Local

@@ -1,13 +1,8 @@
-description: User login with invalid credentials
-name: shouldReturn401OnInvalidCredentials
+description: Refresh fails when no refresh token cookie is present
+name: shouldReturn401OnMissingRefreshToken
 request:
   method: POST
-  url: /auth/login
-  headers:
-    Content-Type: application/json
-  body:
-    email: "test@example.com"
-    password: "WrongPassword"
+  url: /auth/refresh
 response:
   status: 401
   headers:
@@ -16,7 +11,7 @@ response:
     type: "https://api.scopeflow.com/errors/invalid-credentials"
     title: "Invalid Credentials"
     status: 401
-    detail: "Invalid email or password"
+    detail: "Refresh token invalido ou expirado. Faca login novamente."
     error_code: "AUTH-401"
     error_id: "550e8400-e29b-41d4-a716-446655440000"
     timestamp: "2025-01-15T10:30:00Z"

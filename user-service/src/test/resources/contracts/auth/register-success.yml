@@ -1,13 +1,14 @@
-description: User login with valid credentials
-name: shouldLoginSuccessfully
+description: Register new user account with valid data
+name: shouldRegisterUserSuccessfully
 request:
   method: POST
-  url: /auth/login
+  url: /auth/register
   headers:
     Content-Type: application/json
   body:
-    email: "test@example.com"
+    email: "newuser@example.com"
     password: "ValidPassword123!"
+    fullName: "New User"
   matchers:
     body:
       - path: $.email
@@ -16,8 +17,11 @@ request:
       - path: $.password
         type: by_regex
         value: ".+"
+      - path: $.fullName
+        type: by_regex
+        value: ".+"
 response:
-  status: 200
+  status: 201
   headers:
     Content-Type: application/json
   body:

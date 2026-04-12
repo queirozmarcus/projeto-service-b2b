@@ -1,0 +1,21 @@
+description: Refresh access token using a valid httpOnly cookie
+name: shouldRefreshAccessTokenSuccessfully
+request:
+  method: POST
+  url: /auth/refresh
+  headers:
+    Cookie: "refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.refresh"
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    expiresIn: 900
+  matchers:
+    body:
+      - path: $.accessToken
+        type: by_regex
+        value: "^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$"
+      - path: $.expiresIn
+        type: by_type

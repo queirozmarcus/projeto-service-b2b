@@ -2,7 +2,7 @@ description: Get current user profile with valid JWT
 name: shouldReturnCurrentUserProfile
 request:
   method: GET
-  url: /api/v1/auth/me
+  url: /auth/me
   headers:
     Content-Type: application/json
     Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.test"
@@ -30,4 +30,4 @@ response:
         value: "(ACTIVE|INACTIVE)"
       - path: $.createdAt
         type: by_regex
-        value: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(Z|[+-]\\d{2}:\\d{2})"
+        value: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})"
