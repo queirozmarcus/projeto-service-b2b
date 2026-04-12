@@ -11,16 +11,9 @@ import {
 } from '@/components/dashboard';
 import { DocumentPlusIcon } from '@heroicons/react/24/outline';
 
-const placeholderStats = [
-  { id: 'active',    label: 'Propostas Ativas',   value: '—', trend: '', trendDirection: 'neutral' as const },
-  { id: 'completed', label: 'Briefings Completos', value: '—', trend: '', trendDirection: 'neutral' as const },
-  { id: 'approval',  label: 'Taxa de Aprovação',   value: '—', trend: '', trendDirection: 'neutral' as const },
-  { id: 'clients',   label: 'Novos Clientes',      value: '—', trend: '', trendDirection: 'neutral' as const },
-];
-
 export default function DashboardPage() {
   const { user } = useSessionStore();
-  const { isLoading, fetchProposals, getFilteredProposals } = useDashboardStore();
+  const { isLoading, fetchError, fetchProposals, getFilteredProposals, computeStats, computeRecentActivity } = useDashboardStore();
 
   useEffect(() => {
     fetchProposals();
@@ -34,6 +27,8 @@ export default function DashboardPage() {
   };
 
   const recentProposals = getFilteredProposals();
+  const stats = computeStats();
+  const recentActivity = computeRecentActivity();
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -60,8 +55,15 @@ export default function DashboardPage() {
           </a>
         </div>
 
+        {/* ── Fetch error banner ─────────────────────────────────── */}
+        {fetchError && (
+          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            {fetchError}
+          </div>
+        )}
+
         {/* ── Stats ──────────────────────────────────────────────── */}
-        <StatsGrid stats={placeholderStats} isLoading={isLoading} />
+        <StatsGrid stats={stats} isLoading={isLoading} />
 
         {/* ── Quick Actions (secondary, below stats) ─────────────── */}
         <div>
@@ -84,7 +86,7 @@ export default function DashboardPage() {
             <h2 className="mb-5 font-display text-xl font-black text-ink-900">
               Atividade Recente
             </h2>
-            <RecentActivity activities={[]} isLoading={isLoading} />
+            <RecentActivity activities={recentActivity} isLoading={isLoading} />
           </div>
         </div>
       </div>

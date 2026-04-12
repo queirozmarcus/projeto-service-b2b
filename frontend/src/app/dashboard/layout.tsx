@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import useSessionStore from '@/stores/useSession';
 import { DashboardNavbar } from '@/components/dashboard';
+import { ToastContainer } from '@/components/ui/ToastContainer';
 
 export default function DashboardLayout({
   children,
@@ -32,6 +33,7 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-canvas">
       <DashboardNavbar />
       <main>{children}</main>
+      <ToastContainer />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { Proposal, ProposalStatus } from '@/types/proposal';
 import useDashboardStore from '@/stores/useDashboardStore';
+import { useToast } from '@/hooks/useToast';
 
 interface ProposalListProps {
   proposals?: Proposal[];
@@ -23,11 +24,14 @@ export function ProposalList({
 }: ProposalListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const deleteProposal = useDashboardStore((s) => s.deleteProposal);
+  const { error: toastError } = useToast();
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
       await deleteProposal(id);
+    } catch {
+      toastError('Erro ao deletar proposta. Tente novamente.');
     } finally {
       setDeletingId(null);
     }

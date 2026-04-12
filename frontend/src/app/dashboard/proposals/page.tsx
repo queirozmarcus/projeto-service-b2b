@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { DocumentPlusIcon } from '@heroicons/react/24/outline';
 import { ProposalList } from '@/components/dashboard/ProposalList';
@@ -17,8 +18,12 @@ const FILTER_OPTIONS: { label: string; value: StatusFilter }[] = [
 ];
 
 export default function ProposalsPage() {
-  const { statusFilter, isLoading, setStatusFilter, getFilteredProposals } =
+  const { statusFilter, isLoading, fetchError, setStatusFilter, getFilteredProposals, fetchProposals } =
     useDashboardStore();
+
+  useEffect(() => {
+    fetchProposals();
+  }, [fetchProposals]);
 
   const filtered = getFilteredProposals();
 
@@ -41,6 +46,13 @@ export default function ProposalsPage() {
           Nova Proposta
         </Link>
       </div>
+
+      {/* Error banner */}
+      {fetchError && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          {fetchError}
+        </div>
+      )}
 
       {/* Status filter */}
       <div className="flex flex-wrap gap-2">

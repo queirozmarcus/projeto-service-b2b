@@ -12,6 +12,33 @@ interface RecentActivityProps {
   isLoading?: boolean;
 }
 
+function formatRelativeTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
+
+  const hhmm = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  if (date >= startOfToday) {
+    return `hoje às ${hhmm}`;
+  }
+
+  if (date >= startOfYesterday) {
+    return `ontem às ${hhmm}`;
+  }
+
+  const diffMs = startOfToday.getTime() - new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
+
+  if (diffDays <= 7) {
+    return `há ${diffDays} dias`;
+  }
+
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
 const typeConfig = {
   created: { dotColor: 'bg-blue-500' },
   approved: { dotColor: 'bg-emerald-500' },
@@ -56,10 +83,7 @@ export function RecentActivity({
       <div className="space-y-5">
         {activities.map((activity) => {
           const config = typeConfig[activity.type];
-          const formattedTime = new Date(activity.timestamp).toLocaleTimeString('pt-BR', {
-            hour: '2-digit',
-            minute: '2-digit',
-          });
+          const formattedTime = formatRelativeTime(activity.timestamp);
 
           return (
             <div key={activity.id} className="flex gap-3">
