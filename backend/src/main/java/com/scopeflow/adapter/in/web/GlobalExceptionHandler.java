@@ -4,6 +4,7 @@ import com.scopeflow.core.domain.briefing.*;
 import com.scopeflow.core.domain.proposal.*;
 import com.scopeflow.core.domain.user.*;
 import com.scopeflow.core.domain.workspace.*;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -517,6 +518,57 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
+                .body(problemDetail);
+    }
+
+    // ============ Resilience Exceptions (circuit breaker, service unavailable) ============
+
+    /**
+     * Handle service unavailable (USER-012).
+     *
+     * Thrown by UserServiceRestAdapter when user-service is unreachable or returns 5xx.
+     * Maps to 503 Service Unavailable with Retry-After hint.
+     */
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handleServiceUnavailable(
+            ServiceUnavailableException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "service-unavailable"));
+        problemDetail.setTitle("Service Unavailable");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header("Retry-After", "30")
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle circuit breaker open (Resilience4j CallNotPermittedException).
+     *
+     * Thrown when Resilience4j rejects the call because the circuit is OPEN.
+     * Distinct from ServiceUnavailableException: the circuit itself blocked the call
+     * without ever reaching the remote service.
+     */
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<ProblemDetail> handleCircuitBreakerOpen(
+            CallNotPermittedException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "circuit-breaker-open"));
+        problemDetail.setTitle("Service Temporarily Unavailable");
+        problemDetail.setDetail("user-service is temporarily unavailable. Please try again in a few moments.");
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, "USER-012");
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header("Retry-After", "30")
                 .body(problemDetail);
     }
 
