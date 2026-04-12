@@ -1,0 +1,32 @@
+# ============================================================
+# Staging profile — ScopeFlow monolith
+#
+# Diferenças em relação ao application.yml base:
+#   - auth.service.use-extracted=true  → Strangler Fig ativo:
+#     monolith proxia todos os endpoints /auth/* para o user-service
+#   - Cookies sem HTTPS (staging pode rodar em HTTP interno)
+#   - Logs reduzidos para INFO
+#
+# Para ativar: SPRING_PROFILES_ACTIVE=staging
+# Para rollback imediato: AUTH_SERVICE_EXTRACTED=false (env var
+#   sobrescreve este arquivo sem necessidade de redeploy do yaml)
+# ============================================================
+
+# Strangler Fig: Cut-over para user-service em staging
+auth:
+  service:
+    use-extracted: true
+    url: ${AUTH_SERVICE_URL:http://user-service:8081/api/v1}
+
+# Cookies HTTP-only mas sem require-secure em staging (sem TLS interno)
+app:
+  cookie:
+    secure: ${APP_COOKIE_SECURE:false}
+  requires-https: false
+
+# Logs menos verbosos em staging (sem DEBUG de Security)
+logging:
+  level:
+    root: INFO
+    com.scopeflow: INFO
+    org.springframework.security: WARN
