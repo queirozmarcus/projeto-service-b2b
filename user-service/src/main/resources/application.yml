@@ -16,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      # NEVER auto-create schema -- migrations managed by monolith
+      # NEVER auto-create schema -- Flyway manages all DDL
       ddl-auto: validate
     show-sql: false
     properties:
@@ -26,9 +26,15 @@ spring:
         jdbc:
           time_zone: UTC
 
-  # Flyway DISABLED -- migrations managed by monolith (shared DB)
+  # Flyway habilitado: user-service gerencia seu próprio schema
+  # baseline-on-migrate: true é OBRIGATÓRIO quando o banco já contém dados migrados via pg_dump.
+  # baseline-version: 0 garante que V1 seja executado normalmente no banco zerado (novo dev / CI),
+  # e marcado como baseline quando o banco já tiver os dados do cut-over.
   flyway:
-    enabled: false
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
 
   # Graceful shutdown (mandatory for Strangler Fig zero-downtime)
   lifecycle:

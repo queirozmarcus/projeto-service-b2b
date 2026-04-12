@@ -18,6 +18,28 @@ services:
     networks:
       - scopeflow-network
 
+  # Banco exclusivo do user-service (DB-per-service — Strangler Fig Fase 5)
+  # Durante o período de dual-write, o monólito continua usando 'postgres' acima.
+  # Após o cut-over, este banco vira a source of truth para users.
+  user-db:
+    image: postgres:16-alpine
+    container_name: scopeflow-user-db
+    environment:
+      POSTGRES_DB: scopeflow_users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d scopeflow_users"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scopeflow-network
+
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: scopeflow-rabbitmq
@@ -85,7 +107,7 @@ services:
       # Spring Profile
       SPRING_PROFILES_ACTIVE: local
 
-      # Database Configuration
+      # Database Configuration (monolith banco compartilhado — fonte original)
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/scopeflow
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
@@ -168,8 +190,12 @@ services:
       # Spring Profile
       SPRING_PROFILES_ACTIVE: local
 
-      # Database Configuration (SHARED DB — mesma instância do monólito)
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/scopeflow
+      # Database Configuration — banco exclusivo do user-service (DB-per-service)
+      # Durante o período de dual-write (pré-cutover), mantenha apontando para
+      # 'postgres:5432/scopeflow' (banco compartilhado). Após migração de dados
+      # e cutover, altere para 'user-db:5432/scopeflow_users'.
+      # Ver: user-service/docs/DB_MIGRATION_GUIDE.md
+      SPRING_DATASOURCE_URL: ${USER_SERVICE_DATABASE_URL:-jdbc:postgresql://postgres:5432/scopeflow}
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
 
@@ -201,6 +227,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      user-db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/api/v1/actuator/health/readiness"]
       interval: 30s
@@ -221,6 +249,7 @@ services:
 
 volumes:
   postgres_data:
+  user_db_data:
   rabbitmq_data:
   redis_data:
 
