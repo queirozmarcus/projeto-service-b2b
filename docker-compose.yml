@@ -18,9 +18,8 @@ services:
     networks:
       - scopeflow-network
 
-  # Banco exclusivo do user-service (DB-per-service — Strangler Fig Fase 5)
-  # Durante o período de dual-write, o monólito continua usando 'postgres' acima.
-  # Após o cut-over, este banco vira a source of truth para users.
+  # Banco exclusivo do user-service (DB-per-service — Strangler Fig concluído, ADR-009)
+  # Source of truth para users. Monólito não acessa mais esta tabela diretamente.
   user-db:
     image: postgres:16-alpine
     container_name: scopeflow-user-db
@@ -191,11 +190,9 @@ services:
       SPRING_PROFILES_ACTIVE: local
 
       # Database Configuration — banco exclusivo do user-service (DB-per-service)
-      # Durante o período de dual-write (pré-cutover), mantenha apontando para
-      # 'postgres:5432/scopeflow' (banco compartilhado). Após migração de dados
-      # e cutover, altere para 'user-db:5432/scopeflow_users'.
-      # Ver: user-service/docs/DB_MIGRATION_GUIDE.md
-      SPRING_DATASOURCE_URL: ${USER_SERVICE_DATABASE_URL:-jdbc:postgresql://postgres:5432/scopeflow}
+      # Módulo User decommissioned do monólito (ADR-009). user-service usa banco próprio.
+      # Ver: docs/migration/DB-MIGRATION-USER-SERVICE.md
+      SPRING_DATASOURCE_URL: ${USER_SERVICE_DATABASE_URL:-jdbc:postgresql://user-db:5432/scopeflow_users}
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
 
