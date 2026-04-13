@@ -3,6 +3,7 @@ package com.scopeflow.adapter.in.web.user;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scopeflow.adapter.in.web.GlobalExceptionHandler;
 import com.scopeflow.adapter.in.web.user.dto.CreateInvitedUserRequest;
+import com.scopeflow.adapter.out.userservice.AuthProxyAdapter;
 import com.scopeflow.config.TestSecurityConfig;
 import com.scopeflow.config.WithScopeFlowUser;
 import com.scopeflow.core.domain.workspace.Role;
@@ -15,8 +16,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.UUID;
 
@@ -47,7 +46,7 @@ class UserControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private RestTemplate authServiceRestTemplate;
+    private AuthProxyAdapter authProxyAdapter;
 
     // ============ GET /api/v1/users/by-email/{email} ============
 
@@ -64,8 +63,8 @@ class UserControllerTest {
                      "fullName":"Existing User","status":"ACTIVE","createdAt":"2024-01-01T00:00:00Z"}
                     """;
 
-            given(authServiceRestTemplate.exchange(
-                    contains("/users/by-email/existing@example.com"), eq(HttpMethod.GET), any(), eq(String.class)
+            given(authProxyAdapter.proxy(
+                    contains("/users/by-email/"), eq(HttpMethod.GET), isNull(), any(HttpHeaders.class)
             )).willReturn(ResponseEntity.ok(upstreamBody));
 
             mockMvc.perform(get("/api/v1/users/by-email/{email}", "existing@example.com"))
@@ -82,10 +81,10 @@ class UserControllerTest {
                      "title":"User Not Found","status":404,"error_code":"USER-010"}
                     """;
 
-            given(authServiceRestTemplate.exchange(
-                    contains("/users/by-email/"), eq(HttpMethod.GET), any(), eq(String.class)
-            )).willThrow(HttpClientErrorException.create(
-                    HttpStatus.NOT_FOUND, "Not Found", new HttpHeaders(), problemJson.getBytes(), null));
+            // AuthProxyAdapter.proxy() catches HttpClientErrorException and returns ResponseEntity
+            given(authProxyAdapter.proxy(
+                    contains("/users/by-email/"), eq(HttpMethod.GET), isNull(), any(HttpHeaders.class)
+            )).willReturn(ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemJson));
 
             mockMvc.perform(get("/api/v1/users/by-email/{email}", "nonexistent@example.com"))
                     .andExpect(status().isNotFound());
@@ -116,8 +115,8 @@ class UserControllerTest {
                      "fullName":"Invited User","status":"INACTIVE","createdAt":"2024-01-01T00:00:00Z"}
                     """;
 
-            given(authServiceRestTemplate.exchange(
-                    contains("/users/invited"), eq(HttpMethod.POST), any(), eq(String.class)
+            given(authProxyAdapter.proxy(
+                    contains("/users/invited"), eq(HttpMethod.POST), any(), any(HttpHeaders.class)
             )).willReturn(ResponseEntity.status(HttpStatus.CREATED).body(upstreamBody));
 
             mockMvc.perform(post("/api/v1/users/invited")
@@ -144,10 +143,9 @@ class UserControllerTest {
                      "title":"Duplicate Email","status":409,"error_code":"USER-011"}
                     """;
 
-            given(authServiceRestTemplate.exchange(
-                    contains("/users/invited"), eq(HttpMethod.POST), any(), eq(String.class)
-            )).willThrow(HttpClientErrorException.create(
-                    HttpStatus.CONFLICT, "Conflict", new HttpHeaders(), problemJson.getBytes(), null));
+            given(authProxyAdapter.proxy(
+                    contains("/users/invited"), eq(HttpMethod.POST), any(), any(HttpHeaders.class)
+            )).willReturn(ResponseEntity.status(HttpStatus.CONFLICT).body(problemJson));
 
             mockMvc.perform(post("/api/v1/users/invited")
                             .contentType(MediaType.APPLICATION_JSON)

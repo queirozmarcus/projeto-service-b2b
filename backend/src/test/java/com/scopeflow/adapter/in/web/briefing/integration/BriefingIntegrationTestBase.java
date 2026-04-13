@@ -32,7 +32,7 @@ import java.util.UUID;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 abstract class BriefingIntegrationTestBase {
 
     @Container
@@ -95,9 +95,21 @@ abstract class BriefingIntegrationTestBase {
                 serviceType
         );
 
-        var entity = JpaBriefingSessionEntity.fromDomain(session);
-        var saved = sessionRepository.save(entity);
-        return saved.toDomain();
+        var entity = new JpaBriefingSession(
+                session.getId().value(),
+                session.getWorkspaceId().value(),
+                session.getClientId().value(),
+                session.getServiceType().name(),
+                session.status(),
+                session.getPublicToken().value(),
+                null,
+                null,
+                null,
+                session.getCreatedAt(),
+                session.getUpdatedAt()
+        );
+        sessionRepository.save(entity);
+        return session;
     }
 
     /**
@@ -109,9 +121,21 @@ abstract class BriefingIntegrationTestBase {
                 new CompletionScore(95, java.util.List.of())
         );
 
-        var entity = JpaBriefingSessionEntity.fromDomain(completed);
-        var saved = sessionRepository.save(entity);
-        return saved.toDomain();
+        var entity = new JpaBriefingSession(
+                completed.getId().value(),
+                completed.getWorkspaceId().value(),
+                completed.getClientId().value(),
+                completed.getServiceType().name(),
+                completed.status(),
+                completed.getPublicToken().value(),
+                95,
+                null,
+                null,
+                completed.getCreatedAt(),
+                completed.getUpdatedAt()
+        );
+        sessionRepository.save(entity);
+        return completed;
     }
 
     /**
@@ -127,9 +151,19 @@ abstract class BriefingIntegrationTestBase {
                 Instant.now()
         );
 
-        var entity = JpaBriefingQuestionEntity.fromDomain(question);
-        var saved = questionRepository.save(entity);
-        return saved.toDomain();
+        var entity = new JpaBriefingQuestion(
+                question.getId().value(),
+                sessionId.value(),
+                question.getText(),
+                question.getStep(),
+                question.getQuestionType(),
+                null,
+                true,
+                false,
+                question.getCreatedAt()
+        );
+        questionRepository.save(entity);
+        return question;
     }
 
     /**
@@ -145,9 +179,18 @@ abstract class BriefingIntegrationTestBase {
                 85
         );
 
-        var entity = JpaBriefingAnswerEntity.fromDomain(answer);
-        var saved = answerRepository.save(entity);
-        return saved.toDomain();
+        var entity = new JpaBriefingAnswer(
+                answer.getId().value(),
+                sessionId.value(),
+                questionId.value(),
+                answer.getText().value(),
+                null,
+                answer.getQualityScore(),
+                null,
+                answer.getAnsweredAt()
+        );
+        answerRepository.save(entity);
+        return answer;
     }
 
     /**

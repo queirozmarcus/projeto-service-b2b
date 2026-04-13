@@ -86,7 +86,7 @@ class BriefingControllerErrorHandlingTest extends BriefingIntegrationTestBase {
         var token = generateTestJwtToken(WORKSPACE_ID_A, "user@example.com");
 
         // When: submit invalid answer (too short, e.g., "a")
-        var request = new SubmitAnswerRequest(question.questionId().value(), "a");
+        var request = new SubmitAnswerRequest(question.getId().value(), "a");
         MvcResult result = mockMvc.perform(post("/api/v1/briefings/{id}/answers", session.getId().value())
                         .header("Authorization", token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -109,12 +109,12 @@ class BriefingControllerErrorHandlingTest extends BriefingIntegrationTestBase {
         var session = createTestBriefing(WORKSPACE_ID_A, CLIENT_ID, ServiceType.SOCIAL_MEDIA);
         var question = createTestQuestion(session.getId(), 1, "What is your goal?");
         // Simulate max follow-ups already created
-        createTestAnswer(session.getId(), question.questionId(), "First answer");
+        createTestAnswer(session.getId(), question.getId(), "First answer");
 
         var token = generateTestJwtToken(WORKSPACE_ID_A, "user@example.com");
 
         // When: try to submit another follow-up (exceeds limit)
-        var request = new SubmitAnswerRequest(question.questionId().value(), "Follow-up answer");
+        var request = new SubmitAnswerRequest(question.getId().value(), "Follow-up answer");
         MvcResult result = mockMvc.perform(post("/api/v1/briefings/{id}/answers", session.getId().value())
                         .header("Authorization", token)
                         .contentType(MediaType.APPLICATION_JSON)

@@ -2,7 +2,6 @@ package com.scopeflow.adapter.in.web.briefing.integration;
 
 import com.scopeflow.adapter.in.web.briefing.dto.*;
 import com.scopeflow.core.domain.briefing.*;
-import com.scopeflow.core.domain.workspace.WorkspaceId;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
@@ -52,15 +51,14 @@ class BriefingControllerV1IntegrationTest extends BriefingIntegrationTestBase {
                 BriefingResponse.class
         );
         assertThat(response.id()).isNotNull();
-        assertThat(response.status()).isEqualTo(BriefingStatus.IN_PROGRESS);
+        assertThat(response.status()).isEqualTo("IN_PROGRESS");
         assertThat(response.publicToken()).isNotNull();
-        assertThat(response.serviceType()).isEqualTo(ServiceType.SOCIAL_MEDIA);
+        assertThat(response.serviceType()).isEqualTo(ServiceType.SOCIAL_MEDIA.name());
 
         // Verify persistence
         var savedEntity = sessionRepository.findById(response.id()).orElseThrow();
-        var saved = savedEntity.toDomain();
-        assertThat(saved.getWorkspaceId()).isEqualTo(new WorkspaceId(WORKSPACE_ID_A));
-        assertThat(saved.getClientId()).isEqualTo(new ClientId(CLIENT_ID));
+        assertThat(savedEntity.getWorkspaceId()).isEqualTo(WORKSPACE_ID_A);
+        assertThat(savedEntity.getClientId()).isEqualTo(CLIENT_ID);
     }
 
     @Test
@@ -103,7 +101,7 @@ class BriefingControllerV1IntegrationTest extends BriefingIntegrationTestBase {
         // Given: multiple briefings in workspace A
         createTestBriefing(WORKSPACE_ID_A, CLIENT_ID, ServiceType.SOCIAL_MEDIA);
         createTestBriefing(WORKSPACE_ID_A, UUID.randomUUID(), ServiceType.LANDING_PAGE);
-        createTestBriefing(WORKSPACE_ID_A, UUID.randomUUID(), ServiceType.WEB_DEVELOPMENT);
+        createTestBriefing(WORKSPACE_ID_A, UUID.randomUUID(), ServiceType.WEB_DESIGN);
 
         var token = generateTestJwtToken(WORKSPACE_ID_A, "user@example.com");
 
@@ -201,7 +199,7 @@ class BriefingControllerV1IntegrationTest extends BriefingIntegrationTestBase {
         // Given: existing briefing with questions and answers
         var session = createTestBriefing(WORKSPACE_ID_A, CLIENT_ID, ServiceType.SOCIAL_MEDIA);
         var question = createTestQuestion(session.getId(), 1, "What is your goal?");
-        createTestAnswer(session.getId(), question.questionId(), "Increase brand awareness");
+        createTestAnswer(session.getId(), question.getId(), "Increase brand awareness");
 
         var token = generateTestJwtToken(WORKSPACE_ID_A, "user@example.com");
 
@@ -216,8 +214,8 @@ class BriefingControllerV1IntegrationTest extends BriefingIntegrationTestBase {
                 result.getResponse().getContentAsString(),
                 BriefingDetailResponse.class
         );
-        assertThat(response.session()).isNotNull();
-        assertThat(response.session().id()).isEqualTo(session.getId().value());
+        assertThat(response.id()).isNotNull();
+        assertThat(response.id()).isEqualTo(session.getId().value());
         assertThat(response.progress()).isNotNull();
         assertThat(response.questions()).hasSize(1);
         assertThat(response.answers()).hasSize(1);
@@ -255,7 +253,7 @@ class BriefingControllerV1IntegrationTest extends BriefingIntegrationTestBase {
         // Given: briefing with some answers
         var session = createTestBriefing(WORKSPACE_ID_A, CLIENT_ID, ServiceType.SOCIAL_MEDIA);
         var question = createTestQuestion(session.getId(), 1, "What is your goal?");
-        createTestAnswer(session.getId(), question.questionId(), "Increase brand awareness");
+        createTestAnswer(session.getId(), question.getId(), "Increase brand awareness");
 
         var token = generateTestJwtToken(WORKSPACE_ID_A, "user@example.com");
 
@@ -299,8 +297,8 @@ class BriefingControllerV1IntegrationTest extends BriefingIntegrationTestBase {
                 result.getResponse().getContentAsString(),
                 QuestionResponse.class
         );
-        assertThat(response.questionId()).isNotNull();
-        assertThat(response.questionText()).isNotBlank();
+        assertThat(response.id()).isNotNull();
+        assertThat(response.text()).isNotBlank();
         assertThat(response.step()).isEqualTo(1);
     }
 
@@ -309,7 +307,7 @@ class BriefingControllerV1IntegrationTest extends BriefingIntegrationTestBase {
         // Given: briefing with all questions answered
         var session = createTestBriefing(WORKSPACE_ID_A, CLIENT_ID, ServiceType.SOCIAL_MEDIA);
         var question = createTestQuestion(session.getId(), 1, "What is your goal?");
-        createTestAnswer(session.getId(), question.questionId(), "Increase brand awareness");
+        createTestAnswer(session.getId(), question.getId(), "Increase brand awareness");
 
         var token = generateTestJwtToken(WORKSPACE_ID_A, "user@example.com");
 
@@ -326,7 +324,7 @@ class BriefingControllerV1IntegrationTest extends BriefingIntegrationTestBase {
         var session = createTestBriefing(WORKSPACE_ID_A, CLIENT_ID, ServiceType.SOCIAL_MEDIA);
         var question = createTestQuestion(session.getId(), 1, "What is your goal?");
 
-        var request = new SubmitAnswerRequest(question.questionId().value(), "Increase brand awareness");
+        var request = new SubmitAnswerRequest(question.getId().value(), "Increase brand awareness");
         var token = generateTestJwtToken(WORKSPACE_ID_A, "user@example.com");
 
         // When: submit answer
@@ -348,7 +346,7 @@ class BriefingControllerV1IntegrationTest extends BriefingIntegrationTestBase {
         var session = createTestBriefing(WORKSPACE_ID_A, CLIENT_ID, ServiceType.SOCIAL_MEDIA);
         var question = createTestQuestion(session.getId(), 1, "What is your goal?");
 
-        var request = new SubmitAnswerRequest(question.questionId().value(), "");
+        var request = new SubmitAnswerRequest(question.getId().value(), "");
         var token = generateTestJwtToken(WORKSPACE_ID_A, "user@example.com");
 
         // When: submit empty answer

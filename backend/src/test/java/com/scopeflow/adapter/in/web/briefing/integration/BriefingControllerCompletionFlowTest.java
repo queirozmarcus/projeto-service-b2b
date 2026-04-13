@@ -42,7 +42,7 @@ class BriefingControllerCompletionFlowTest extends BriefingIntegrationTestBase {
                 createResult.getResponse().getContentAsString(),
                 BriefingResponse.class
         );
-        assertThat(briefing.status()).isEqualTo(BriefingStatus.IN_PROGRESS);
+        assertThat(briefing.status()).isEqualTo("IN_PROGRESS");
 
         // Step 2: Get next question
         MvcResult questionResult = mockMvc.perform(get("/api/v1/briefings/{id}/next-question", briefing.id())
@@ -56,7 +56,7 @@ class BriefingControllerCompletionFlowTest extends BriefingIntegrationTestBase {
         );
 
         // Step 3: Submit answer
-        var answerRequest = new SubmitAnswerRequest(question.questionId(), "Comprehensive answer to the question");
+        var answerRequest = new SubmitAnswerRequest(question.id(), "Comprehensive answer to the question");
         mockMvc.perform(post("/api/v1/briefings/{id}/answers", briefing.id())
                         .header("Authorization", token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -77,7 +77,7 @@ class BriefingControllerCompletionFlowTest extends BriefingIntegrationTestBase {
                 completeResult.getResponse().getContentAsString(),
                 BriefingResponse.class
         );
-        assertThat(completed.status()).isEqualTo(BriefingStatus.COMPLETED);
+        assertThat(completed.status()).isEqualTo("COMPLETED");
         assertThat(completed.completionScore()).isEqualTo(95);
     }
 
@@ -86,7 +86,7 @@ class BriefingControllerCompletionFlowTest extends BriefingIntegrationTestBase {
         // Given: briefing with sufficient completion score
         var session = createTestBriefing(WORKSPACE_ID_A, CLIENT_ID, ServiceType.SOCIAL_MEDIA);
         var question = createTestQuestion(session.getId(), 1, "What is your goal?");
-        createTestAnswer(session.getId(), question.questionId(), "Increase brand awareness");
+        createTestAnswer(session.getId(), question.getId(), "Increase brand awareness");
 
         var token = generateTestJwtToken(WORKSPACE_ID_A, "user@example.com");
         var request = new CompleteBriefingRequest(95, java.util.List.of());
@@ -104,14 +104,13 @@ class BriefingControllerCompletionFlowTest extends BriefingIntegrationTestBase {
                 result.getResponse().getContentAsString(),
                 BriefingResponse.class
         );
-        assertThat(response.status()).isEqualTo(BriefingStatus.COMPLETED);
+        assertThat(response.status()).isEqualTo("COMPLETED");
         assertThat(response.completionScore()).isEqualTo(95);
 
         // Verify persistence
         var savedEntity = sessionRepository.findById(response.id()).orElseThrow();
-        var saved = savedEntity.toDomain();
-        assertThat(saved).isInstanceOf(BriefingCompleted.class);
-        assertThat(((BriefingCompleted) saved).getCompletionScore().score()).isEqualTo(95);
+        assertThat(savedEntity.getStatus()).isEqualTo("COMPLETED");
+        assertThat(savedEntity.getCompletionScore()).isEqualTo(95);
     }
 
     @Test
@@ -150,8 +149,7 @@ class BriefingControllerCompletionFlowTest extends BriefingIntegrationTestBase {
 
         // Then: status changes to ABANDONED
         var savedEntity = sessionRepository.findById(session.getId().value()).orElseThrow();
-        var saved = savedEntity.toDomain();
-        assertThat(saved).isInstanceOf(BriefingAbandoned.class);
+        assertThat(savedEntity.getStatus()).isEqualTo("ABANDONED");
     }
 
     @Test
@@ -184,6 +182,6 @@ class BriefingControllerCompletionFlowTest extends BriefingIntegrationTestBase {
                 BriefingResponse.class
         );
         assertThat(newBriefing.id()).isNotEqualTo(session.getId().value());
-        assertThat(newBriefing.status()).isEqualTo(BriefingStatus.IN_PROGRESS);
+        assertThat(newBriefing.status()).isEqualTo("IN_PROGRESS");
     }
 }

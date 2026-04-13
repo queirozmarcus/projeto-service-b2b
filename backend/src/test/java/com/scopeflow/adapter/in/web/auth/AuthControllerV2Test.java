@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scopeflow.adapter.in.web.GlobalExceptionHandler;
 import com.scopeflow.adapter.in.web.auth.dto.LoginRequest;
 import com.scopeflow.adapter.in.web.auth.dto.RegisterRequest;
+import com.scopeflow.adapter.out.userservice.AuthProxyAdapter;
 import com.scopeflow.config.TestSecurityConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,8 +14,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.*;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
@@ -33,7 +32,7 @@ class AuthControllerV2Test {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private RestTemplate authServiceRestTemplate;
+    private AuthProxyAdapter authProxyAdapter;
 
     // ============ register ============
 
@@ -47,8 +46,8 @@ class AuthControllerV2Test {
         HttpHeaders upstreamHeaders = new HttpHeaders();
         upstreamHeaders.add(HttpHeaders.SET_COOKIE, "refreshToken=rt; HttpOnly; Path=/");
 
-        given(authServiceRestTemplate.exchange(
-                contains("/auth/register"), eq(HttpMethod.POST), any(), eq(String.class)
+        given(authProxyAdapter.proxy(
+                contains("/auth/register"), eq(HttpMethod.POST), any(), any(HttpHeaders.class)
         )).willReturn(ResponseEntity.status(HttpStatus.CREATED).headers(upstreamHeaders).body(upstreamBody));
 
         RegisterRequest request = new RegisterRequest(
@@ -98,10 +97,10 @@ class AuthControllerV2Test {
                  "title":"Email Already Registered","status":409}
                 """;
 
-        given(authServiceRestTemplate.exchange(
-                contains("/auth/register"), eq(HttpMethod.POST), any(), eq(String.class)
-        )).willThrow(HttpClientErrorException.create(
-                HttpStatus.CONFLICT, "Conflict", new HttpHeaders(), problemJson.getBytes(), null));
+        // AuthProxyAdapter.proxy() catches HttpClientErrorException internally and returns ResponseEntity
+        given(authProxyAdapter.proxy(
+                contains("/auth/register"), eq(HttpMethod.POST), any(), any(HttpHeaders.class)
+        )).willReturn(ResponseEntity.status(HttpStatus.CONFLICT).body(problemJson));
 
         RegisterRequest request = new RegisterRequest(
                 "user@example.com", "Password1!", "Test User", null
@@ -125,8 +124,8 @@ class AuthControllerV2Test {
         HttpHeaders upstreamHeaders = new HttpHeaders();
         upstreamHeaders.add(HttpHeaders.SET_COOKIE, "refreshToken=rt; HttpOnly; Path=/");
 
-        given(authServiceRestTemplate.exchange(
-                contains("/auth/login"), eq(HttpMethod.POST), any(), eq(String.class)
+        given(authProxyAdapter.proxy(
+                contains("/auth/login"), eq(HttpMethod.POST), any(), any(HttpHeaders.class)
         )).willReturn(ResponseEntity.ok().headers(upstreamHeaders).body(upstreamBody));
 
         LoginRequest request = new LoginRequest("user@example.com", "Password1!");
@@ -147,10 +146,9 @@ class AuthControllerV2Test {
                  "title":"Invalid Credentials","status":401}
                 """;
 
-        given(authServiceRestTemplate.exchange(
-                contains("/auth/login"), eq(HttpMethod.POST), any(), eq(String.class)
-        )).willThrow(HttpClientErrorException.create(
-                HttpStatus.UNAUTHORIZED, "Unauthorized", new HttpHeaders(), problemJson.getBytes(), null));
+        given(authProxyAdapter.proxy(
+                contains("/auth/login"), eq(HttpMethod.POST), any(), any(HttpHeaders.class)
+        )).willReturn(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemJson));
 
         LoginRequest request = new LoginRequest("user@example.com", "WrongPass1!");
 
@@ -169,8 +167,8 @@ class AuthControllerV2Test {
                 {"accessToken":"new-tok","expiresIn":900}
                 """;
 
-        given(authServiceRestTemplate.exchange(
-                contains("/auth/refresh"), eq(HttpMethod.POST), any(), eq(String.class)
+        given(authProxyAdapter.proxy(
+                contains("/auth/refresh"), eq(HttpMethod.POST), any(), any(HttpHeaders.class)
         )).willReturn(ResponseEntity.ok(upstreamBody));
 
         mockMvc.perform(post("/auth/refresh")

@@ -78,7 +78,7 @@ class BriefingMapperTest {
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.briefing()).isNotNull();
+        assertThat(response.id()).isNotNull();
         assertThat(response.progress()).isNotNull();
         assertThat(response.questions()).hasSize(2);
         assertThat(response.answers()).hasSize(1);

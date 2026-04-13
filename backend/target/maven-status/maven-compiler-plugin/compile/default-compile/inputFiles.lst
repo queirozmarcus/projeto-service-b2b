@@ -101,6 +101,7 @@
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/in/web/HealthController.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/in/web/briefing/dto/BriefingDetailResponse.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/user/InvalidInvitedByUserException.java
+/home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/out/userservice/AuthProxyAdapter.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/QuestionId.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/out/pdf/ITextPdfServiceAdapter.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/proposal/ApprovalTokenExpiredException.java

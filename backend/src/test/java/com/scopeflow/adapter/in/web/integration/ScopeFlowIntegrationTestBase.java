@@ -41,7 +41,7 @@ import java.util.UUID;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public abstract class ScopeFlowIntegrationTestBase {
 
     @Container
@@ -243,5 +243,5 @@ public abstract class ScopeFlowIntegrationTestBase {
     /**
      * Carries the IDs and token for a fully set up test user.
      */
-    protected record AuthContext(UUID userId, UUID workspaceId, String authorizationHeader) {}
+    public record AuthContext(UUID userId, UUID workspaceId, String authorizationHeader) {}
 }
