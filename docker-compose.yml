@@ -75,8 +75,12 @@ services:
       - scopeflow-network
 
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.3
     container_name: scopeflow-traefik
+    environment:
+      # Força o cliente Docker interno do Traefik a usar API 1.41+
+      # Necessário em WSL2 onde Docker Desktop exige mínimo 1.40
+      DOCKER_API_VERSION: "1.41"
     command:
       # Enable API and dashboard (insecure mode for local dev)
       - "--api.insecure=true"
