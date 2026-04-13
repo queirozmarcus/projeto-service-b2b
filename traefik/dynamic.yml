@@ -1,0 +1,35 @@
+# traefik/dynamic.yml — Rotas estáticas (Strangler Fig)
+#
+# Substitui o Docker provider que falha em WSL2 por file-based provider.
+# As rotas replicam exatamente o comportamento das labels do docker-compose.
+#
+# Roteamento Strangler Fig:
+#   Priority 100 → /api/v1/auth/* e /api/v1/users/* → user-service (8081)
+#   Priority  50 → /api/*                            → monolith (8080)
+
+http:
+  routers:
+    user-service:
+      rule: "PathPrefix(`/api/v1/auth`) || PathPrefix(`/api/v1/users`)"
+      service: user-service
+      priority: 100
+      entryPoints:
+        - web
+
+    monolith:
+      rule: "PathPrefix(`/api/`)"
+      service: monolith
+      priority: 50
+      entryPoints:
+        - web
+
+  services:
+    user-service:
+      loadBalancer:
+        servers:
+          - url: "http://user-service:8081"
+
+    monolith:
+      loadBalancer:
+        servers:
+          - url: "http://app:8080"

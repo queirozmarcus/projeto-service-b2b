@@ -77,16 +77,14 @@ services:
   traefik:
     image: traefik:v3.3
     container_name: scopeflow-traefik
-    environment:
-      # Força o cliente Docker interno do Traefik a usar API 1.41+
-      # Necessário em WSL2 onde Docker Desktop exige mínimo 1.40
-      DOCKER_API_VERSION: "1.41"
     command:
       # Enable API and dashboard (insecure mode for local dev)
       - "--api.insecure=true"
-      # Enable Docker provider
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
+      # File-based provider: evita Docker provider que falha em WSL2
+      # (Docker Desktop rejeita API < 1.40; Traefik negocia a partir de 1.24)
+      # As rotas Strangler Fig estão em traefik/dynamic.yml
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+      - "--providers.file.watch=true"
       # Define entrypoints
       - "--entrypoints.web.address=:80"
       # Access logs for debugging
@@ -94,9 +92,9 @@ services:
       - "--log.level=INFO"
     ports:
       - "80:80"      # HTTP entrypoint
-      - "8888:8080"  # Traefik dashboard (renamed to avoid conflict with monolith)
+      - "8888:8080"  # Traefik dashboard
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     networks:
       - scopeflow-network
     restart: unless-stopped
