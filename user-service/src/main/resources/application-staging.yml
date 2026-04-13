@@ -1,0 +1,43 @@
+# ============================================================
+# Staging profile — ScopeFlow user-service
+#
+# DB-per-service ATIVO em staging:
+#   - Banco dedicado: scopeflow_users (user-db container, porta 5433)
+#   - Flyway gerencia o schema independente do monólito
+#   - baseline-on-migrate herdado do application.yml base
+#
+# Diferenças em relação ao application.yml base:
+#   - Datasource aponta para user-db (banco dedicado)
+#   - Flyway explicitamente habilitado (sem depender do base)
+#   - Cookies sem HTTPS (staging pode rodar em HTTP interno)
+#   - Logs reduzidos para INFO
+#
+# Para ativar: SPRING_PROFILES_ACTIVE=staging
+# Ou via docker-compose: docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+# ============================================================
+
+spring:
+  # DB-per-service: banco exclusivo do user-service em staging
+  # Fallback mantém compatibilidade com ambientes que sobrescrevem via env var
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://user-db:5432/scopeflow_users}
+
+  # Flyway explicitamente habilitado — user-service é dono do schema em staging
+  # baseline-on-migrate: true e baseline-version: 0 herdados do application.yml
+  flyway:
+    enabled: true
+
+# Cookies HTTP-only sem require-secure em staging (sem TLS interno)
+app:
+  cookie:
+    secure: ${APP_COOKIE_SECURE:false}
+  requires-https: false
+
+# Logs menos verbosos em staging (sem DEBUG de domínio)
+logging:
+  level:
+    root: INFO
+    com.scopeflow.user: INFO
+    org.springframework.security: WARN
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN

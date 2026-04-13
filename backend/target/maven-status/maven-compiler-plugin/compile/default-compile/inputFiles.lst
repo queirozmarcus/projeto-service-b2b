@@ -184,6 +184,7 @@
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/out/persistence/proposal/JpaApproval.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/out/persistence/workspace/JpaWorkspace.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/user/EmailAlreadyRegisteredException.java
+/home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/application/purge/PurgeJobService.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/in/web/proposal/ApprovalControllerV2.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/BriefingQuestionRepository.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/adapter/out/persistence/briefing/JpaServiceContextQuestionSpringRepository.java
