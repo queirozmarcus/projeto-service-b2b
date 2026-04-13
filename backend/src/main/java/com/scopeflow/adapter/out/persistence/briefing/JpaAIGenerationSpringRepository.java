@@ -1,10 +1,12 @@
 package com.scopeflow.adapter.out.persistence.briefing;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,4 +42,15 @@ public interface JpaAIGenerationSpringRepository extends JpaRepository<JpaAIGene
         @Param("sessionId") UUID sessionId,
         @Param("type") String type
     );
+
+    /**
+     * Delete AI generation records older than the given cutoff.
+     * Operates as bulk DELETE in the database — does not load entities into memory.
+     *
+     * @param cutoff records created before this instant will be deleted
+     * @return number of deleted rows
+     */
+    @Modifying
+    @Query("DELETE FROM JpaAIGeneration ag WHERE ag.createdAt < :cutoff")
+    int deleteCreatedBefore(@Param("cutoff") Instant cutoff);
 }

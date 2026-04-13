@@ -1,8 +1,10 @@
 package com.scopeflow.application.outbox;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -51,4 +53,15 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
      */
     @Query("SELECT COUNT(oe) FROM OutboxEvent oe WHERE oe.publishedAt IS NULL")
     long countUnpublished();
+
+    /**
+     * Delete published events older than the given cutoff.
+     * Only deletes events where published_at IS NOT NULL — never touches unpublished events.
+     *
+     * @param cutoff events published before this instant will be deleted
+     * @return number of deleted rows
+     */
+    @Modifying
+    @Query("DELETE FROM OutboxEvent oe WHERE oe.publishedAt IS NOT NULL AND oe.publishedAt < :cutoff")
+    int deletePublishedBefore(Instant cutoff);
 }

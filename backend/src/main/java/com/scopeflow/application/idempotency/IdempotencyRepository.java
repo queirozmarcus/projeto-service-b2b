@@ -1,8 +1,10 @@
 package com.scopeflow.application.idempotency;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -45,4 +47,15 @@ public interface IdempotencyRepository extends JpaRepository<IdempotencyRecord, 
      */
     @Query("SELECT COUNT(ir) FROM IdempotencyRecord ir WHERE ir.listenerId = :listenerId")
     long countByListenerId(String listenerId);
+
+    /**
+     * Delete all idempotency records older than the given cutoff.
+     * Dedup window is considered closed after retention period.
+     *
+     * @param cutoff records processed before this instant will be deleted
+     * @return number of deleted rows
+     */
+    @Modifying
+    @Query("DELETE FROM IdempotencyRecord ir WHERE ir.processedAt < :cutoff")
+    int deleteBefore(Instant cutoff);
 }

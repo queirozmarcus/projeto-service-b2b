@@ -114,6 +114,11 @@ app:
   cookie:
     secure: ${APP_COOKIE_SECURE:true}
   requires-https: ${APP_REQUIRES_HTTPS:true}
+  purge:
+    enabled: ${PURGE_ENABLED:true}
+    outbox-retention-days: ${PURGE_OUTBOX_RETENTION_DAYS:7}
+    idempotency-retention-days: ${PURGE_IDEMPOTENCY_RETENTION_DAYS:30}
+    ai-generations-retention-days: ${PURGE_AI_GENERATIONS_RETENTION_DAYS:90}
 
 # JWT Configuration
 jwt:
