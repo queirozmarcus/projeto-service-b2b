@@ -18,9 +18,14 @@ Para setup e comandos, ver [`README.md`](../README.md) na raiz. Para status atua
 | Schema do banco | [`database/schema-diagram.md`](database/schema-diagram.md) |
 | Deploy em staging | [`deployment/DEPLOYMENT-GUIDE.md`](deployment/DEPLOYMENT-GUIDE.md) |
 | Cut-over produção | [`migration/DB-MIGRATION-USER-SERVICE.md`](migration/DB-MIGRATION-USER-SERVICE.md) |
-| Frontend (dashboard, landing, arquitetura) | [`frontend/`](frontend/) |
+| Dashboard (componentes, Zustand, API) | [`frontend/DASHBOARD-GUIDE.md`](frontend/DASHBOARD-GUIDE.md) |
+| Landing page (SEO, SSG, customização) | [`frontend/LANDING-PAGE-GUIDE.md`](frontend/LANDING-PAGE-GUIDE.md) |
+| Auditoria SEO | [`frontend/SEO_AUDIT_REPORT.md`](frontend/SEO_AUDIT_REPORT.md) |
+| Monitor & Heal (script de infra) | [`devops/MONITOR-AND-HEAL-VALIDATION.md`](devops/MONITOR-AND-HEAL-VALIDATION.md) |
 | Testes de contrato | [`qa/contracts/README.md`](qa/contracts/README.md) |
 | Cobertura de testes | [`qa/test-coverage-report.md`](qa/test-coverage-report.md) |
+| Smoke tests | [`qa/smoke-tests.md`](qa/smoke-tests.md) |
+| Integration tests (UserController) | [`qa/user-controller-integration-tests.md`](qa/user-controller-integration-tests.md) |
 
 ---
 
@@ -64,8 +69,7 @@ docs/
 │   └── DEPLOYMENT-GUIDE.md                   # Guia de deploy staging
 │
 ├── devops/
-│   ├── MONITOR-AND-HEAL-VALIDATION.md        # Validação monitor-and-heal script
-│   └── SEO_AUDIT_REPORT.md                   # Relatório de SEO (landing + dashboard)
+│   └── MONITOR-AND-HEAL-VALIDATION.md        # Validação monitor-and-heal script
 │
 ├── migration/
 │   ├── README.md                              # Status da migração Strangler Fig
@@ -87,20 +91,19 @@ docs/
 ├── frontend/
 │   ├── DASHBOARD-GUIDE.md                    # Componentes do dashboard, Zustand, integração API
 │   ├── LANDING-PAGE-GUIDE.md                 # Landing page: SEO, SSG, customização
-│   └── LANDING-ARCHITECTURE.md              # Arquitetura dos componentes landing
+│   ├── LANDING-ARCHITECTURE.md              # Arquitetura dos componentes landing
+│   └── SEO_AUDIT_REPORT.md                  # Auditoria SEO (landing + dashboard)
 │
 ├── qa/
 │   ├── CONTRACT-TESTING-SUMMARY.md           # Resumo dos contract tests
 │   ├── CONTRACT-TESTS-USER-SERVICE.md        # Contract tests do user-service (provider)
 │   ├── CONTRACT-TESTS-MONOLITH.md            # Contract tests do monólito (consumer)
 │   ├── test-coverage-report.md               # Relatório de cobertura
+│   ├── smoke-tests.md                        # Smoke tests documentados
+│   ├── user-controller-integration-tests.md  # Integration tests do UserController
 │   └── contracts/
 │       ├── README.md                          # Índice de contratos
 │       └── CONTRACT-TESTING-GUIDE.md         # Guia de contract testing
-│
-├── testing/
-│   ├── smoke-tests.md                        # Smoke tests documentados
-│   └── user-controller-integration-tests.md  # Integration tests do UserController
 │
 └── sessions/
     └── archive/                              # Histórico de sessões e artefatos antigos

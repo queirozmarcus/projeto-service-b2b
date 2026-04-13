@@ -1,17 +1,15 @@
 package com.scopeflow.adapter.in.web.auth;
 
 import com.scopeflow.adapter.in.web.auth.dto.*;
+import com.scopeflow.adapter.out.userservice.AuthProxyAdapter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 
 /**
  * Auth controller: registration, login, token refresh, profile.
@@ -24,7 +22,7 @@ import org.springframework.web.client.RestTemplate;
  * - Access token: short-lived (15min), returned in response body, stored in memory by client
  * - Refresh token: long-lived (7d), delivered via httpOnly Set-Cookie, never exposed in body
  *
- * All auth requests are proxied to user-service.
+ * All auth requests are proxied to user-service via AuthProxyAdapter (circuit breaker + retry).
  */
 @RestController
 @RequestMapping("/auth")
@@ -33,16 +31,10 @@ public class AuthControllerV2 {
 
     private static final Logger log = LoggerFactory.getLogger(AuthControllerV2.class);
 
-    @Value("${app.cookie.secure:true}")
-    private boolean cookieSecure;
+    private final AuthProxyAdapter authProxyAdapter;
 
-    @Value("${auth.service.url:http://user-service:8081/api/v1}")
-    private String authServiceUrl;
-
-    private final RestTemplate authServiceRestTemplate;
-
-    public AuthControllerV2(RestTemplate authServiceRestTemplate) {
-        this.authServiceRestTemplate = authServiceRestTemplate;
+    public AuthControllerV2(AuthProxyAdapter authProxyAdapter) {
+        this.authProxyAdapter = authProxyAdapter;
     }
 
     /**
@@ -53,8 +45,10 @@ public class AuthControllerV2 {
     @RateLimit
     @Operation(summary = "Register new user account")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("Proxying register to user-service: email={}", request.email());
-        return proxyPost("/auth/register", request);
+        log.debug("Proxying register to user-service: email={}", request.email());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return authProxyAdapter.proxy("/auth/register", HttpMethod.POST, request, headers);
     }
 
     /**
@@ -65,8 +59,10 @@ public class AuthControllerV2 {
     @RateLimit
     @Operation(summary = "Authenticate and obtain tokens")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Proxying login to user-service: email={}", request.email());
-        return proxyPost("/auth/login", request);
+        log.debug("Proxying login to user-service: email={}", request.email());
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return authProxyAdapter.proxy("/auth/login", HttpMethod.POST, request, headers);
     }
 
     /**
@@ -77,7 +73,13 @@ public class AuthControllerV2 {
     @Operation(summary = "Refresh access token using httpOnly cookie")
     public ResponseEntity<?> refresh(HttpServletRequest request) {
         log.info("Proxying refresh to user-service");
-        return proxyPostWithCookies("/auth/refresh", null, request);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String cookieHeader = request.getHeader("Cookie");
+        if (cookieHeader != null) {
+            headers.set("Cookie", cookieHeader);
+        }
+        return authProxyAdapter.proxy("/auth/refresh", HttpMethod.POST, null, headers);
     }
 
     /**
@@ -88,7 +90,12 @@ public class AuthControllerV2 {
     @Operation(summary = "Get current user profile")
     public ResponseEntity<?> me(HttpServletRequest request) {
         log.info("Proxying /me to user-service");
-        return proxyGetWithAuth("/auth/me", request);
+        HttpHeaders headers = new HttpHeaders();
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null) {
+            headers.set("Authorization", authHeader);
+        }
+        return authProxyAdapter.proxy("/auth/me", HttpMethod.GET, null, headers);
     }
 
     /**
@@ -99,101 +106,12 @@ public class AuthControllerV2 {
     @Operation(summary = "Logout: clears refresh token cookie")
     public ResponseEntity<?> logout(HttpServletRequest request) {
         log.info("Proxying logout to user-service");
-        return proxyPostWithCookies("/auth/logout", null, request);
-    }
-
-    // ============ Proxy helpers ============
-
-    /**
-     * Proxy a POST request to user-service.
-     * Forwards request body and returns response with headers (including Set-Cookie).
-     */
-    private ResponseEntity<?> proxyPost(String path, Object body) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Object> entity = new HttpEntity<>(body, headers);
-
-            ResponseEntity<String> response = authServiceRestTemplate.exchange(
-                    authServiceUrl + path, HttpMethod.POST, entity, String.class
-            );
-
-            HttpHeaders responseHeaders = new HttpHeaders();
-            // Forward Set-Cookie header from user-service (contains refresh token)
-            if (response.getHeaders().containsKey(HttpHeaders.SET_COOKIE)) {
-                responseHeaders.addAll(HttpHeaders.SET_COOKIE, response.getHeaders().get(HttpHeaders.SET_COOKIE));
-            }
-
-            return ResponseEntity.status(response.getStatusCode())
-                    .headers(responseHeaders)
-                    .body(response.getBody());
-        } catch (HttpClientErrorException e) {
-            log.warn("user-service returned error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
-        } catch (Exception e) {
-            log.error("Failed to proxy to user-service", e);
-            throw new RuntimeException("User service unavailable", e);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String cookieHeader = request.getHeader("Cookie");
+        if (cookieHeader != null) {
+            headers.set("Cookie", cookieHeader);
         }
-    }
-
-    /**
-     * Proxy a POST request with cookies (for refresh/logout).
-     */
-    private ResponseEntity<?> proxyPostWithCookies(String path, Object body, HttpServletRequest request) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            // Forward cookies from original request
-            String cookieHeader = request.getHeader("Cookie");
-            if (cookieHeader != null) {
-                headers.set("Cookie", cookieHeader);
-            }
-            HttpEntity<Object> entity = new HttpEntity<>(body, headers);
-
-            ResponseEntity<String> response = authServiceRestTemplate.exchange(
-                    authServiceUrl + path, HttpMethod.POST, entity, String.class
-            );
-
-            HttpHeaders responseHeaders = new HttpHeaders();
-            if (response.getHeaders().containsKey(HttpHeaders.SET_COOKIE)) {
-                responseHeaders.addAll(HttpHeaders.SET_COOKIE, response.getHeaders().get(HttpHeaders.SET_COOKIE));
-            }
-
-            return ResponseEntity.status(response.getStatusCode())
-                    .headers(responseHeaders)
-                    .body(response.getBody());
-        } catch (HttpClientErrorException e) {
-            log.warn("user-service returned error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
-        } catch (Exception e) {
-            log.error("Failed to proxy to user-service", e);
-            throw new RuntimeException("User service unavailable", e);
-        }
-    }
-
-    /**
-     * Proxy a GET request with Authorization header.
-     */
-    private ResponseEntity<?> proxyGetWithAuth(String path, HttpServletRequest request) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null) {
-                headers.set("Authorization", authHeader);
-            }
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<String> response = authServiceRestTemplate.exchange(
-                    authServiceUrl + path, HttpMethod.GET, entity, String.class
-            );
-
-            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
-        } catch (HttpClientErrorException e) {
-            log.warn("user-service returned error: status={}, body={}", e.getStatusCode(), e.getResponseBodyAsString());
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
-        } catch (Exception e) {
-            log.error("Failed to proxy to user-service", e);
-            throw new RuntimeException("User service unavailable", e);
-        }
+        return authProxyAdapter.proxy("/auth/logout", HttpMethod.POST, null, headers);
     }
 }

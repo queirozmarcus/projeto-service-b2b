@@ -1,17 +1,16 @@
 package com.scopeflow.adapter.in.web.user;
 
 import com.scopeflow.adapter.in.web.user.dto.CreateInvitedUserRequest;
+import com.scopeflow.adapter.out.userservice.AuthProxyAdapter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 /**
  * User management endpoints.
@@ -20,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
  * Supports workspace invite flow: lookup by email, create invited user.
  * All endpoints require authentication (JWT).
  *
- * All requests are proxied to user-service.
+ * All requests are proxied to user-service via AuthProxyAdapter (circuit breaker + retry).
  */
 @RestController
 @RequestMapping("/api/v1/users")
@@ -29,13 +28,10 @@ public class UserController {
 
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
-    @Value("${auth.service.url:http://user-service:8081/api/v1}")
-    private String authServiceUrl;
+    private final AuthProxyAdapter authProxyAdapter;
 
-    private final RestTemplate authServiceRestTemplate;
-
-    public UserController(RestTemplate authServiceRestTemplate) {
-        this.authServiceRestTemplate = authServiceRestTemplate;
+    public UserController(AuthProxyAdapter authProxyAdapter) {
+        this.authProxyAdapter = authProxyAdapter;
     }
 
     /**
@@ -51,7 +47,15 @@ public class UserController {
     @Operation(summary = "Get user by email")
     public ResponseEntity<?> getByEmail(@PathVariable String email, HttpServletRequest request) {
         log.info("Proxying getByEmail to user-service: email={}", email);
-        return proxyGetWithAuth("/users/by-email/" + email, request);
+        HttpHeaders headers = new HttpHeaders();
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader != null) {
+            headers.set("Authorization", authHeader);
+        }
+        String path = UriComponentsBuilder.fromPath("/users/by-email/{email}")
+                .buildAndExpand(email)
+                .toUriString();
+        return authProxyAdapter.proxy(path, HttpMethod.GET, null, headers);
     }
 
     /**
@@ -68,53 +72,12 @@ public class UserController {
     @Operation(summary = "Create invited user")
     public ResponseEntity<?> createInvited(@Valid @RequestBody CreateInvitedUserRequest request, HttpServletRequest httpRequest) {
         log.info("Proxying createInvited to user-service: email={}", request.email());
-        return proxyPostWithAuth("/users/invited", request, httpRequest);
-    }
-
-    // ============ Proxy helpers ============
-
-    private ResponseEntity<?> proxyGetWithAuth(String path, HttpServletRequest request) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null) {
-                headers.set("Authorization", authHeader);
-            }
-            HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<String> response = authServiceRestTemplate.exchange(
-                    authServiceUrl + path, HttpMethod.GET, entity, String.class
-            );
-            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
-        } catch (HttpClientErrorException e) {
-            log.warn("user-service returned error: status={}", e.getStatusCode());
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
-        } catch (Exception e) {
-            log.error("Failed to proxy to user-service", e);
-            throw new RuntimeException("User service unavailable", e);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String authHeader = httpRequest.getHeader("Authorization");
+        if (authHeader != null) {
+            headers.set("Authorization", authHeader);
         }
-    }
-
-    private ResponseEntity<?> proxyPostWithAuth(String path, Object body, HttpServletRequest request) {
-        try {
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            String authHeader = request.getHeader("Authorization");
-            if (authHeader != null) {
-                headers.set("Authorization", authHeader);
-            }
-            HttpEntity<Object> entity = new HttpEntity<>(body, headers);
-
-            ResponseEntity<String> response = authServiceRestTemplate.exchange(
-                    authServiceUrl + path, HttpMethod.POST, entity, String.class
-            );
-            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
-        } catch (HttpClientErrorException e) {
-            log.warn("user-service returned error: status={}", e.getStatusCode());
-            return ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
-        } catch (Exception e) {
-            log.error("Failed to proxy to user-service", e);
-            throw new RuntimeException("User service unavailable", e);
-        }
+        return authProxyAdapter.proxy("/users/invited", HttpMethod.POST, request, headers);
     }
 }
