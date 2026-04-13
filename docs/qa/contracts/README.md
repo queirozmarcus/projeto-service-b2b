@@ -5,8 +5,8 @@
 | Document | Purpose |
 |----------|---------|
 | [**CONTRACT-TESTING-GUIDE.md**](CONTRACT-TESTING-GUIDE.md) | Main guide: architecture, how-to, troubleshooting |
-| [**user-service/CONTRACT-TESTS.md**](../../../user-service/CONTRACT-TESTS.md) | Provider contracts (8 YAML files) |
-| [**backend/CONTRACT-TESTS.md**](../../../backend/CONTRACT-TESTS.md) | Consumer tests (10 scenarios) |
+| [**docs/qa/CONTRACT-TESTS-USER-SERVICE.md**](../CONTRACT-TESTS-USER-SERVICE.md) | Provider contracts (8 YAML files) |
+| [**docs/qa/CONTRACT-TESTS-MONOLITH.md**](../CONTRACT-TESTS-MONOLITH.md) | Consumer tests (10 scenarios) |
 | [**validate-contracts.sh**](../../../scripts/validate-contracts.sh) | CI validation script |
 
 ## TL;DR — Quick Start
@@ -113,5 +113,5 @@ JWT secret mismatch → ❌ block deploy
 ## Support
 
 - **Questions:** See [CONTRACT-TESTING-GUIDE.md](CONTRACT-TESTING-GUIDE.md)
-- **Provider docs:** [user-service/CONTRACT-TESTS.md](../../../user-service/CONTRACT-TESTS.md)
-- **Consumer docs:** [backend/CONTRACT-TESTS.md](../../../backend/CONTRACT-TESTS.md)
+- **Provider docs:** [docs/qa/CONTRACT-TESTS-USER-SERVICE.md](../CONTRACT-TESTS-USER-SERVICE.md)
+- **Consumer docs:** [docs/qa/CONTRACT-TESTS-MONOLITH.md](../CONTRACT-TESTS-MONOLITH.md)

@@ -2,7 +2,7 @@
 
 **Status:** ✅ **Extraído e operacional em staging** | Cut-over produção pendente
 
-Ver: [DB_MIGRATION_GUIDE.md](docs/DB_MIGRATION_GUIDE.md) para passos do cut-over em produção.
+Ver: [docs/migration/DB-MIGRATION-USER-SERVICE.md](../docs/migration/DB-MIGRATION-USER-SERVICE.md) para passos do cut-over em produção.
 
 ---
 

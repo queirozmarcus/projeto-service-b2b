@@ -347,7 +347,7 @@ docker logs scopeflow-user-service -f
 | `docker-compose.yml` | Stack completa (7 serviços) |
 | `docker-compose.staging.yml` | Override: user-service → DB dedicado |
 | `backend/src/main/resources/application.yml` | Config base + Resilience4j + Purge |
-| `user-service/docs/DB_MIGRATION_GUIDE.md` | Passos de cut-over e rollback para produção |
+| `docs/migration/DB-MIGRATION-USER-SERVICE.md` | Passos de cut-over e rollback para produção |
 | `backend/src/main/resources/db/migration/` | Flyway V1–V9 (monólito) |
 | `user-service/src/main/resources/db/migration/` | Flyway V1 (user-service) |
 | `.claude/plans/backlog/` | Planos aprovados aguardando execução |

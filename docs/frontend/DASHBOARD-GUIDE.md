@@ -304,7 +304,7 @@ try {
 
 ## Documentação Completa
 
-Veja `/frontend/DASHBOARD_REFACTOR.md` para documentação detalhada:
+Veja [`docs/sessions/archive/DASHBOARD_REFACTOR.md`](../sessions/archive/DASHBOARD_REFACTOR.md) para documentação detalhada (arquivo histórico):
 - Arquitetura completa
 - Props de todos os componentes
 - Fluxos principais

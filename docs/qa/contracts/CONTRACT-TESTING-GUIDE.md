@@ -69,14 +69,16 @@ projeto-service-b2b/
 │   ├── src/test/java/com/scopeflow/user/contract/
 │   │   ├── ContractVerifierBase.java      # Base class com mocks
 │   │   └── ContractVerifierSecurityConfig.java
-│   ├── CONTRACT-TESTS.md                  # Docs do provider
 │   └── pom.xml                            # spring-cloud-contract-maven-plugin
 │
 ├── backend/                               # Consumer
 │   ├── src/test/java/com/scopeflow/contract/
 │   │   └── UserServiceContractTest.java   # Consumer tests com stubs
-│   ├── CONTRACT-TESTS.md                  # Docs do consumer
 │   └── pom.xml                            # spring-cloud-starter-contract-stub-runner
+│
+├── docs/qa/
+│   ├── CONTRACT-TESTS-USER-SERVICE.md     # Docs do provider
+│   └── CONTRACT-TESTS-MONOLITH.md        # Docs do consumer
 │
 ├── scripts/
 │   └── validate-contracts.sh              # Script de validação CI

@@ -17,7 +17,8 @@ Para setup e comandos, ver [`README.md`](../README.md) na raiz. Para status atua
 | Migração Strangler Fig | [`migration/README.md`](migration/README.md) |
 | Schema do banco | [`database/schema-diagram.md`](database/schema-diagram.md) |
 | Deploy em staging | [`deployment/DEPLOYMENT-GUIDE.md`](deployment/DEPLOYMENT-GUIDE.md) |
-| Cut-over produção | [`../user-service/docs/DB_MIGRATION_GUIDE.md`](../user-service/docs/DB_MIGRATION_GUIDE.md) |
+| Cut-over produção | [`migration/DB-MIGRATION-USER-SERVICE.md`](migration/DB-MIGRATION-USER-SERVICE.md) |
+| Frontend (dashboard, landing, arquitetura) | [`frontend/`](frontend/) |
 | Testes de contrato | [`qa/contracts/README.md`](qa/contracts/README.md) |
 | Cobertura de testes | [`qa/test-coverage-report.md`](qa/test-coverage-report.md) |
 
@@ -68,6 +69,7 @@ docs/
 │
 ├── migration/
 │   ├── README.md                              # Status da migração Strangler Fig
+│   ├── DB-MIGRATION-USER-SERVICE.md          # Cut-over produção: pg_dump, restore, rollback
 │   ├── ETAPA-3-CONCLUSAO.md                  # Etapa 3 — conclusão
 │   ├── ETAPA-3-VALIDACAO.md                  # Etapa 3 — validação
 │   ├── EXTRACAO-USER-SERVICE-RESUMO.md       # Resumo da extração user-service
@@ -82,8 +84,14 @@ docs/
 │       ├── 03-proposal.md                    # ⏳ Backlog
 │       └── 04-briefing.md                    # ⏳ Backlog
 │
+├── frontend/
+│   ├── DASHBOARD-GUIDE.md                    # Componentes do dashboard, Zustand, integração API
+│   ├── LANDING-PAGE-GUIDE.md                 # Landing page: SEO, SSG, customização
+│   └── LANDING-ARCHITECTURE.md              # Arquitetura dos componentes landing
+│
 ├── qa/
 │   ├── CONTRACT-TESTING-SUMMARY.md           # Resumo dos contract tests
+│   ├── CONTRACT-TESTS-USER-SERVICE.md        # Contract tests do user-service (provider)
 │   ├── CONTRACT-TESTS-MONOLITH.md            # Contract tests do monólito (consumer)
 │   ├── test-coverage-report.md               # Relatório de cobertura
 │   └── contracts/

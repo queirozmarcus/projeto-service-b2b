@@ -257,4 +257,4 @@ cd user-service
 - [Spring Cloud Contract Docs](https://spring.io/projects/spring-cloud-contract)
 - [Stub Runner Configuration](https://cloud.spring.io/spring-cloud-contract/reference/html/project-features.html#features-stub-runner)
 - [Strangler Fig Pattern](https://martinfowler.com/bliki/StranglerFigApplication.html)
-- [Provider Contracts](../user-service/CONTRACT-TESTS.md)
+- [Provider Contracts](CONTRACT-TESTS-USER-SERVICE.md)

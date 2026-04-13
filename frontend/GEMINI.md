@@ -82,11 +82,11 @@ npm run format        # Formatar código com Prettier
 
 ## 📋 Guias de Referência Interna
 
-Para detalhes específicos sobre partes do sistema, consulte:
-- `DASHBOARD_QUICKSTART.md`: Guia rápido para novos componentes de dashboard.
-- `DASHBOARD_REFACTOR.md`: Detalhes da arquitetura de componentes do dashboard.
-- `LANDING_PAGE_GUIDE.md`: Guia de implementação e SEO da Landing Page.
-- `SEO_AUDIT_REPORT.md`: Relatório de auditoria e melhorias de SEO.
+Para detalhes específicos sobre partes do sistema, consulte (caminhos relativos à raiz do repo):
+- [`docs/frontend/DASHBOARD-GUIDE.md`](../docs/frontend/DASHBOARD-GUIDE.md): Guia de componentes do dashboard, Zustand store, integração com API.
+- [`docs/frontend/LANDING-PAGE-GUIDE.md`](../docs/frontend/LANDING-PAGE-GUIDE.md): Guia de implementação e SEO da Landing Page.
+- [`docs/frontend/LANDING-ARCHITECTURE.md`](../docs/frontend/LANDING-ARCHITECTURE.md): Arquitetura dos componentes da landing page.
+- [`docs/devops/SEO_AUDIT_REPORT.md`](../docs/devops/SEO_AUDIT_REPORT.md): Relatório de auditoria e melhorias de SEO.
 
 ---
 *Este arquivo é o guia mestre para o Gemini CLI atuar no frontend do ScopeFlow.*

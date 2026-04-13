@@ -29,7 +29,6 @@ user-service/
 │   └── ContractVerifierSecurityConfig.java         # Security config para testes
 ├── src/main/java/com/scopeflow/user/config/
 │   └── GlobalExceptionHandler.java                 # RFC 9457 error handling
-├── CONTRACT-TESTS.md                               # Docs do provider
 └── pom.xml                                         # spring-cloud-contract-maven-plugin
 ```
 
@@ -46,7 +45,6 @@ user-service/
 backend/
 ├── src/test/java/com/scopeflow/contract/
 │   └── UserServiceContractTest.java                # 10 testes de consumer
-├── CONTRACT-TESTS.md                               # Docs do consumer
 └── pom.xml                                         # spring-cloud-starter-contract-stub-runner
 ```
 
@@ -86,8 +84,8 @@ docs/qa/contracts/
 ├── README.md                                       # Hub de navegação
 └── CONTRACT-TESTING-GUIDE.md                       # Guia completo (8 páginas)
 
-user-service/CONTRACT-TESTS.md                      # Provider docs
-backend/CONTRACT-TESTS.md                           # Consumer docs
+docs/qa/CONTRACT-TESTS-USER-SERVICE.md              # Provider docs
+docs/qa/CONTRACT-TESTS-MONOLITH.md                 # Consumer docs
 ```
 
 **Conteúdo da documentação:**

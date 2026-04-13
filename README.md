@@ -94,7 +94,7 @@ graph TB
 | **Outbox Pattern** | Eventos confiáveis → RabbitMQ | [CLAUDE.md § Outbox](CLAUDE.md) |
 | **Idempotency Keys** | Endpoints públicos (sem auth) | [CLAUDE.md § Idempotency](CLAUDE.md) |
 | **Circuit Breaker + Retry** | Chamadas ao User Service e SES | [CLAUDE.md § Circuit Breakers](CLAUDE.md) |
-| **DB-per-service** | User Service: banco dedicado | [user-service/docs/DB_MIGRATION_GUIDE.md](user-service/docs/DB_MIGRATION_GUIDE.md) |
+| **DB-per-service** | User Service: banco dedicado | [docs/migration/DB-MIGRATION-USER-SERVICE.md](docs/migration/DB-MIGRATION-USER-SERVICE.md) |
 | **RFC 9457 Problem Details** | Todos os erros de API | [docs/architecture/adr/ADR-006-rfc9457-problem-details.md](docs/architecture/adr/ADR-006-rfc9457-problem-details.md) |
 
 > Decisões arquiteturais completas em [docs/architecture/README.md](docs/architecture/README.md) (ADR-002 a ADR-009).
@@ -153,7 +153,6 @@ projeto-service-b2b/
 │
 ├── README.md                        ← você está aqui (hub central)
 ├── CLAUDE.md                        ← guia para Claude Code
-├── GEMINI.md                        ← guia para Gemini CLI
 ├── docker-compose.yml               ← stack completa (7 serviços)
 ├── docker-compose.staging.yml       ← override: DB-per-service
 ├── .env.example                     ← variáveis de ambiente documentadas
@@ -172,10 +171,11 @@ projeto-service-b2b/
 │   │   ├── application/             ← use cases de auth e perfil
 │   │   ├── adapter/                 ← AuthController, JpaUserRepository
 │   │   └── config/                  ← Security, JWT, CORS
-│   └── docs/
-│       └── DB_MIGRATION_GUIDE.md    ← passos de cut-over para produção
+│   └── (sem docs — todos em docs/migration/ e docs/qa/)
 │
 ├── frontend/                        ← Next.js 15 + React 19 + TypeScript
+│   ├── AGENTS.md                    ← guia para AI agents (estrutura, comandos)
+│   ├── GEMINI.md                    ← guia para Gemini CLI
 │   ├── src/app/
 │   │   ├── (auth)/                  ← login, register
 │   │   └── dashboard/               ← dashboard, proposals, briefings
@@ -250,7 +250,7 @@ projeto-service-b2b/
 | [docs/migration/extraction-cards/02-workspace.md](docs/migration/extraction-cards/02-workspace.md) | Card 02: Workspace 🔄 Próximo |
 | [docs/migration/extraction-cards/03-proposal.md](docs/migration/extraction-cards/03-proposal.md) | Card 03: Proposal ⏳ Backlog |
 | [docs/migration/extraction-cards/04-briefing.md](docs/migration/extraction-cards/04-briefing.md) | Card 04: Briefing ⏳ Backlog |
-| [user-service/docs/DB_MIGRATION_GUIDE.md](user-service/docs/DB_MIGRATION_GUIDE.md) | Cut-over produção: pg_dump, restore, rollback |
+| [docs/migration/DB-MIGRATION-USER-SERVICE.md](docs/migration/DB-MIGRATION-USER-SERVICE.md) | Cut-over produção: pg_dump, restore, rollback |
 
 #### ADRs — Migração
 
@@ -286,7 +286,7 @@ projeto-service-b2b/
 | [docs/qa/contracts/CONTRACT-TESTING-GUIDE.md](docs/qa/contracts/CONTRACT-TESTING-GUIDE.md) | Guia de contract testing |
 | [docs/qa/CONTRACT-TESTING-SUMMARY.md](docs/qa/CONTRACT-TESTING-SUMMARY.md) | Resumo dos contratos implementados |
 | [docs/qa/CONTRACT-TESTS-MONOLITH.md](docs/qa/CONTRACT-TESTS-MONOLITH.md) | Contract tests do monólito (consumer) |
-| [user-service/CONTRACT-TESTS.md](user-service/CONTRACT-TESTS.md) | Contract tests do user-service (provider) |
+| [docs/qa/CONTRACT-TESTS-USER-SERVICE.md](docs/qa/CONTRACT-TESTS-USER-SERVICE.md) | Contract tests do user-service (provider) |
 | [docs/qa/test-coverage-report.md](docs/qa/test-coverage-report.md) | Relatório de cobertura de testes |
 | [tests/e2e/README.md](tests/e2e/README.md) | E2E: auth flow, smoke tests |
 | [tests/e2e/TESTING-STRATEGY.md](tests/e2e/TESTING-STRATEGY.md) | Estratégia de testes E2E |
@@ -303,10 +303,11 @@ projeto-service-b2b/
 
 | Documento | Descrição |
 |-----------|-----------|
-| [frontend/AGENTS.md](frontend/AGENTS.md) | Guidelines do repositório frontend (estrutura, comandos) |
-| [frontend/DASHBOARD_QUICKSTART.md](frontend/DASHBOARD_QUICKSTART.md) | Quick start do dashboard (componentes, stores) |
-| [frontend/LANDING_PAGE_GUIDE.md](frontend/LANDING_PAGE_GUIDE.md) | Guia da landing page |
-| [frontend/src/components/landing/ARCHITECTURE.md](frontend/src/components/landing/ARCHITECTURE.md) | Arquitetura dos componentes da landing |
+| [frontend/AGENTS.md](frontend/AGENTS.md) | Guidelines para AI agents (estrutura, comandos, convenções) |
+| [frontend/GEMINI.md](frontend/GEMINI.md) | Guia mestre para Gemini CLI atuar no frontend |
+| [docs/frontend/DASHBOARD-GUIDE.md](docs/frontend/DASHBOARD-GUIDE.md) | Componentes do dashboard, Zustand store, integração API |
+| [docs/frontend/LANDING-PAGE-GUIDE.md](docs/frontend/LANDING-PAGE-GUIDE.md) | Landing page: SEO, SSG, customização, componentes |
+| [docs/frontend/LANDING-ARCHITECTURE.md](docs/frontend/LANDING-ARCHITECTURE.md) | Arquitetura dos componentes da landing (props, data flow) |
 
 ---
 
@@ -588,7 +589,7 @@ docker compose ps
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
 # User Service → banco dedicado scopeflow_users (:5433)
-# Ver: user-service/docs/DB_MIGRATION_GUIDE.md para cut-over em produção
+# Ver: docs/migration/DB-MIGRATION-USER-SERVICE.md para cut-over em produção
 ```
 
 ### Desenvolvimento Local (sem Docker para os serviços Java)
