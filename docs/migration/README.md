@@ -1,7 +1,7 @@
 # Documentação de Migração — ScopeFlow AI
 
-**Data:** 2026-04-05  
-**Status:** Monólito Modular → Preparado para Microsserviços
+**Data:** 2026-04-13 (atualizado)
+**Status:** User Service ✅ Extraído — staging ativo com DB-per-service
 
 ---
 
@@ -13,16 +13,14 @@ Este diretório (`docs/migration/`) contém toda a documentação de análise, d
 
 | ADR | Título | Status |
 |-----|--------|--------|
-| [ADR-001](adr/ADR-001-ordem-de-extracao-bounded-contexts.md) | Ordem de extração dos bounded contexts | Proposto |
-| [ADR-002](adr/ADR-002-database-strategy-shared-inicial.md) | Database strategy — shared database inicial | Proposto |
-| [ADR-003](adr/ADR-003-comunicacao-entre-servicos.md) | Comunicação entre serviços — híbrida REST + eventos | Proposto |
-| ADR-004 | Ownership de `service_context_profiles` / `service_context_questions` | **PENDENTE — necessário antes da extração 4** |
-
-ADR-004 precisa ser criado e aprovado antes de iniciar o extraction card 04 (Briefing). Há três fontes conflitantes apontando ownership diferente para essas tabelas (Briefing vs Workspace), o que torna a decisão bloqueadora para a extração de maior risco.
+| [ADR-001](adr/ADR-001-ordem-de-extracao-bounded-contexts.md) | Ordem de extração dos bounded contexts | ✅ Aplicado |
+| [ADR-002](adr/ADR-002-database-strategy-shared-inicial.md) | Database strategy — shared inicial → DB-per-service em staging | ✅ Aplicado |
+| [ADR-003](adr/ADR-003-comunicacao-entre-servicos.md) | Comunicação entre serviços — REST síncrono via UserServiceRestAdapter | ✅ Aplicado |
+| [ADR-004](adr/ADR-004-ownership-service-context.md) | Ownership de `service_context_profiles` / `service_context_questions` | ✅ Documentado |
 
 ### Análise de Acoplamento
 
-- **[`coupling-matrix.md`](coupling-matrix.md)**
+- **[`../architecture/coupling-matrix.md`](../architecture/coupling-matrix.md)**
   - Matriz de dependências entre os 4 bounded contexts
   - Score de acoplamento por contexto (chamadas diretas, dados compartilhados, eventos)
   - Zonas de ambiguidade e recomendações de desacoplamento
@@ -31,12 +29,12 @@ ADR-004 precisa ser criado e aprovado antes de iniciar o extraction card 04 (Bri
 
 Sequência de extração definida pelo ADR-001. Cada card descreve pré-requisitos, steps, rollback e critérios de aceite para um contexto.
 
-| Prioridade | Contexto | Tabelas | Risco | Status | Bloqueadores |
-|-----------|----------|---------|-------|--------|-------------|
-| 1 | [User (Auth)](extraction-cards/01-user-auth.md) | 1 | Baixo | Pendente execução | Adicionar endpoints de gestão de usuário para invite flow (`GET /users/by-email/{email}` e `POST /users/invited`) |
-| 2 | [Workspace](extraction-cards/02-workspace.md) | 2 | Médio | Pendente revisão | Refatorar `inviteMember()` para REST; OpenTelemetry obrigatório; contrato `UserServiceClient` indefinido |
-| 3 | [Proposal](extraction-cards/03-proposal.md) | 4 | Médio | Pendente revisão | Definir responsável pela remoção da FK `proposals.briefing_id`; resolver routing do path compartilhado `POST /api/v1/proposals/{proposalId}/briefing-sessions` |
-| 4 | [Briefing](extraction-cards/04-briefing.md) | 7 | Alto | Pendente revisão | Circuit breaker OpenAI indefinido; ADR-004 pendente; refatorar violação hexagonal no `BriefingSessionControllerV2` |
+| Prioridade | Contexto | Tabelas | Risco | Status | Notas |
+|-----------|----------|---------|-------|--------|-------|
+| 1 | [User (Auth)](extraction-cards/01-user-auth.md) | 1 | Baixo | ✅ **Extraído — staging ativo** | DB-per-service em `scopeflow_users`; cut-over produção pendente |
+| 2 | [Workspace](extraction-cards/02-workspace.md) | 2 | Médio | 🔄 Próxima extração | Aguarda user-service estável em produção |
+| 3 | [Proposal](extraction-cards/03-proposal.md) | 4 | Médio | ⏳ Backlog | Depende: Workspace extraído |
+| 4 | [Briefing](extraction-cards/04-briefing.md) | 7 | Alto | ⏳ Backlog | Depende: Proposal extraído; circuit breaker OpenAI pendente (Phase 4) |
 
 ### Análise de Dados
 
@@ -122,7 +120,7 @@ Infrastructure: 3 tabelas (18%)  ██████
 Para quem chega nesta pasta pela primeira vez:
 
 - **Entender o contexto geral** → este README
-- **Entender as dependências entre contextos** → [`coupling-matrix.md`](coupling-matrix.md)
+- **Entender as dependências entre contextos** → [`../architecture/coupling-matrix.md`](../architecture/coupling-matrix.md)
 - **Entender as decisões arquiteturais** → [`adr/ADR-001`](adr/ADR-001-ordem-de-extracao-bounded-contexts.md), [`ADR-002`](adr/ADR-002-database-strategy-shared-inicial.md), [`ADR-003`](adr/ADR-003-comunicacao-entre-servicos.md)
 - **Executar a migração** → [`extraction-cards/`](extraction-cards/) na ordem 01 → 02 → 03 → 04
 - **Entender o schema e ownership de dados** → [`../architecture/schema-inventory.md`](../architecture/schema-inventory.md) + [`../architecture/data-ownership.md`](../architecture/data-ownership.md)
@@ -186,20 +184,23 @@ Core Service (Briefing + Proposal) ←─→ Platform Service (Workspace + User)
 
 ## Próximos Passos
 
-### Imediatos (0-3 meses)
+### Concluídos ✅
 
 - [x] Inventário de schema completo
-- [x] Mapeamento de ownership
+- [x] Mapeamento de ownership e coupling matrix
 - [x] Extraction cards criados (01–04)
-- [x] ADRs 001–003 documentados
-- [ ] **ADR-004:** definir ownership de `service_context_profiles` / `service_context_questions`
-- [ ] Corrigir card 01 (User): adicionar endpoints de gestão de usuário para invite flow (`GET /users/by-email/{email}` e `POST /users/invited`)
-- [ ] Corrigir card 02 (Workspace): adicionar OpenTelemetry e contrato `UserServiceClient`
-- [ ] Corrigir card 03 (Proposal): definir sequência de remoção da FK `proposals.briefing_id`; mapear `ApprovalController` como endpoint público; listar `BriefingCompletedListener` e adapters AWS como classes a migrar
-- [ ] Corrigir card 04 (Briefing): refatorar violação hexagonal no `BriefingSessionControllerV2`; adicionar `ProposalServiceClient`; contract tests Briefing ↔ Workspace
-- [ ] Implementar testes de contrato (Pact) entre Briefing ↔ Proposal
-- [ ] Configurar API Gateway (pré-requisito transversal para todos os cards)
-- [ ] Adicionar cache Redis para `workspaces` (preparação)
+- [x] ADRs 001–004 documentados e aplicados
+- [x] **Card 01 (User Auth):** extraído — 20/20 sprints. DB-per-service em staging. Traefik routing ativo.
+- [x] `GET /users/by-email/{email}` e `POST /users/invited` implementados no monólito
+- [x] `UserServiceClient` (port) + `UserServiceRestAdapter` com `@CircuitBreaker` + `@Retry`
+- [x] `WorkspaceControllerV2` refatorado para usar `UserServiceClient`
+
+### Próximos Passos
+
+- [ ] **Cut-over produção (card 01):** ver `.claude/plans/backlog/2026-04-12-migration-fase3-cutover-producao.md`
+- [ ] **Card 02 (Workspace):** iniciar após user-service estável em produção (~48h pós-cut-over)
+- [ ] **Card 03 (Proposal):** dependência: Workspace extraído
+- [ ] **Card 04 (Briefing):** dependência: Proposal + circuit breaker OpenAI (Phase 4)
 
 ### Curto prazo (3-6 meses)
 

@@ -1,23 +1,25 @@
 # User Service — Strangler Fig Extraction
 
-**Status:** Infrastructure provisioned ✅ | Implementation in progress ⏳
+**Status:** ✅ **Extraído e operacional em staging** | Cut-over produção pendente
+
+Ver: [DB_MIGRATION_GUIDE.md](docs/DB_MIGRATION_GUIDE.md) para passos do cut-over em produção.
 
 ---
 
 ## Visão Geral
 
-User Service é o **primeiro microsserviço extraído** do monólito ScopeFlow via **Strangler Fig pattern**.
+User Service é o **primeiro microsserviço extraído** do monólito ScopeFlow via **Strangler Fig pattern** — 20/20 sprints concluídos.
 
 **Responsabilidades:**
-- Autenticação JWT (login, refresh token)
-- Autorização (roles, permissions)
-- Gerenciamento de usuários (CRUD, password reset)
+- Autenticação JWT (login, refresh token, logout)
+- Registro de usuários
+- Gerenciamento de perfil (`/users/me`, `/users/by-email`, `/users/invited`)
 
 **Stack:**
 - Java 21 (virtual threads, sealed classes, records)
-- Spring Boot 3.2+
-- PostgreSQL 16 (shared DB inicial — migração futura)
-- Traefik API Gateway (routing `/api/v1/auth/*`)
+- Spring Boot 3.4.3
+- PostgreSQL 16 dedicado (`scopeflow_users`, porta 5433) — DB-per-service ativo em staging
+- Traefik API Gateway (routing `/api/v1/auth/*` e `/api/v1/users/*`, prioridade 100)
 
 ---
 

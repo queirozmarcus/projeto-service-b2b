@@ -1,7 +1,7 @@
 # Documentação Arquitetural — ScopeFlow AI
 
-**Data:** 2026-04-05  
-**Status:** Completo (análise inicial)
+**Data:** 2026-04-13 (atualizado)
+**Status:** Atualizado — User Service extraído, circuit breakers e purge jobs implementados
 
 Este diretório contém o mapeamento completo da arquitetura do ScopeFlow AI.
 
@@ -72,11 +72,12 @@ Este diretório contém o mapeamento completo da arquitetura do ScopeFlow AI.
 ## 🚀 Roadmap Arquitetural
 
 ### Curto Prazo (0-3 meses)
-1. Circuit breaker (Resilience4j) em OpenAI, S3, SES
-2. Validação de RI em `Proposal.create()`
-3. Purge jobs (outbox, idempotency, ai_generations)
-4. Row-Level Security (RLS) PostgreSQL
-5. Testes de isolamento multi-tenancy
+1. ✅ ~~Circuit breaker Resilience4j em SES~~ — implementado
+2. ✅ ~~Purge jobs (outbox, idempotency, ai_generations)~~ — implementado
+3. Validação de RI em `Proposal.create()`
+4. Circuit breaker OpenAI + S3 (Phase 4 — aguarda adapters)
+5. Row-Level Security (RLS) PostgreSQL
+6. Testes de isolamento multi-tenancy
 
 ### Médio Prazo (3-6 meses)
 1. Cache Redis (User, Workspace)
@@ -95,24 +96,30 @@ Este diretório contém o mapeamento completo da arquitetura do ScopeFlow AI.
 
 ## 🔍 Pontos de Atenção Identificados
 
+### Resolvidos ✅
+
+1. ✅ **Circuit breakers implementados** — `user-service` (CB+Retry) e `ses` (CB) via Resilience4j
+2. ✅ **Purge jobs implementados** — outbox (7d), idempotency (30d), ai_generations (90d) — `PurgeJobService`
+3. ✅ **User Service extraído** — Strangler Fig completo, staging ativo com DB-per-service
+4. ✅ **GlobalExceptionHandler completo** — RFC 9457 + ServiceUnavailable + CircuitBreaker open handler
+
 ### Alta Prioridade ⚠️
 
 1. **Validação de RI ausente** — `Proposal.create()` não valida briefing exists + completed
 2. **Workspace creation não atômica** — não verificado se `Workspace + owner member` usa `@Transactional`
-3. **Circuit breaker faltando** — OpenAI, S3, SES sem proteção de falha
+3. **Circuit breaker faltando** — OpenAI e S3 sem proteção (adapters não existem — Phase 4)
 
 ### Média Prioridade ⚠️
 
-4. **Purge jobs faltando** — `outbox_event`, `idempotency_record`, `ai_generations` crescem indefinidamente
-5. **Rate limiting in-memory** — Bucket4j não compartilha estado entre pods
-6. **PostgreSQL encryption at rest** — PII não encriptado em disco
-7. **CAPTCHA faltando** — Endpoints públicos vulneráveis a bots
+4. **Rate limiting in-memory** — Bucket4j não compartilha estado entre pods
+5. **PostgreSQL encryption at rest** — PII não encriptado em disco
+6. **CAPTCHA faltando** — Endpoints públicos vulneráveis a bots
 
 ### Baixa Prioridade ℹ️
 
-8. **Tracing faltando** — OpenTelemetry não implementado
-9. **LGPD 60%** — Consentimento + portabilidade + direito ao esquecimento faltando
-10. **Log masking PII** — `briefing_answers.answer_text` pode vazar PII em logs
+7. **Tracing faltando** — OpenTelemetry não implementado
+8. **LGPD 60%** — Consentimento + portabilidade + direito ao esquecimento faltando
+9. **Log masking PII** — `briefing_answers.answer_text` pode vazar PII em logs
 
 ---
 
