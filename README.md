@@ -1,17 +1,20 @@
 # ScopeFlow AI — B2B Service Discovery Platform
 
-AI-powered SaaS platform that helps small B2B service providers (freelancers, microagencies) streamline their sales process. Transform confusing commercial conversations into clear, approved, and raise-ready scopes.
+AI-powered SaaS platform that helps B2B service providers (freelancers, microagencies) transform client conversations into clear, approved scopes through structured AI-assisted discovery.
+
+**Branch ativa:** `develop` — **Última atualização:** 2026-04-13
 
 ---
 
-## Key Features
+## Estado Atual do Projeto
 
-- **AI-Assisted Discovery:** Guide clients through structured questions, detect gaps, auto-generate follow-ups
-- **Workspace Management:** Multi-tenant architecture with role-based access (Owner, Admin, Member)
-- **Briefing Flow:** Sequential questions → Gap detection → Completion (80%+ score required)
-- **Public Client Access:** Clients answer via public token (no auth required)
-- **Immutable Audit Trail:** All answers and AI generations recorded for compliance
-- **Scope Generation:** Completed briefings → Proposal context (async via RabbitMQ)
+| Camada | Status | Detalhes |
+|--------|--------|---------|
+| **Backend — Monólito** | ✅ ~85% | Todos os domínios implementados, circuit breakers, purge jobs |
+| **User Service** | ✅ 100% (staging) | Extraído via Strangler Fig, DB-per-service ativo |
+| **Frontend** | ✅ ~70% | Dashboard, proposals e briefings integrados com API real |
+| **Infra / CI/CD** | ✅ Operacional | Docker Compose completo, Traefik, GitHub Actions |
+| **Produção** | 🔄 Pendente | User service estável em staging; cut-over prod aguardando |
 
 ---
 
@@ -19,73 +22,69 @@ AI-powered SaaS platform that helps small B2B service providers (freelancers, mi
 
 | Layer | Technology | Status |
 |-------|-----------|--------|
-| **Frontend** | Next.js 15 + React 19 + TypeScript | ✅ Created |
-| **Backend** | Spring Boot 3.2 + Java 21 | ✅ Created |
-| **Database** | PostgreSQL 16-Alpine + Flyway | ✅ Created |
-| **Storage** | AWS S3 | 🔄 Planned |
-| **Queue** | RabbitMQ 3.13-Alpine | ✅ Docker |
-| **Authentication** | Spring Security 6.x + JWT | 🔄 In Progress |
-| **PDF Generation** | iText 8.0.1 + Virtual Threads | 🔄 Planned |
-| **LLM Integration** | OpenAI SDK for Java 0.18.0 | ✅ Dependency |
-| **Observability** | Logback + SLF4J + Prometheus | ✅ Configured |
-| **Build Tool** | Maven 3.8+ | ✅ Created |
-| **Testing** | JUnit 5 + AssertJ + Testcontainers | ✅ Dependencies |
-| **CI/CD** | GitHub Actions | ✅ Created |
-| **Containerization** | Docker multi-stage | ✅ Created |
-| **Infrastructure** | Docker Compose v3.9 | ✅ Created |
+| **Frontend** | Next.js 15 + React 19 + TypeScript + Zustand | ✅ Operacional |
+| **Backend** | Spring Boot 3.4.3 + Java 21 + Virtual Threads | ✅ Operacional |
+| **User Service** | Spring Boot 3.4.3 + Java 21 (microsserviço) | ✅ Operacional |
+| **Database (monólito)** | PostgreSQL 16 + Flyway (V1–V9) | ✅ Operacional |
+| **Database (user-service)** | PostgreSQL 16 dedicado + Flyway (V1) | ✅ Staging ativo |
+| **Queue** | RabbitMQ 3.13 | ✅ Docker |
+| **Cache** | Redis 7 | ✅ Docker |
+| **API Gateway** | Traefik v3.0 (Strangler Fig routing) | ✅ Operacional |
+| **Authentication** | Spring Security 6.x + JWT (shared secret) | ✅ Cross-service |
+| **Resilience** | Resilience4j (Circuit Breaker + Retry) | ✅ user-service + SES |
+| **PDF Generation** | iText 8 (stub — Phase 4) | 🔄 Planned |
+| **LLM Integration** | OpenAI SDK Java 0.18.0 (mock local) | 🔄 Partial |
+| **Email** | AWS SES adapter + circuit breaker | ✅ Implementado |
+| **Storage** | AWS S3 (stub — Phase 4) | 🔄 Planned |
+| **Observability** | Logback + SLF4J + Prometheus (Actuator) | ✅ Configurado |
+| **Testing** | JUnit 5 + AssertJ + Testcontainers + Vitest | ✅ Operacional |
+| **CI/CD** | GitHub Actions | ✅ Operacional |
 
 ---
 
 ## Architecture
 
-**Pattern:** Hexagonal (Ports & Adapters) with Domain-Driven Design (DDD)
+### Padrão Geral
 
-**Core Domains:**
-1. **User & Workspace** (Terminal 1) — ✅ Completed
-2. **Briefing** (Terminal 2) — ✅ API Design Completed (Step 4/7)
-3. **Proposal** (Terminal 3) — 🔄 Planned
-4. **Client** (Terminal 4) — 🔄 Planned
+**Hexagonal (Ports & Adapters) + DDD** em ambos backend e user-service.
 
-**Key Principles:**
-- **Sealed Classes:** Type-safe domain entities (Java 21)
-- **Records:** Immutable DTOs and value objects
-- **Virtual Threads:** Async I/O without thread pool limits
-- **Outbox Pattern:** Event-driven communication (RabbitMQ via AMQP)
-- **Testcontainers:** Real database for integration tests
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Traefik v3.0                              │
+│         PathPrefix(/api/v1/auth|/users) → user-service          │
+│         PathPrefix(/api/)              → monolith               │
+└──────────────┬──────────────────────────┬───────────────────────┘
+               │                          │
+    ┌──────────▼──────────┐   ┌───────────▼──────────┐
+    │  user-service :8081  │   │   monolith :8080      │
+    │  Java 21 + SB 3.4    │   │   Java 21 + SB 3.4    │
+    │  DB: scopeflow_users │   │   DB: scopeflow       │
+    └──────────────────────┘   └──────────────────────┘
+               │                          │
+    ┌──────────▼──────────┐   ┌───────────▼──────────┐
+    │ PostgreSQL :5433     │   │ PostgreSQL :5432      │
+    │ scopeflow_users      │   │ scopeflow             │
+    └──────────────────────┘   └──────────────────────┘
+```
 
----
+### Domínios do Monólito
 
-## Briefing API Endpoints
+| Domínio | Pacote | Estado |
+|---------|--------|--------|
+| **User** | `core/domain/user/` | ✅ Extraído para user-service (decommissioned no monólito) |
+| **Workspace** | `core/domain/workspace/` | ✅ Completo |
+| **Briefing** | `core/domain/briefing/` | ✅ Completo (sealed classes, question flow) |
+| **Proposal** | `core/domain/proposal/` | ✅ Completo |
+| **Client** | `core/domain/client/` | ✅ Completo |
 
-The Briefing domain exposes **11 REST endpoints** for AI-assisted discovery flows:
+### Strangler Fig — Status de Extração
 
-### Authenticated Endpoints (Workspace owners/members)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/briefings` | Create new briefing session |
-| `GET` | `/api/v1/briefings` | List briefings (paginated) |
-| `GET` | `/api/v1/briefings/{id}` | Get briefing details |
-| `GET` | `/api/v1/briefings/{id}/progress` | Get progress metrics (cached 30s) |
-| `GET` | `/api/v1/briefings/{id}/next-question` | Get next sequential question |
-| `POST` | `/api/v1/briefings/{id}/answers` | Submit answer |
-| `POST` | `/api/v1/briefings/{id}/complete` | Mark briefing as completed |
-| `POST` | `/api/v1/briefings/{id}/abandon` | Abandon briefing session |
-
-**Authentication:** JWT Bearer token (100 req/min rate limit)
-
-### Public Endpoints (Clients, no auth)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/public/briefings/{publicToken}` | Get public briefing by token |
-| `GET` | `/public/briefings/{publicToken}/next-question` | Get next question (no auth) |
-| `POST` | `/public/briefings/{publicToken}/answers` | Submit answer (no auth) |
-
-**Rate Limit:** 10 req/min per IP
-
-**Full API Documentation:** [`docs/api/BRIEFING-API-GUIDE.md`](docs/api/BRIEFING-API-GUIDE.md)
-**OpenAPI Spec:** [`docs/api/briefing-api.yaml`](docs/api/briefing-api.yaml)
+| Bounded Context | Status | Notas |
+|----------------|--------|-------|
+| **User (Auth)** | ✅ Extraído — staging ativo | DB-per-service em `scopeflow_users` |
+| **Workspace** | 🔄 Próxima extração | Após user-service estável em prod |
+| **Briefing** | ⏳ Backlog | Dependência: Workspace extraído |
+| **Proposal** | ⏳ Backlog | Dependência: Briefing extraído |
 
 ---
 
@@ -93,342 +92,364 @@ The Briefing domain exposes **11 REST endpoints** for AI-assisted discovery flow
 
 ### Prerequisites
 
-- **Java 21** (Eclipse Temurin recommended)
-- **Maven 3.8+** (or use embedded Maven wrapper)
-- **Node.js LTS** (for frontend only)
-- **PostgreSQL 14+** locally (or use Docker Compose)
-- **Docker & Docker Compose v2**
-- **OpenAI API key** (for AI integration)
+- **Java 21** (Eclipse Temurin recomendado)
+- **Maven 3.8+** (ou use o wrapper `./mvnw`)
+- **Node.js LTS** (para o frontend)
+- **Docker Desktop** com WSL2 integration
+- **OpenAI API key** (opcional em dev — serviço retorna mock local)
 
-### First-Time Setup
+### Setup Local (Docker Compose)
 
 ```bash
-# Clone repository
+# Clone
 git clone <repo>
 cd projeto-service-b2b
 
-# Setup environment
+# Configurar variáveis de ambiente
 cp .env.example .env
-# Update .env: DATABASE_URL, OPENAI_API_KEY, JWT_SECRET, etc.
+# Editar .env: JWT_SECRET (mín. 32 chars), OPENAI_API_KEY (opcional)
 
-# Start infrastructure (PostgreSQL + RabbitMQ)
+# Subir stack completa (postgres, user-db, rabbitmq, redis, traefik, app, user-service)
 docker compose up -d
 
-# Backend: Run migrations
-cd backend
-./mvnw flyway:migrate
-
-# Backend: Start dev server
-./mvnw spring-boot:run  # http://localhost:8080/api/v1
-
-# Frontend: Start dev server (separate terminal)
-cd frontend
-npm install
-npm run dev  # http://localhost:3000
-```
-
-### Docker Compose (Infrastructure + Services)
-
-#### Starting Services
-
-```bash
-# Start entire stack (PostgreSQL + RabbitMQ + Redis + Traefik + monolith + user-service)
-docker compose up -d
-
-# Start only infrastructure (useful for local Spring Boot dev)
-docker compose up postgres rabbitmq redis traefik -d
-
-# Start specific service
-docker compose up user-service -d
-
-# Check service health
+# Verificar saúde dos serviços
 docker compose ps
-docker compose logs user-service -f
-
-# Stop all services
-docker compose down
-
-# Stop and remove volumes (CAUTION: deletes all data)
-docker compose down -v
 ```
 
-#### User Service (Strangler Fig Extraction)
+### Setup Staging (DB-per-service ativo)
 
 ```bash
-# Build user-service image
-docker compose build user-service
+# Subir stack com profile staging (user-service → banco dedicado scopeflow_users)
+docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
 
-# Start user-service (requires postgres)
-docker compose up user-service -d
-
-# Verify health (direct access)
-curl http://localhost:8081/actuator/health/liveness
-curl http://localhost:8081/actuator/health/readiness
-
-# Verify health (via Traefik routing)
-curl http://localhost/api/v1/auth/health    # routed to user-service
-curl http://localhost/api/v1/workspaces      # routed to monolith
-
-# Check Traefik dashboard
-open http://localhost:8888/dashboard/
-# Or: curl http://localhost:8888/api/http/routers | jq
-
-# View logs
-docker compose logs user-service -f
-docker compose logs traefik -f
-
-# Restart service (e.g., after code changes)
-docker compose restart user-service
-
-# Rebuild and restart (after Dockerfile/pom.xml changes)
-docker compose up user-service --build -d
+# Verificar routing do Traefik
+curl -s http://localhost:8888/api/http/routers | jq '.[] | {name: .name, priority: .priority}'
 ```
 
-#### Troubleshooting Docker Compose
-
-| Issue | Diagnostic | Solution |
-|-------|-----------|----------|
-| **User-service won't start** | `docker compose logs user-service` | Check `DATABASE_URL` in `.env`, verify postgres is healthy (`docker compose ps`) |
-| **Traefik routing not working** | `docker inspect scopeflow-user-service \| grep -A5 Labels` | Verify Traefik labels are applied, check priority (user-service=100, monolith=50) |
-| **DB connection refused** | `docker compose exec postgres pg_isready` | Ensure postgres container is running and healthy |
-| **JWT token rejected** | Compare `JWT_SECRET` in monolith vs user-service logs | Both services MUST use identical `JWT_SECRET` from `.env` |
-| **Traefik dashboard 404** | `curl http://localhost:8888/api/http/routers` | Verify Traefik is running: `docker compose ps traefik` |
-| **Port conflict (8080/8081)** | `lsof -i :8080` or `netstat -tulpn \| grep 8080` | Stop conflicting process or change `USER_SERVICE_PORT` in `.env` |
-| **Container keeps restarting** | `docker compose logs user-service --tail=100` | Check for OOM, missing env vars, or health check failures |
-
-#### Traefik Routing Verification
+### Desenvolvimento Local (Spring Boot direto)
 
 ```bash
-# List all routers (should show user-service priority=100, monolith priority=50)
-curl -s http://localhost:8888/api/http/routers | jq '.[] | {name: .name, rule: .rule, priority: .priority, status: .status}'
+# Subir apenas infraestrutura
+docker compose up postgres user-db rabbitmq redis -d
 
-# Expected output:
-# {
-#   "name": "user-service@docker",
-#   "rule": "PathPrefix(`/api/v1/auth`)",
-#   "priority": 100,
-#   "status": "enabled"
-# }
-# {
-#   "name": "monolith@docker",
-#   "rule": "PathPrefix(`/api/`)",
-#   "priority": 50,
-#   "status": "enabled"
-# }
-
-# Test routing (should hit user-service)
-curl -v http://localhost/api/v1/auth/health 2>&1 | grep -i "x-powered-by\|server"
-
-# Test routing (should hit monolith)
-curl -v http://localhost/api/v1/briefings 2>&1 | grep -i "x-powered-by\|server"
-```
-
-### Development Commands
-
-#### Backend (Spring Boot 3.2 + Java 21)
-
-```bash
+# Backend — monólito
 cd backend
+./mvnw spring-boot:run     # http://localhost:8080/api/v1
 
-# Development
-./mvnw spring-boot:run                     # Start dev server
+# User service
+cd user-service
+./mvnw spring-boot:run     # http://localhost:8081/api/v1
 
-# Build
-./mvnw clean package                       # Create uber JAR
-
-# Database Migrations
-./mvnw flyway:migrate                      # Run pending migrations
-./mvnw flyway:repair                       # Fix failed migrations
-
-# Testing
-./mvnw test                                # Unit tests
-./mvnw verify                              # Unit + integration tests
-./mvnw test -Dtest=BriefingServiceTest     # Single test class
-
-# Quality & Coverage
-./mvnw checkstyle:check                    # Code quality
-./mvnw package jacoco:report               # Coverage report
-```
-
-#### Frontend (Next.js 15 + React 19)
-
-```bash
+# Frontend
 cd frontend
-
-# Development
-npm run dev                                # Start dev server
-npm run build                              # Production build
-npm run lint                               # ESLint
-npm run type-check                         # TypeScript strict mode
-npm run test                               # Vitest unit/component tests
-npm run test:e2e                           # Playwright E2E tests
+npm install && npm run dev  # http://localhost:3000
 ```
 
 ---
 
-## Error Handling
+## Comandos de Desenvolvimento
 
-All APIs follow [RFC 9457 Problem Details](https://www.rfc-editor.org/rfc/rfc9457).
+### Backend (Monólito)
 
-**Example Error Response:**
+```bash
+cd backend
+
+./mvnw test                                # Testes unitários
+./mvnw verify                              # Testes unitários + integração (Testcontainers)
+./mvnw test -Dtest=PurgeJobServiceTest     # Classe específica
+./mvnw package jacoco:report               # Relatório de cobertura
+./mvnw flyway:migrate                      # Aplicar migrations pendentes
+./mvnw flyway:info                         # Status das migrations
+```
+
+### User Service
+
+```bash
+cd user-service
+
+./mvnw test                                # Testes unitários
+./mvnw verify                              # Testes de integração
+./mvnw spring-boot:run                     # Iniciar localmente (porta 8081)
+```
+
+### Frontend
+
+```bash
+cd frontend
+
+npm run dev                                # Dev server
+npm run build                              # Build de produção
+npm run type-check                         # TypeScript strict mode
+npm run test                               # Vitest (unit + component)
+npm run test:coverage                      # Cobertura
+```
+
+---
+
+## Estrutura do Projeto
+
+```
+projeto-service-b2b/
+├── backend/                             # Monólito Spring Boot 3.4.3 + Java 21
+│   ├── src/main/java/com/scopeflow/
+│   │   ├── core/domain/                 # Domínio puro (zero Spring)
+│   │   │   ├── briefing/                # Briefing aggregate (sealed classes)
+│   │   │   ├── workspace/               # Workspace aggregate
+│   │   │   ├── user/                    # User domain (ServiceUnavailableException)
+│   │   │   └── client/                  # Client aggregate
+│   │   ├── application/                 # Use cases e orquestração
+│   │   │   ├── port/out/                # Output ports (interfaces)
+│   │   │   ├── idempotency/             # IdempotencyService + Repository
+│   │   │   ├── outbox/                  # OutboxService + OutboxEventPublisher
+│   │   │   ├── purge/                   # PurgeJobService (3 jobs diários)
+│   │   │   └── listener/                # Domain event listeners
+│   │   ├── adapter/
+│   │   │   ├── in/web/                  # REST controllers
+│   │   │   │   ├── auth/                # AuthController
+│   │   │   │   ├── briefing/            # BriefingControllerV1 + Public
+│   │   │   │   ├── proposal/            # ProposalControllerV2
+│   │   │   │   ├── workspace/           # WorkspaceControllerV2 (invite via user-service)
+│   │   │   │   ├── user/                # UserController
+│   │   │   │   └── GlobalExceptionHandler.java  # RFC 9457 + Circuit Breaker handlers
+│   │   │   └── out/
+│   │   │       ├── persistence/         # JPA entities + repositories
+│   │   │       ├── email/               # AwsSesEmailServiceAdapter (@CircuitBreaker)
+│   │   │       ├── pdf/                 # ITextPdfServiceAdapter (stub Phase 4)
+│   │   │       └── userservice/         # UserServiceRestAdapter (@CircuitBreaker + @Retry)
+│   │   └── config/                      # Spring, Security, Resilience4j configs
+│   └── src/main/resources/
+│       ├── application.yml              # Config base + Resilience4j + Purge
+│       ├── application-local.yml        # Dev local
+│       ├── application-staging.yml      # Staging
+│       └── db/migration/                # V1–V9 (Flyway)
+│
+├── user-service/                        # Microsserviço extraído (Strangler Fig)
+│   ├── src/main/java/com/scopeflow/user/
+│   │   ├── domain/                      # User aggregate (Email, PasswordHash, UserId)
+│   │   ├── application/                 # RegisterUser, AuthenticateUser, GetProfile
+│   │   ├── adapter/
+│   │   │   ├── in/web/                  # AuthController, UserController
+│   │   │   └── out/persistence/         # JpaUserRepository
+│   │   └── config/                      # Security, JWT, CORS
+│   └── src/main/resources/
+│       ├── application.yml              # Base (Flyway habilitado, baseline-on-migrate)
+│       ├── application-staging.yml      # Staging → user-db:5432/scopeflow_users
+│       ├── application-production.yml   # Prod (flyway.enabled: false até cut-over)
+│       └── db/migration/V1__create_users_table.sql
+│
+├── frontend/                            # Next.js 15 + React 19 + TypeScript
+│   └── src/
+│       ├── app/
+│       │   ├── (auth)/                  # login, register
+│       │   └── dashboard/               # Dashboard, proposals, briefings
+│       ├── stores/                      # Zustand: useSession, useDashboard, useBriefing
+│       ├── lib/                         # proposalApi, briefingApi, api.ts (axios+JWT)
+│       ├── hooks/                       # useToast
+│       └── components/
+│           ├── dashboard/               # StatsGrid, ProposalList, RecentActivity, etc.
+│           └── ui/                      # ToastContainer
+│
+├── docker-compose.yml                   # Stack completa (7 serviços)
+├── docker-compose.staging.yml           # Override: user-service → DB dedicado
+├── docs/
+│   ├── api/                             # OpenAPI specs + guias
+│   └── architecture/adr/               # ADRs
+└── .claude/plans/
+    ├── concluido/                       # 32 artefatos de planejamento e execução
+    └── backlog/                         # Cut-over prod + backlog técnico
+```
+
+---
+
+## Flyway Migrations — Monólito
+
+| Versão | Arquivo | Descrição |
+|--------|---------|-----------|
+| V1 | `V1__initial_schema.sql` | Schema inicial |
+| V2 | `V2__user_workspace_domain_schema.sql` | User + Workspace domain |
+| V3 | `V3__briefing_domain_schema.sql` | Briefing domain |
+| V4 | `V4__proposal_domain_schema.sql` | Proposal domain |
+| V5 | `V5__outbox_event_schema.sql` | Outbox pattern table |
+| V6 | `V6__idempotency_record_schema.sql` | Idempotency table |
+| V7 | `V7__fix_outbox_event_type_constraint.sql` | Fix constraint |
+| V8 | `V8__proposal_soft_delete_and_service_context_schema.sql` | Soft delete + service context |
+| V9 | `V9__add_missing_indexes.sql` | Índices de performance |
+
+---
+
+## API Endpoints
+
+### Monólito (via Traefik :80 ou direto :8080)
+
+**Auth** — `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`
+
+**Workspace** — `POST /api/v1/workspaces`, `GET /api/v1/workspaces/mine`, `POST /api/v1/workspaces/{id}/members/invite`
+
+**Briefing** — `POST /api/v1/briefing-sessions`, `GET /api/v1/briefing-sessions`, `GET /api/v1/briefing-sessions/{id}`, `POST /api/v1/briefing-sessions/{id}/answers`, `POST /api/v1/briefing-sessions/{id}/complete`
+
+**Proposals** — `POST /api/v1/proposals`, `GET /api/v1/proposals`, `GET /api/v1/proposals/{id}`, `DELETE /api/v1/proposals/{id}`, `POST /api/v1/proposals/{id}/publish`
+
+**Public (sem auth)** — `GET /public/briefings/{token}`, `POST /public/briefings/{token}/answers`
+
+### User Service (via Traefik :80 ou direto :8081)
+
+`POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `GET /api/v1/users/me`, `GET /api/v1/users/by-email/{email}`, `POST /api/v1/users/invited`
+
+**Health:** `GET /api/v1/actuator/health/readiness` (ambos os serviços)
+
+---
+
+## Error Handling — RFC 9457
+
 ```json
 {
   "type": "https://api.scopeflow.com/errors/briefing-not-found",
   "title": "Briefing Not Found",
   "status": 404,
-  "detail": "Briefing session with ID 7c9e6679... was not found",
-  "instance": "/api/v1/briefings/7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "detail": "Briefing session 7c9e6679 was not found",
   "errorCode": "BRIEFING-001",
-  "errorId": "550e8400-e29b-41d4-a716-446655440000",
-  "timestamp": "2026-03-22T14:30:00Z"
+  "errorId": "550e8400-...",
+  "timestamp": "2026-04-13T00:00:00Z"
 }
 ```
 
-**Error Codes:**
-- `BRIEFING-001`: Session not found (404)
-- `BRIEFING-002`: Already completed (409)
-- `BRIEFING-003`: Invalid answer (400)
-- `BRIEFING-004`: Max follow-up exceeded (422)
-- `BRIEFING-005`: Incomplete briefing (422)
-- `BRIEFING-006`: Already in progress (409)
-- `BRIEFING-007`: Invalid state (409)
+Códigos de erro documentados: `BRIEFING-001..007`, `WORKSPACE-001..005`, `USER-001..013`, `PROPOSAL-001..005`
+
+Circuit breaker aberto → HTTP 503 com `Retry-After: 30`
 
 ---
 
-## Testing
+## Resilience4j — Circuit Breakers
 
-### E2E Smoke Tests (Authentication Flow)
+| Instância | Serviço protegido | Sliding window | Failure threshold | Wait |
+|-----------|------------------|---------------|-------------------|------|
+| `user-service` | `UserServiceRestAdapter` | 10 calls | 50% | 30s |
+| `ses` | `AwsSesEmailServiceAdapter` | 5 calls | 60% | 30s |
 
-**Quick start:**
-```bash
-# Run all E2E tests (both monolith and user-service modes)
-./run-e2e-tests.sh
-
-# Run only monolith mode
-./run-e2e-tests.sh --monolith
-
-# Run only user-service mode
-./run-e2e-tests.sh --user-service
-```
-
-**Test coverage:**
-- ✅ User registration → JWT generation
-- ✅ Login with valid/invalid credentials
-- ✅ Protected endpoint access (/auth/me, /workspaces)
-- ✅ JWT validation (format, claims, expiration)
-- ✅ Cross-service JWT compatibility (user-service → monolith)
-- ✅ RFC 9457 error responses
-
-**CI/CD:** Tests run automatically on GitHub Actions for all pushes/PRs. Deployment is blocked if any test fails.
-
-**Documentation:** Full E2E test guide available in [`tests/e2e/README.md`](tests/e2e/README.md)
+`@Retry(name = "user-service")` aplicado em operações de leitura/escrita ao user-service (2 tentativas, 200ms de espera).
 
 ---
 
-### Integration Tests (Testcontainers)
+## Purge Jobs (Scheduled)
+
+| Job | Horário | Tabela | Retenção padrão |
+|-----|---------|--------|----------------|
+| Outbox cleanup | 02:00 UTC | `outbox_events` | 7 dias (somente `publishedAt IS NOT NULL`) |
+| Idempotency cleanup | 02:15 UTC | `idempotency_record` | 30 dias |
+| AI generations cleanup | 02:30 UTC | `ai_generations` | 90 dias |
+
+Controlados via `app.purge.enabled` (env var). Todos os valores de retenção configuráveis.
+
+---
+
+## Traefik Routing (Strangler Fig)
+
+| Router | Rule | Priority | Destino |
+|--------|------|----------|---------|
+| `user-service` | `PathPrefix(/api/v1/auth) \|\| PathPrefix(/api/v1/users)` | **100** | `:8081` |
+| `monolith` | `PathPrefix(/api/)` | 50 | `:8080` |
 
 ```bash
-./mvnw verify  # Run all integration tests with real PostgreSQL
+# Verificar routers ativos
+curl -s http://localhost:8888/api/http/routers | jq '.[] | {name: .name, priority: .priority, status: .status}'
 ```
 
 ---
 
-### Swagger UI (OpenAPI)
+## Testes
+
+### Monólito (59 testes)
 
 ```bash
-./mvnw spring-boot:run
-# Open: http://localhost:8080/swagger-ui.html
+cd backend
+./mvnw test         # Unitários (sem Docker)
+./mvnw verify       # + Integração (Testcontainers — requer Docker)
 ```
 
----
-
-### Manual API Testing
+### User Service (5 testes)
 
 ```bash
-# Get JWT token first (from /api/v1/auth/login)
-export JWT_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+cd user-service
+./mvnw verify       # Unitários + contract tests + integração
+```
 
-# Create briefing
-curl -X POST http://localhost:8080/api/v1/briefings \
-  -H "Authorization: Bearer $JWT_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"clientId":"550e8400-e29b-41d4-a716-446655440000","serviceType":"SOCIAL_MEDIA"}'
+### Frontend (7 suítes Vitest)
+
+```bash
+cd frontend
+npm run test        # Vitest — proposalApi, dashboardStore, useToast, etc.
+```
+
+### E2E (smoke tests)
+
+```bash
+./run-e2e-tests.sh              # Auth flow completo
+./run-e2e-tests.sh --monolith   # Monólito direto
+./run-e2e-tests.sh --user-service  # Via user-service
 ```
 
 ---
 
-## Project Structure
+## Docker Compose — Referência Rápida
 
+```bash
+# Stack dev padrão
+docker compose up -d
+
+# Stack staging (user-service → DB dedicado)
+docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+
+# Rebuild serviço específico (após alteração em código)
+docker compose build user-service && docker compose up -d user-service
+
+# Logs em tempo real
+docker compose logs user-service -f
+docker compose logs app -f
+
+# Saúde dos serviços
+docker compose ps
+
+# Reset completo (CUIDADO: apaga todos os dados)
+docker compose down -v
 ```
-projeto-service-b2b/
-├── backend/                         # Spring Boot 3.2 + Java 21
-│   ├── src/main/java/com/scopeflow/
-│   │   ├── core/                    # Domain layer (no Spring)
-│   │   │   └── domain/
-│   │   │       ├── briefing/        # Briefing domain (sealed classes, records)
-│   │   │       ├── workspace/       # Workspace domain
-│   │   │       └── user/            # User domain
-│   │   ├── adapter/                 # Adapter layer (Spring Boot)
-│   │   │   ├── in/
-│   │   │   │   └── web/             # REST controllers
-│   │   │   │       ├── briefing/    # BriefingControllerV1, PublicBriefingControllerV1
-│   │   │   │       │   ├── dto/     # Request/Response DTOs (records)
-│   │   │   │       │   └── mapper/  # Domain ↔ DTO mappers
-│   │   │   │       └── GlobalExceptionHandler.java
-│   │   │   └── out/
-│   │   │       ├── persistence/     # JPA entities + repositories
-│   │   │       └── messaging/       # RabbitMQ producers/consumers (AMQP)
-│   │   └── config/                  # Spring configuration
-│   └── src/main/resources/
-│       └── db/migration/            # Flyway migrations
-│           ├── V1__initial_schema.sql
-│           ├── V2__user_workspace_schema.sql
-│           └── V3__briefing_domain_schema.sql
-├── frontend/                        # Next.js 15 + React 19 + TypeScript
-├── docs/
-│   ├── api/
-│   │   ├── briefing-api.yaml        # OpenAPI 3.1 spec (Step 4 deliverable)
-│   │   └── BRIEFING-API-GUIDE.md    # Full API documentation
-│   └── architecture/
-│       └── adr/
-│           ├── ADR-001-user-workspace-service.md
-│           └── ADR-002-briefing-domain.md
-├── docker-compose.yml               # PostgreSQL + RabbitMQ + Redis
-└── README.md                        # This file
-```
+
+### Serviços e Portas
+
+| Serviço | Porta | Acesso |
+|---------|-------|--------|
+| Traefik (API gateway) | `:80` | `http://localhost/api/v1/...` |
+| Traefik dashboard | `:8888` | `http://localhost:8888/dashboard/` |
+| Monólito (direto) | `:8080` | `http://localhost:8080/api/v1/...` |
+| User service (direto) | `:8081` | `http://localhost:8081/api/v1/...` |
+| PostgreSQL (monólito) | `:5432` | `postgres/postgres` — db `scopeflow` |
+| PostgreSQL (user-service) | `:5433` | `postgres/postgres` — db `scopeflow_users` |
+| RabbitMQ | `:5672` / `:15672` | Management: `guest/guest` |
+| Redis | `:6379` | — |
 
 ---
 
-## Contributing
+## Troubleshooting
 
-**Branching Strategy:**
-- **main**: production-ready, always deployable
-- **develop**: staging, feature integration
-- **feature/**: `feature/briefing-ai`, `feature/approval-flow`
-- **bugfix/**: `bugfix/proposal-rendering`
+| Problema | Diagnóstico | Solução |
+|---------|-------------|---------|
+| `user-service` crash loop | `docker logs scopeflow-user-service --tail=100` | Verificar `SPRING_DATASOURCE_URL`, rebuild se migration mudou |
+| Tabela `users` não existe | `docker exec scopeflow-user-db psql -U postgres -d scopeflow_users -c "\dt"` | Rebuild da imagem user-service para incluir V1 migration |
+| Traefik não roteia para user-service | `curl -s http://localhost:8888/api/http/routers` | Verificar labels no docker-compose, container healthcheck |
+| JWT rejeitado cross-service | `docker inspect scopeflow-api` e `scopeflow-user-service` — comparar `JWT_SECRET` | Ambos devem usar o mesmo `JWT_SECRET` do `.env` |
+| Flyway checksum mismatch | `./mvnw flyway:info` | Nunca modificar migration aplicada — criar nova versão |
+| Testcontainers falha | `docker ps` | Docker deve estar rodando; memória mínima 4GB |
 
-**Commit Message Format:**
-```
-feat(briefing): adiciona aprofundamento automático de respostas vagas
+---
 
-Implementa lógica de IA para detectar respostas incompletas
-e gerar perguntas complementares. Reduz ambiguidade no briefing.
+## Branching Strategy
 
-Closes #42
-```
-
-**Types:** `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `chore`, `ci`
+- `main` — produção, protegida
+- `develop` — staging, integração de features ← **branch ativa**
+- `feature/` — novas features
+- `bugfix/` — correções
 
 ---
 
 ## License
 
 Proprietary — ScopeFlow AI
-
----
-
-## Contact
-
-**Product:** scopeflow@example.com
-**API Support:** api@scopeflow.com
-**Documentation:** https://docs.scopeflow.com
