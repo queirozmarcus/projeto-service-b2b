@@ -1,0 +1,41 @@
+description: User login with valid credentials
+name: shouldLoginSuccessfully
+request:
+  method: POST
+  url: /auth/login
+  headers:
+    Content-Type: application/json
+  body:
+    email: "test@example.com"
+    password: "ValidPassword123!"
+  matchers:
+    body:
+      - path: $.email
+        type: by_regex
+        value: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      - path: $.password
+        type: by_regex
+        value: ".+"
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    expiresIn: 900
+    userId: "550e8400-e29b-41d4-a716-446655440000"
+    email: "test@example.com"
+    fullName: "Test User"
+  matchers:
+    body:
+      - path: $.accessToken
+        type: by_regex
+        value: "^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$"
+      - path: $.userId
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.email
+        type: by_regex
+        value: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      - path: $.expiresIn
+        type: by_type

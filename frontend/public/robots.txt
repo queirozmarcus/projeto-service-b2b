@@ -1,0 +1,24 @@
+# ScopeFlow robots.txt
+# Allow search engine indexing of public pages
+
+# Allow all bots on public content
+User-agent: *
+Allow: /
+Allow: /auth/register
+Allow: /auth/login
+
+# Disallow private/protected areas
+Disallow: /dashboard
+Disallow: /briefing
+Disallow: /admin
+
+# Disallow internal API routes
+Disallow: /api/
+
+# Disallow common admin paths
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+Disallow: /*?*page=
+
+# Sitemap
+Sitemap: https://scopeflow.app/sitemap.xml

@@ -1,0 +1,41 @@
+# values-staging.yaml — overrides para ambiente de staging
+# Aplicar sobre values.yaml:
+#   helm upgrade --install user-service ./k8s/helm/user-service \
+#     -f k8s/helm/user-service/values-staging.yaml \
+#     --set image.tag=$CI_COMMIT_SHA \
+#     --namespace staging
+
+replicaCount: 1
+
+image:
+  repository: scopeflow/user-service
+  pullPolicy: Always
+
+resources:
+  requests:
+    cpu: 62m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 3
+
+ingress:
+  hosts:
+    - host: api.staging.scopeflow.com
+      paths:
+        - path: /api/v1/auth
+          pathType: Prefix
+        - path: /api/v1/users
+          pathType: Prefix
+  tls:
+    - secretName: user-service-staging-tls
+      hosts:
+        - api.staging.scopeflow.com
+
+config:
+  springProfilesActive: "staging"
+  flywayEnabled: "false"

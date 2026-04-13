@@ -1,4 +1,4 @@
-# Multi-stage build: Node.js LTS for build, minimal image for runtime
+# Multi-stage build: Node.js LTS for build, standalone output for runtime
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
@@ -7,53 +7,45 @@ WORKDIR /build
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --production=false
+# Install all dependencies (--legacy-peer-deps for @testing-library/react React 19 compatibility)
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .
 
-# Build Next.js application
+# NEXT_PUBLIC_* variables are inlined at build time — must be passed as ARG
 ARG NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
+# Build Next.js application (output: standalone)
 RUN npm run build
 
-# Stage 2: Runtime (Node.js minimal + production dependencies only)
-FROM node:20-alpine
+# Stage 2: Runtime — uses standalone output (no full node_modules required)
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 
 # Create non-root user for security
-RUN addgroup -g 1000 nextjs && \
-    adduser -D -u 1000 -G nextjs nextjs
+RUN addgroup -g 1001 -S nextjs && \
+    adduser -u 1001 -S nextjs -G nextjs
 
-# Copy package files and install production dependencies
-COPY --from=builder /build/package*.json ./
-RUN npm ci --production && \
-    npm cache clean --force
+# Standalone output includes its own node_modules copy
+COPY --from=builder --chown=nextjs:nextjs /build/.next/standalone ./
+# Static assets and public folder must be copied separately
+COPY --from=builder --chown=nextjs:nextjs /build/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nextjs /build/public ./public
 
-# Copy Next.js build artifacts and public files
-COPY --from=builder /build/.next ./.next
-COPY --from=builder /build/public ./public
-COPY --from=builder /build/next.config.js ./
-
-# Change ownership
-RUN chown -R nextjs:nextjs /app
-
-# Switch to non-root user
 USER nextjs
 
-# Expose port
 EXPOSE 3000
 
-# Environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
+# Hostname must be 0.0.0.0 so the container is reachable from outside
+ENV HOSTNAME=0.0.0.0
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:3000 || exit 1
 
-# Start Next.js application
-CMD ["npm", "start"]
+# standalone output generates server.js at root of /app
+CMD ["node", "server.js"]

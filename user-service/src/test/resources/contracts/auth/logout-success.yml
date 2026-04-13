@@ -1,0 +1,7 @@
+description: Logout clears refresh token cookie and returns 204 No Content
+name: shouldLogoutSuccessfully
+request:
+  method: POST
+  url: /auth/logout
+response:
+  status: 204

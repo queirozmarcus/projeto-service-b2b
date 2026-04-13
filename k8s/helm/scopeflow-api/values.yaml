@@ -1,0 +1,171 @@
+# values.yaml — valores padrão (base para todos os ambientes)
+# Sobrescrever com values-staging.yaml ou values-prod.yaml no deploy:
+#   helm upgrade --install scopeflow-api ./k8s/helm/scopeflow-api \
+#     -f k8s/helm/scopeflow-api/values-staging.yaml \
+#     --set image.tag=abc1234
+
+# Configuração de réplicas
+replicaCount: 2
+
+# Imagem Docker
+image:
+  repository: scopeflow/scopeflow-api
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# Conta de serviço dedicada (principle of least privilege)
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# Service Kubernetes
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 8080
+  annotations: {}
+
+# Ingress
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Timeout alinhado com terminationGracePeriodSeconds do pod
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+  hosts:
+    - host: api.scopeflow.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: scopeflow-api-tls
+      hosts:
+        - api.scopeflow.com
+
+# Resources — baseados em profiling de Java 21 com virtual threads:
+#   - Heap: 75% de 1Gi limit = ~768Mi (configurado via MaxRAMPercentage no Dockerfile)
+#   - Metaspace + threads: ~256Mi restante
+#   - Request de 512Mi garante scheduling em nodes com pressão de memória
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+# Horizontal Pod Autoscaler
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  # CPU 70%: threshold seguro antes de saturar virtual threads
+  targetCPUUtilizationPercentage: 70
+  # Memória 80%: alerta antecipado — Java tende a crescer gradualmente
+  targetMemoryUtilizationPercentage: 80
+
+# Pod Disruption Budget — garante disponibilidade durante rolling updates e
+# operações de manutenção de node (drain). minAvailable=1 garante pelo menos
+# uma réplica saudável enquanto outra é encerrada.
+pdb:
+  enabled: true
+  minAvailable: 1
+
+# Probes — alinhadas com o endpoint /api/v1/health do HealthController
+probes:
+  # Startup probe: dá tempo para a JVM + Spring Boot inicializar
+  # 30 tentativas * 10s = 5 minutos máximos de startup
+  startup:
+    httpGet:
+      path: /api/v1/health
+      port: 8080
+    failureThreshold: 30
+    periodSeconds: 10
+    initialDelaySeconds: 0
+
+  # Liveness probe: reinicia o container se a app travar (deadlock, OOM recuperável)
+  # Usa /api/v1/health (endpoint customizado do projeto, não /actuator/health)
+  liveness:
+    httpGet:
+      path: /api/v1/health
+      port: 8080
+    initialDelaySeconds: 0
+    periodSeconds: 15
+    failureThreshold: 3
+    timeoutSeconds: 5
+
+  # Readiness probe: remove o pod do load balancer se não estiver pronto para receber tráfego
+  # /api/v1/health/ready verifica dependências (DB, RabbitMQ)
+  readiness:
+    httpGet:
+      path: /api/v1/health/ready
+      port: 8080
+    initialDelaySeconds: 0
+    periodSeconds: 5
+    failureThreshold: 3
+    timeoutSeconds: 3
+
+# Graceful shutdown
+# terminationGracePeriodSeconds: tempo máximo que o kubelet aguarda antes de SIGKILL
+# Deve ser maior que o spring.lifecycle.timeout-per-shutdown-phase (20s) + preStop sleep (5s)
+terminationGracePeriodSeconds: 30
+
+# Configurações não-sensíveis via ConfigMap
+# Sensíveis (DB password, JWT secret, OpenAI key) devem ser injetadas via Secret/Sealed Secret
+config:
+  springProfilesActive: "kubernetes"
+  serverPort: "8080"
+  # Virtual threads via JVM flag no Dockerfile — redundância via env var para clareza
+  springThreadsVirtualEnabled: "true"
+  # Graceful shutdown: cada fase tem 20s para completar
+  springLifecycleTimeoutPerShutdownPhase: "20s"
+  # Actuator: expõe health, info e prometheus para Kubernetes e Prometheus scraping
+  managementEndpointsWebExposureInclude: "health,info,prometheus"
+  managementEndpointHealthProbesEnabled: "true"
+  managementEndpointHealthShowDetails: "when-authorized"
+  # Logging estruturado — facilita parsing por Loki/CloudWatch/Datadog
+  loggingPattern: '{"timestamp":"%d","level":"%p","service":"scopeflow-api","traceId":"%X{traceId}","message":"%m"}%n'
+
+  # Strangler Fig — User Service extraction
+  # false por padrão: safe default (monólito resolve auth internamente)
+  authServiceExtracted: "false"
+  authServiceUrl: "http://user-service:8081/api/v1"
+
+# Referências a Secrets externos (criados fora do chart — Sealed Secrets ou External Secrets)
+# O Deployment monta esses secrets como env vars
+externalSecrets:
+  databaseSecretName: "scopeflow-db-credentials"
+  jwtSecretName: "scopeflow-jwt-secret"
+  openaiSecretName: "scopeflow-openai-credentials"
+  rabbitmqSecretName: "scopeflow-rabbitmq-credentials"
+
+# Affinity: distribui pods em nodes diferentes para alta disponibilidade
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - scopeflow-api
+          topologyKey: kubernetes.io/hostname
+
+# Security context — non-root, read-only filesystem, sem escalada de privilégio
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  # readOnlyRootFilesystem: o /tmp precisa ser gravável para heap dumps
+  # Use emptyDir para /tmp se quiser readOnly no rootfs
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL

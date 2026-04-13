@@ -53,7 +53,15 @@ public class BriefingMapperImpl implements BriefingMapper {
         }
 
         BriefingResponse briefingResponse = toResponse(session);
-        ProgressResponse progress = toProgressResponse(session.completionScore());
+
+        // Get progress response: only BriefingCompleted has a completion score
+        ProgressResponse progress;
+        if (session instanceof BriefingCompleted completed) {
+            progress = toProgressResponse(completed.getCompletionScore());
+        } else {
+            // For in-progress/abandoned sessions, return empty progress
+            progress = new ProgressResponse(0, 0, 0, List.of());
+        }
 
         List<QuestionResponse> questionResponses = questions.stream()
                 .map(q -> toQuestionResponse(q, false)) // TODO: detect if followup generated
@@ -64,7 +72,15 @@ public class BriefingMapperImpl implements BriefingMapper {
                 .toList();
 
         return new BriefingDetailResponse(
-                briefingResponse,
+                session.getId().value(),
+                session.getWorkspaceId().value(),
+                session.getClientId().value(),
+                session.getServiceType().name(),
+                session.status(),
+                session.getPublicToken().value(),
+                null,  // TODO: completionScore from domain
+                session.getCreatedAt(),
+                session.getUpdatedAt(),
                 progress,
                 questionResponses,
                 answerResponses
@@ -118,6 +134,20 @@ public class BriefingMapperImpl implements BriefingMapper {
                 0, // TODO: calculate from questions count
                 score.score(),
                 score.gapsIdentified()
+        );
+    }
+
+    @Override
+    public ProgressResponse toProgressResponse(com.scopeflow.core.domain.briefing.GapAnalysis analysis) {
+        if (analysis == null) {
+            return new ProgressResponse(0, 0, 0, List.of());
+        }
+
+        return new ProgressResponse(
+                0, // currentStep — calculated dynamically in future
+                0, // totalSteps — calculated dynamically in future
+                analysis.score(),
+                analysis.gaps()
         );
     }
 
@@ -191,7 +221,8 @@ public class BriefingMapperImpl implements BriefingMapper {
 
     @Override
     public PublicToken toPublicToken(UUID publicToken) {
-        return new PublicToken(publicToken);
+        // PublicToken expects a String, convert UUID to string representation
+        return new PublicToken(publicToken.toString().replace("-", ""));
     }
 
     @Override

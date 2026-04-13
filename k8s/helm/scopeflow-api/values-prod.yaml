@@ -1,0 +1,33 @@
+# values-prod.yaml — overrides para ambiente de produção
+# Aplicar sobre values.yaml:
+#   helm upgrade --install scopeflow-api ./k8s/helm/scopeflow-api \
+#     -f k8s/helm/scopeflow-api/values-prod.yaml \
+#     --set image.tag=$RELEASE_TAG \
+#     --namespace production
+
+replicaCount: 3
+
+image:
+  repository: scopeflow/scopeflow-api
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 512Mi
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+
+hpa:
+  minReplicas: 3
+  maxReplicas: 20
+  targetCPUUtilizationPercentage: 65
+
+pdb:
+  minAvailable: 2
+
+config:
+  springProfilesActive: "production"
+  authServiceExtracted: "false"
+  authServiceUrl: "http://user-service:8081/api/v1"

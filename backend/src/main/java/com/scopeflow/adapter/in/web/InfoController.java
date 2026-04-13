@@ -25,7 +25,7 @@ import java.util.Map;
  * - Debugging (check environment, git commit, build time)
  */
 @RestController
-@RequestMapping("/api/v1/info")
+@RequestMapping("/info")
 @Tag(name = "Info", description = "API information and version endpoints")
 public class InfoController {
 

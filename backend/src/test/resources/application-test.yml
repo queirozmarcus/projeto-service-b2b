@@ -1,0 +1,72 @@
+# Test profile configuration
+# Overrides application.yml for integration tests.
+# Testcontainers @DynamicPropertySource will override datasource + rabbitmq properties at runtime.
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  rabbitmq:
+    # Overridden by Testcontainers @DynamicPropertySource at runtime
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+    virtual-host: /
+    connection-timeout: 5000
+    listener:
+      simple:
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 500       # Faster for tests: 500ms → 1s → 2s
+          multiplier: 2.0
+          max-interval: 5000
+        default-requeue-rejected: false
+        prefetch: 1
+        acknowledge-mode: AUTO        # AUTO in tests for simpler assertion flow
+        concurrency: "1-1"
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100,expireAfterWrite=60s
+
+# Disable scheduling during tests (controlled manually in outbox tests)
+scheduling:
+  enabled: false
+
+# JWT (test secret — not used in messaging tests but context requires it)
+jwt:
+  secret: test-secret-key-must-be-at-least-32-characters-long
+  expiration: 900000
+  refresh-expiration: 604800000
+
+# AWS (not used in messaging tests — mocked via @MockBean)
+aws:
+  s3:
+    bucket: test-bucket
+    region: us-east-1
+  access-key-id: test-key
+  secret-access-key: test-secret
+
+logging:
+  level:
+    root: WARN
+    com.scopeflow: DEBUG
+    org.testcontainers: INFO
+    org.springframework.amqp: DEBUG

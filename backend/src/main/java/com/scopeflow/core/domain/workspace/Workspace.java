@@ -16,7 +16,7 @@ import java.util.Objects;
  *
  * No framework dependencies. Pure domain logic.
  */
-public sealed class Workspace permits WorkspaceActive, WorkspaceSuspended {
+public abstract sealed class Workspace permits WorkspaceActive, WorkspaceSuspended {
     private final WorkspaceId id;
     private final UserId ownerId;
     private final String name;

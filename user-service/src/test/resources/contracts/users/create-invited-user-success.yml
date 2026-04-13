@@ -1,0 +1,46 @@
+description: Create invited user with valid request
+name: shouldCreateInvitedUser
+request:
+  method: POST
+  url: /users/invited
+  headers:
+    Content-Type: application/json
+    Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.test"
+  body:
+    email: "invited@example.com"
+    invitedByUserId: "550e8400-e29b-41d4-a716-446655440000"
+    role: "MEMBER"
+  matchers:
+    body:
+      - path: $.email
+        type: by_regex
+        value: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      - path: $.invitedByUserId
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.role
+        type: by_regex
+        value: "(OWNER|ADMIN|MEMBER)"
+response:
+  status: 201
+  headers:
+    Content-Type: application/json
+  body:
+    id: "660e8400-e29b-41d4-a716-446655440001"
+    email: "invited@example.com"
+    fullName: "Invited"
+    status: "INACTIVE"
+    createdAt: "2025-01-15T10:30:00Z"
+  matchers:
+    body:
+      - path: $.id
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.email
+        type: by_regex
+        value: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      - path: $.status
+        type: by_equality
+      - path: $.createdAt
+        type: by_regex
+        value: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})"

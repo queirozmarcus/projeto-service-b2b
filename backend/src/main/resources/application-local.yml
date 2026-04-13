@@ -1,0 +1,4 @@
+# Local/staging profile: desativa Secure flag no cookie para compatibilidade com HTTP
+app:
+  cookie:
+    secure: false

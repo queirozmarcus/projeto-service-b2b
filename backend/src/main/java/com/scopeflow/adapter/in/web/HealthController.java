@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  * - Monitoring systems (Prometheus, DataDog, etc.)
  */
 @RestController
-@RequestMapping("/api/v1/health")
+@RequestMapping("/health")
 @Tag(name = "Health", description = "API health status endpoints")
 public class HealthController {
 

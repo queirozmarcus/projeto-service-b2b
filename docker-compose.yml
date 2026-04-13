@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -20,6 +18,27 @@ services:
     networks:
       - scopeflow-network
 
+  # Banco exclusivo do user-service (DB-per-service — Strangler Fig concluído, ADR-009)
+  # Source of truth para users. Monólito não acessa mais esta tabela diretamente.
+  user-db:
+    image: postgres:16-alpine
+    container_name: scopeflow-user-db
+    environment:
+      POSTGRES_DB: scopeflow_users
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d scopeflow_users"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scopeflow-network
+
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: scopeflow-rabbitmq
@@ -34,7 +53,8 @@ services:
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
-      timeout: 5s
+      timeout: 30s
+      start_period: 90s
       retries: 5
     networks:
       - scopeflow-network
@@ -54,6 +74,29 @@ services:
     networks:
       - scopeflow-network
 
+  traefik:
+    image: traefik:v3.0
+    container_name: scopeflow-traefik
+    command:
+      # Enable API and dashboard (insecure mode for local dev)
+      - "--api.insecure=true"
+      # Enable Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # Define entrypoints
+      - "--entrypoints.web.address=:80"
+      # Access logs for debugging
+      - "--accesslog=true"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"      # HTTP entrypoint
+      - "8888:8080"  # Traefik dashboard (renamed to avoid conflict with monolith)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - scopeflow-network
+    restart: unless-stopped
+
   app:
     build:
       context: ./backend
@@ -63,7 +106,7 @@ services:
       # Spring Profile
       SPRING_PROFILES_ACTIVE: local
 
-      # Database Configuration
+      # Database Configuration (monolith banco compartilhado — fonte original)
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/scopeflow
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
@@ -81,12 +124,33 @@ services:
       # Application Configuration
       SERVER_PORT: 8080
 
-      # JWT Configuration (development only)
-      JWT_SECRET: dev-secret-key-change-in-production-min-32-chars
+      # JWT Configuration (development only — SHARED with user-service)
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production-min-32-chars}
       JWT_EXPIRATION_MS: 900000
 
-      # AWS S3 (mock for local development)
+      # Graceful shutdown
+      SERVER_SHUTDOWN: graceful
+      SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE: 30s
+
+      # AWS (mock credentials para dev local — não acessam AWS real)
       AWS_S3_ENABLED: "false"
+      AWS_ACCESS_KEY_ID: local-dev-key-id
+      AWS_SECRET_ACCESS_KEY: local-dev-secret-key
+      AWS_REGION: us-east-1
+
+      # SMTP mock para dev local (JavaMailSender bean — sem envio real)
+      SPRING_MAIL_HOST: localhost
+      SPRING_MAIL_PORT: 1025
+
+      # Desabilita redirect HTTPS em dev local
+      APP_REQUIRES_HTTPS: "false"
+      APP_COOKIE_SECURE: "false"
+
+      # Strangler Fig: Auth Service Extraction
+      # false = monolith handles auth locally (safe default)
+      # true = monolith proxies auth requests to user-service
+      AUTH_SERVICE_EXTRACTED: ${AUTH_SERVICE_EXTRACTED:-false}
+      AUTH_SERVICE_URL: http://user-service:8081/api/v1
 
       # OpenAI API (optional for local dev)
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -100,17 +164,89 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/v1/health/ready"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/api/v1/actuator/health/readiness"]
       interval: 30s
       timeout: 5s
-      start_period: 40s
+      start_period: 240s
       retries: 3
     networks:
       - scopeflow-network
     restart: unless-stopped
+    labels:
+      # Traefik routing: monólito captura todas as rotas EXCETO /api/v1/auth/*
+      - "traefik.enable=true"
+      - "traefik.http.routers.monolith.rule=PathPrefix(`/api/`)"
+      - "traefik.http.routers.monolith.entrypoints=web"
+      - "traefik.http.routers.monolith.priority=50"
+      - "traefik.http.services.monolith.loadbalancer.server.port=8080"
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: scopeflow-user-service
+    environment:
+      # Spring Profile
+      SPRING_PROFILES_ACTIVE: local
+
+      # Database Configuration — banco exclusivo do user-service (DB-per-service)
+      # Módulo User decommissioned do monólito (ADR-009). user-service usa banco próprio.
+      # Ver: docs/migration/DB-MIGRATION-USER-SERVICE.md
+      SPRING_DATASOURCE_URL: ${USER_SERVICE_DATABASE_URL:-jdbc:postgresql://user-db:5432/scopeflow_users}
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+
+      # RabbitMQ Configuration
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+      # Redis Configuration
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      # Application Configuration
+      SERVER_PORT: ${USER_SERVICE_PORT:-8081}
+
+      # JWT Configuration (SHARED secret — deve ser IDÊNTICO ao monólito)
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production-min-32-chars}
+      JWT_EXPIRATION_MS: 900000
+
+      # Graceful shutdown (obrigatório para Strangler Fig)
+      SERVER_SHUTDOWN: graceful
+      SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE: 30s
+
+      # Desabilita redirect HTTPS em dev local
+      APP_REQUIRES_HTTPS: "false"
+    ports:
+      - "${USER_SERVICE_PORT:-8081}:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      user-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081/api/v1/actuator/health/readiness"]
+      interval: 30s
+      timeout: 3s
+      start_period: 150s
+      retries: 3
+    networks:
+      - scopeflow-network
+    restart: unless-stopped
+    labels:
+      # Traefik routing: Strangler Fig — user-service captura /api/v1/auth/* e /api/v1/users/* com prioridade ALTA
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-service.rule=PathPrefix(`/api/v1/auth`) || PathPrefix(`/api/v1/users`)"
+      - "traefik.http.routers.user-service.entrypoints=web"
+      - "traefik.http.routers.user-service.priority=100"
+      - "traefik.http.services.user-service.loadbalancer.server.port=8081"
+
 
 volumes:
   postgres_data:
+  user_db_data:
   rabbitmq_data:
   redis_data:
 

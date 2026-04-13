@@ -1,198 +1,132 @@
-import Link from 'next/link';
+import type { Metadata } from 'next';
+import {
+  LandingNavbar,
+  Hero,
+  ProblemSolution,
+  FeatureGrid,
+  HowItWorks,
+  PricingTable,
+  SocialProof,
+  FAQ,
+  CTASection,
+  Footer,
+} from '@/components/landing';
+
+export const metadata: Metadata = {
+  title: 'ScopeFlow — Briefing inteligente, escopos aprovados',
+  description:
+    'Transforme conversas vagas em escopos claros, aprovados e rastreáveis com uma experiência de briefing orientada por IA.',
+  keywords: [
+    'briefing com IA',
+    'gestao de escopo',
+    'aprovacao de projeto',
+    'saas b2b',
+    'freelancers',
+    'agencias',
+    'consultoria digital',
+  ],
+  openGraph: {
+    type: 'website',
+    locale: 'pt_BR',
+    url: 'https://scopeflow.app',
+    siteName: 'ScopeFlow',
+    title: 'ScopeFlow — Briefing inteligente, escopos aprovados',
+    description:
+      'Transforme conversas vagas em escopos claros, aprovados e rastreáveis com IA.',
+    images: [
+      {
+        url: 'https://scopeflow.app/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'ScopeFlow — Briefing inteligente para escopos aprovados',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'ScopeFlow — Briefing inteligente, escopos aprovados',
+    description: 'Transforme briefing em escopo aprovado com IA.',
+    images: ['https://scopeflow.app/og-image.png'],
+  },
+};
+
+const FEATURES = [
+  {
+    icon: '01',
+    title: 'Descoberta guiada',
+    description:
+      'A IA conduz perguntas inteligentes para revelar objetivo, escopo, restrições e prioridades logo no primeiro contato.',
+  },
+  {
+    icon: '02',
+    title: 'Escopo pronto para validar',
+    description:
+      'Respostas viram um documento claro com entregáveis, premissas, cronograma e critérios de aprovação.',
+  },
+  {
+    icon: '03',
+    title: 'Aprovação sem ruído',
+    description:
+      'Cliente aprova com contexto e rastreabilidade. Menos retrabalho, menos discussão e mais previsibilidade comercial.',
+  },
+];
+
+const PLANS = [
+  {
+    name: 'Starter',
+    price: 'R$ 49',
+    description: 'Para autônomos e pequenos estúdios',
+    features: [
+      'Até 15 briefings por mês',
+      'Fluxo guiado com IA',
+      'Escopo com entregáveis e premissas',
+      'Histórico de aprovações',
+      'Suporte por email',
+    ],
+  },
+  {
+    name: 'Growth',
+    price: 'R$ 149',
+    description: 'Para operações comerciais e equipes de entrega',
+    features: [
+      'Briefings ilimitados',
+      'Templates por serviço',
+      'Colaboração para equipe',
+      'Branding da sua operação',
+      'Prioridade no suporte',
+      'Relatórios de conversão',
+      'Aprovação compartilhável',
+    ],
+    highlight: true,
+  },
+  {
+    name: 'Enterprise',
+    price: 'Sob consulta',
+    description: 'Para times com processo, compliance e integrações',
+    features: [
+      'Tudo do plano Growth',
+      'SSO e governança',
+      'Integrações customizadas',
+      'Ambiente white-label',
+      'SLA e onboarding dedicado',
+      'Políticas avançadas de segurança',
+    ],
+  },
+];
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen">
-      {/* Navigation */}
-      <nav className="border-b border-secondary-200 bg-white px-6 py-4">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-primary-600">ScopeFlow</h1>
-            <div className="flex gap-4">
-              <Link
-                href="/auth/login"
-                className="rounded-lg px-4 py-2 text-secondary-700 hover:bg-secondary-100"
-              >
-                Login
-              </Link>
-              <Link
-                href="/auth/register"
-                className="rounded-lg bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Hero Section */}
-      <section className="bg-gradient-to-b from-primary-50 to-white px-6 py-20">
-        <div className="mx-auto max-w-4xl text-center">
-          <h2 className="mb-6 text-5xl font-bold text-secondary-900">
-            Transform Vague Requirements into Structured Scopes
-          </h2>
-          <p className="mb-8 text-xl text-secondary-600">
-            AI-powered briefing sessions that extract clarity from confusion.
-            Get scope agreements in hours, not weeks.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Link
-              href="/auth/register"
-              className="rounded-lg bg-primary-600 px-8 py-3 font-semibold text-white hover:bg-primary-700"
-            >
-              Start Free Trial
-            </Link>
-            <Link
-              href="#features"
-              className="rounded-lg border-2 border-primary-600 px-8 py-3 font-semibold text-primary-600 hover:bg-primary-50"
-            >
-              Learn More
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="px-6 py-20">
-        <div className="mx-auto max-w-6xl">
-          <h3 className="mb-12 text-center text-3xl font-bold text-secondary-900">
-            Why ScopeFlow?
-          </h3>
-          <div className="grid gap-8 md:grid-cols-3">
-            {/* Feature 1 */}
-            <div className="rounded-lg border border-secondary-200 bg-white p-8">
-              <div className="mb-4 text-4xl">🤖</div>
-              <h4 className="mb-3 text-xl font-semibold text-secondary-900">
-                AI-Powered Briefing
-              </h4>
-              <p className="text-secondary-600">
-                Ask the right follow-up questions automatically. Our AI learns
-                what matters for your service type.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="rounded-lg border border-secondary-200 bg-white p-8">
-              <div className="mb-4 text-4xl">📋</div>
-              <h4 className="mb-3 text-xl font-semibold text-secondary-900">
-                Instant Scope Generation
-              </h4>
-              <p className="text-secondary-600">
-                From answers to scope in seconds. Deliverables, timelines, and
-                estimates. All structured and ready.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="rounded-lg border border-secondary-200 bg-white p-8">
-              <div className="mb-4 text-4xl">✅</div>
-              <h4 className="mb-3 text-xl font-semibold text-secondary-900">
-                Approval Workflows
-              </h4>
-              <p className="text-secondary-600">
-                Traceable sign-offs. Multi-party approvals. Audit trail. Know
-                exactly who agreed to what.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="bg-primary-600 px-6 py-16">
-        <div className="mx-auto max-w-4xl text-center">
-          <h3 className="mb-4 text-3xl font-bold text-white">
-            Ready to structure your chaos?
-          </h3>
-          <p className="mb-8 text-lg text-primary-100">
-            Join agências, freelancers, and studios already using ScopeFlow.
-          </p>
-          <Link
-            href="/auth/register"
-            className="inline-block rounded-lg bg-white px-8 py-3 font-semibold text-primary-600 hover:bg-secondary-100"
-          >
-            Start Your Free Trial
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-secondary-200 bg-white px-6 py-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid gap-8 md:grid-cols-4">
-            <div>
-              <h5 className="mb-4 font-bold text-secondary-900">ScopeFlow</h5>
-              <p className="text-sm text-secondary-600">
-                AI-powered briefing for service providers.
-              </p>
-            </div>
-            <div>
-              <h5 className="mb-4 font-semibold text-secondary-900">Product</h5>
-              <ul className="space-y-2 text-sm text-secondary-600">
-                <li>
-                  <Link href="#" className="hover:text-primary-600">
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-primary-600">
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-primary-600">
-                    Security
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="mb-4 font-semibold text-secondary-900">Company</h5>
-              <ul className="space-y-2 text-sm text-secondary-600">
-                <li>
-                  <Link href="#" className="hover:text-primary-600">
-                    About
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-primary-600">
-                    Blog
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-primary-600">
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h5 className="mb-4 font-semibold text-secondary-900">Legal</h5>
-              <ul className="space-y-2 text-sm text-secondary-600">
-                <li>
-                  <Link href="#" className="hover:text-primary-600">
-                    Privacy
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-primary-600">
-                    Terms
-                  </Link>
-                </li>
-                <li>
-                  <Link href="#" className="hover:text-primary-600">
-                    Status
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-          <div className="mt-8 border-t border-secondary-200 pt-8 text-center text-sm text-secondary-600">
-            <p>&copy; 2026 ScopeFlow. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+    <main className="bg-void">
+      <LandingNavbar />
+      <Hero />
+      <ProblemSolution />
+      <FeatureGrid features={FEATURES} />
+      <HowItWorks />
+      <PricingTable plans={PLANS} />
+      <SocialProof />
+      <FAQ />
+      <CTASection />
+      <Footer />
     </main>
   );
 }

@@ -1,74 +1,162 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Global styles */
+/* ── Design tokens ──────────────────────────────────────────────── */
+@theme {
+  /* Landing dark surfaces */
+  --color-void:        #09090E;
+  --color-pitch:       #0D0D14;
+  --color-dark-surface:  #10101A;
+  --color-dark-raised:   #18182A;
+  --color-dark-border:   #24243A;
+  --color-dark-border-hover: #3A3A58;
+
+  /* Dashboard light surfaces */
+  --color-canvas:        #F5F5F0;
+  --color-surface:       #FFFFFF;
+  --color-surface-raised: #FAFAF8;
+
+  /* Amber / Primary */
+  --color-primary-50:  #FFFBEE;
+  --color-primary-100: #FFF4CC;
+  --color-primary-200: #FFE794;
+  --color-primary-300: #FFD452;
+  --color-primary-400: #FFBC20;
+  --color-primary-500: #F5A623;
+  --color-primary-600: #E08800;
+  --color-primary-700: #B56B00;
+  --color-primary-800: #834D00;
+  --color-primary-900: #503000;
+
+  /* Secondary / Cool slate */
+  --color-secondary-50:  #F8F8FC;
+  --color-secondary-100: #F0F0F8;
+  --color-secondary-200: #E0E0EE;
+  --color-secondary-300: #BCBCD8;
+  --color-secondary-400: #8888AA;
+  --color-secondary-500: #666680;
+  --color-secondary-600: #4E4E6A;
+  --color-secondary-700: #383856;
+  --color-secondary-800: #252540;
+  --color-secondary-900: #14142A;
+
+  /* Ink — professional text */
+  --color-ink-50:  #F8F8F8;
+  --color-ink-100: #EFEFEF;
+  --color-ink-200: #DCDCDC;
+  --color-ink-300: #BEBEBE;
+  --color-ink-400: #969696;
+  --color-ink-500: #6A6A6A;
+  --color-ink-600: #4A4A4A;
+  --color-ink-700: #323232;
+  --color-ink-800: #1E1E1E;
+  --color-ink-900: #0E0E0E;
+
+  /* Accent — emerald success */
+  --color-accent-50:  #EFFDF5;
+  --color-accent-100: #D8FBDF;
+  --color-accent-400: #34D399;
+  --color-accent-500: #10B981;
+  --color-accent-600: #059669;
+
+  /* Status */
+  --color-danger-50:  #FEF2F2;
+  --color-danger-500: #EF4444;
+  --color-danger-700: #B91C1C;
+
+  /* Typography */
+  --font-sans:    var(--font-sans),    system-ui, sans-serif;
+  --font-display: var(--font-display), Georgia, serif;
+
+  /* Shadows */
+  --shadow-card:        0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-card-hover:  0 4px 16px -4px rgb(0 0 0 / 0.12);
+  --shadow-amber:       0 0 40px rgb(245 166 35 / 0.18);
+  --shadow-amber-sm:    0 0 20px rgb(245 166 35 / 0.12);
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  @apply bg-secondary-50 text-secondary-900 antialiased;
+  background-color: var(--color-canvas);
+  color: var(--color-ink-800);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
 }
 
-/* Typography */
-h1 {
-  @apply scroll-m-20 text-4xl font-extrabold tracking-tight;
+/* ── Form defaults ─────────────────────────────────────────────── */
+input, textarea, select {
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-secondary-200);
+  background-color: var(--color-surface);
+  padding: 0.5rem 0.75rem;
+  color: var(--color-ink-800);
 }
-
-h2 {
-  @apply scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight;
+input::placeholder, textarea::placeholder {
+  color: var(--color-secondary-400);
 }
-
-h3 {
-  @apply scroll-m-20 text-2xl font-semibold tracking-tight;
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px rgb(245 166 35 / 0.15);
 }
-
-h4 {
-  @apply scroll-m-20 text-xl font-semibold tracking-tight;
-}
-
-h5 {
-  @apply scroll-m-20 text-lg font-semibold tracking-tight;
-}
-
-h6 {
-  @apply scroll-m-20 text-base font-semibold tracking-tight;
-}
-
-p {
-  @apply leading-7 [&:not(:last-child)]:mb-2;
-}
-
-a {
-  @apply text-primary-600 hover:text-primary-700 transition-colors;
-}
-
-/* Form elements */
-input,
-textarea,
-select {
-  @apply rounded-md border border-secondary-200 bg-white px-3 py-2 placeholder-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20;
-}
-
 button {
-  @apply transition-all duration-200;
+  transition: all 0.2s;
+}
+a {
+  transition: color 0.15s;
 }
 
-/* Accessibility */
+/* ── Keyframes ─────────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes ambientPulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.7; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes subtleFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 24px rgba(245,166,35,0.1); }
+  50%      { box-shadow: 0 0 32px rgba(245,166,35,0.15); }
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% center; }
+  50%      { background-position: 100% center; }
+}
+
+.animate-fade-in        { animation: fadeIn 0.6s ease-out forwards; }
+.animate-slide-up       { animation: slideUp 0.6s ease-out forwards; }
+.animate-slide-in-right { animation: slideInRight 0.7s ease-out forwards; }
+.animate-ambient-pulse  { animation: ambientPulse 5s ease-in-out infinite; }
+.animate-subtle-float   { animation: subtleFloat 4s ease-in-out infinite; }
+.animate-glow           { animation: glow 3s ease-in-out infinite; }
+.animate-gradient-shift { animation: gradientShift 8s ease-in-out infinite; }
+
+/* ── Accessibility ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-  }
-}
-
-/* Dark mode utilities (if needed) */
-@media (prefers-color-scheme: dark) {
-  body {
-    @apply bg-secondary-900 text-secondary-100;
   }
 }

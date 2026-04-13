@@ -47,6 +47,11 @@ public interface BriefingMapper {
     ProgressResponse toProgressResponse(CompletionScore score);
 
     /**
+     * Map GapAnalysis to ProgressResponse (used by detectGaps — score may be < 80).
+     */
+    ProgressResponse toProgressResponse(GapAnalysis analysis);
+
+    /**
      * Map BriefingQuestion to QuestionResponse.
      */
     QuestionResponse toQuestionResponse(BriefingQuestion question, boolean followUpGenerated);

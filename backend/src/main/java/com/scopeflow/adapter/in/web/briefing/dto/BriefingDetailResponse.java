@@ -27,8 +27,8 @@ public record BriefingDetailResponse(
         @Schema(description = "Briefing status", example = "IN_PROGRESS")
         String status,
 
-        @Schema(description = "Public token for client access", example = "9f8c7d6e-5b4a-3210-9876-543210fedcba")
-        UUID publicToken,
+        @Schema(description = "Public token for client access", example = "abc123def456ghi789jkl012mno345pqr678stu901")
+        String publicToken,
 
         @Schema(description = "Completion score (only set when status=COMPLETED)", example = "95")
         Integer completionScore,

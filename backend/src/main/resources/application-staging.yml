@@ -1,0 +1,26 @@
+# ============================================================
+# Staging profile — ScopeFlow monolith
+#
+# Diferenças em relação ao application.yml base:
+#   - Cookies sem HTTPS (staging pode rodar em HTTP interno)
+#   - Logs reduzidos para INFO
+#
+# Para ativar: SPRING_PROFILES_ACTIVE=staging
+# ============================================================
+
+auth:
+  service:
+    url: ${AUTH_SERVICE_URL:http://user-service:8081/api/v1}
+
+# Cookies HTTP-only mas sem require-secure em staging (sem TLS interno)
+app:
+  cookie:
+    secure: ${APP_COOKIE_SECURE:false}
+  requires-https: false
+
+# Logs menos verbosos em staging (sem DEBUG de Security)
+logging:
+  level:
+    root: INFO
+    com.scopeflow: INFO
+    org.springframework.security: WARN

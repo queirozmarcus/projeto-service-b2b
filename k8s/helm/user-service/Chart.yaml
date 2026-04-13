@@ -1,0 +1,23 @@
+apiVersion: v2
+name: user-service
+description: ScopeFlow User Service — autenticação e gestão de usuários extraídos do monólito (Strangler Fig)
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+
+keywords:
+  - scopeflow
+  - b2b
+  - saas
+  - auth
+  - user-service
+  - spring-boot
+  - java21
+
+home: https://scopeflow.com
+sources:
+  - https://github.com/scopeflow/user-service
+
+maintainers:
+  - name: ScopeFlow Team
+    email: support@scopeflow.com

@@ -1,0 +1,36 @@
+description: Create invited user fails when invitedByUserId does not exist
+name: shouldReturn400OnInvalidInvitedByUser
+request:
+  method: POST
+  url: /users/invited
+  headers:
+    Content-Type: application/json
+    Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.test"
+  body:
+    email: "newmember@example.com"
+    invitedByUserId: "999e8400-e29b-41d4-a716-446655440999"
+    role: "MEMBER"
+response:
+  status: 400
+  headers:
+    Content-Type: application/problem+json
+  body:
+    type: "https://api.scopeflow.com/errors/invalid-invited-by-user"
+    title: "Invalid Invited By User"
+    status: 400
+    detail: "Invalid invited_by user: 999e8400-e29b-41d4-a716-446655440999"
+    error_code: "USER-012"
+    error_id: "550e8400-e29b-41d4-a716-446655440000"
+    timestamp: "2025-01-15T10:30:00Z"
+  matchers:
+    body:
+      - path: $.error_code
+        type: by_equality
+      - path: $.status
+        type: by_equality
+      - path: $.error_id
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.timestamp
+        type: by_regex
+        value: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})"

@@ -14,7 +14,7 @@ import java.util.Objects;
  *
  * No framework dependencies. Pure domain logic.
  */
-public sealed class BriefingSession permits BriefingInProgress, BriefingCompleted, BriefingAbandoned {
+public abstract sealed class BriefingSession permits BriefingInProgress, BriefingCompleted, BriefingAbandoned {
     private final BriefingSessionId id;
     private final WorkspaceId workspaceId;
     private final ClientId clientId;

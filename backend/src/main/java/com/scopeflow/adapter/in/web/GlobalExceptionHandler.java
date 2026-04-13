@@ -1,14 +1,19 @@
 package com.scopeflow.adapter.in.web;
 
 import com.scopeflow.core.domain.briefing.*;
-import com.scopeflow.core.domain.user.EmailAlreadyRegisteredException;
+import com.scopeflow.core.domain.proposal.*;
+import com.scopeflow.core.domain.user.*;
 import com.scopeflow.core.domain.workspace.*;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
@@ -161,6 +166,156 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(problemDetail);
+    }
+
+    // ============ Auth Exceptions ============
+
+    /**
+     * Handle invalid credentials (login failure).
+     */
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidCredentials(
+            InvalidCredentialsException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-credentials"));
+        problemDetail.setTitle("Invalid Credentials");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
+    }
+
+    // ============ User Domain Exceptions ============
+
+    /**
+     * Handle user not found (USER-010).
+     */
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleUserNotFound(
+            UserNotFoundException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "user-not-found"));
+        problemDetail.setTitle("User Not Found");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    /**
+     * Handle duplicate email (USER-011).
+     */
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ProblemDetail> handleDuplicateEmail(
+            DuplicateEmailException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "duplicate-email"));
+        problemDetail.setTitle("Duplicate Email");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+    }
+
+    /**
+     * Handle invalid invited by user (USER-012).
+     */
+    @ExceptionHandler(InvalidInvitedByUserException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidInvitedByUser(
+            InvalidInvitedByUserException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-invited-by-user"));
+        problemDetail.setTitle("Invalid Invited By User");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    /**
+     * Handle invalid role (USER-013).
+     */
+    @ExceptionHandler(InvalidRoleException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidRole(
+            InvalidRoleException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-role"));
+        problemDetail.setTitle("Invalid Role");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    // ============ Proposal Domain Exceptions ============
+
+    /**
+     * Handle proposal not found.
+     */
+    @ExceptionHandler(ProposalNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleProposalNotFound(
+            ProposalNotFoundException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "proposal-not-found"));
+        problemDetail.setTitle("Proposal Not Found");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    /**
+     * Handle invalid proposal state transition.
+     */
+    @ExceptionHandler(InvalidProposalStateException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidProposalState(
+            InvalidProposalStateException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-proposal-state"));
+        problemDetail.setTitle("Invalid Proposal State");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+    }
+
+    /**
+     * Handle expired approval token.
+     */
+    @ExceptionHandler(ApprovalTokenExpiredException.class)
+    public ResponseEntity<ProblemDetail> handleApprovalTokenExpired(
+            ApprovalTokenExpiredException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "approval-token-expired"));
+        problemDetail.setTitle("Approval Token Expired");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
     }
 
     // ============ Briefing Domain Exceptions ============
@@ -346,6 +501,81 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * Handle illegal state transitions (e.g., completing an already-completed briefing session).
+     * Maps to HTTP 409 Conflict.
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ProblemDetail> handleIllegalState(
+            IllegalStateException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-state-transition"));
+        problemDetail.setTitle("Invalid State Transition");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, "BRIEFING-409");
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(problemDetail);
+    }
+
+    // ============ Resilience Exceptions (circuit breaker, service unavailable) ============
+
+    /**
+     * Handle service unavailable (USER-012).
+     *
+     * Thrown by UserServiceRestAdapter when user-service is unreachable or returns 5xx.
+     * Maps to 503 Service Unavailable with Retry-After hint.
+     */
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ResponseEntity<ProblemDetail> handleServiceUnavailable(
+            ServiceUnavailableException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "service-unavailable"));
+        problemDetail.setTitle("Service Unavailable");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header("Retry-After", "30")
+                .body(problemDetail);
+    }
+
+    /**
+     * Handle circuit breaker open (Resilience4j CallNotPermittedException).
+     *
+     * Thrown when Resilience4j rejects the call because the circuit is OPEN.
+     * Distinct from ServiceUnavailableException: the circuit itself blocked the call
+     * without ever reaching the remote service.
+     *
+     * Covers all named circuit breakers: user-service, ses, openai, s3, etc.
+     */
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<ProblemDetail> handleCircuitBreakerOpen(
+            CallNotPermittedException ex,
+            WebRequest request
+    ) {
+        String circuitName = ex.getCausingCircuitBreakerName();
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.SERVICE_UNAVAILABLE);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "circuit-breaker-open"));
+        problemDetail.setTitle("Service Temporarily Unavailable");
+        problemDetail.setDetail("'" + circuitName + "' is temporarily unavailable. Please try again in a few moments.");
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, "SVC-503");
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header("Retry-After", "30")
+                .body(problemDetail);
+    }
+
+    /**
      * Handle rate limit exceeded.
      *
      * Note: This is a placeholder. In production, use a proper rate limiting library
@@ -370,10 +600,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     /**
      * Handle validation errors (Bean Validation).
+     * Overrides ResponseEntityExceptionHandler.handleMethodArgumentNotValid to avoid ambiguity.
      */
-    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
-    public ResponseEntity<ProblemDetail> handleValidationErrors(
-            org.springframework.web.bind.MethodArgumentNotValidException ex,
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
             WebRequest request
     ) {
         ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);

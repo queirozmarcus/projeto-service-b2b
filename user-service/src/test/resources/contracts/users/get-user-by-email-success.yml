@@ -1,0 +1,33 @@
+description: Get user by email with valid JWT
+name: shouldReturnUserByEmail
+request:
+  method: GET
+  url: /users/by-email/test@example.com
+  headers:
+    Content-Type: application/json
+    Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.test"
+response:
+  status: 200
+  headers:
+    Content-Type: application/json
+  body:
+    id: "550e8400-e29b-41d4-a716-446655440000"
+    email: "test@example.com"
+    fullName: "Test User"
+    phone: "+55119999988888"
+    status: "ACTIVE"
+    createdAt: "2025-01-15T10:30:00Z"
+  matchers:
+    body:
+      - path: $.id
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.email
+        type: by_regex
+        value: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+      - path: $.status
+        type: by_regex
+        value: "(ACTIVE|INACTIVE)"
+      - path: $.createdAt
+        type: by_regex
+        value: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})"

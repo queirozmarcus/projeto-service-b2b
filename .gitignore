@@ -1,0 +1,58 @@
+# Node
+node_modules/
+/package-lock.json
+npm-debug.log*
+
+# Next.js
+.next/
+out/
+build/
+dist/
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+.env.production
+!.env.example
+
+# Java / Maven
+backend/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Playwright
+test-results/
+playwright-report/
+
+# TypeScript incremental build
+tsconfig.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
+# Logs (all variants)
+*.log
+logs/
+
+# Maven wrapper downloads (not the wrapper scripts)
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# Misnamed directory (created by erroneous `cd ~` inside container)
+backend/~/
