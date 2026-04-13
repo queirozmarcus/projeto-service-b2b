@@ -35,8 +35,8 @@ backend/src/main/java/com/scopeflow/
 │   └── listener/             # Domain event listeners
 ├── adapter/
 │   ├── in/web/               # REST controllers (Spring MVC)
-│   │   ├── auth/             # AuthController
-│   │   ├── briefing/         # BriefingControllerV1, PublicBriefingControllerV1
+│   │   ├── auth/             # AuthControllerV2 — proxy para user-service (fallback sem Traefik)
+│   │   ├── briefing/         # BriefingControllerV1, BriefingSessionControllerV2, PublicBriefingControllerV1
 │   │   ├── proposal/         # ProposalControllerV2
 │   │   ├── workspace/        # WorkspaceControllerV2 (invite via user-service)
 │   │   ├── user/             # UserController
@@ -96,6 +96,7 @@ User Service foi extraído do monólito via Strangler Fig. Traefik roteia `/api/
 - **JWT secret compartilhado**: ambos os serviços usam o mesmo `JWT_SECRET` — tokens são cross-compatible
 - **DB-per-service**: `scopeflow_users` (PostgreSQL dedicado, porta 5433) — ativo em staging
 - **Módulo User no monólito**: decommissioned — `ServiceUnavailableException` protege chamadas residuais
+- **AuthControllerV2 (proxy)**: o monólito mantém `AuthControllerV2` que faz proxy das requisições `/auth/*` para o user-service via `RestTemplate`. Funciona como fallback quando Traefik não está presente (dev local sem docker compose). Em staging/produção, Traefik intercepta antes do monólito (prioridade 100 > 50).
 
 ### 2. Circuit Breakers (Resilience4j)
 

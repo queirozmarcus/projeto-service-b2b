@@ -19,7 +19,7 @@
 
 ## ✅ Concluído
 
-### Backend — Monólito (Spring Boot 3.4.3 + Java 21)
+### Backend — Monólito (Spring Boot 3.2.0 + Java 21)
 
 | Feature | Detalhes |
 |---------|---------|

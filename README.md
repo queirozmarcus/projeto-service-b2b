@@ -62,7 +62,7 @@ graph TB
     end
 
     subgraph services["Serviços"]
-        monolith["Monólito\nSpring Boot 3.4.3 + Java 21\n:8080"]
+        monolith["Monólito\nSpring Boot 3.2.0 + Java 21\n:8080"]
         userservice["User Service\nSpring Boot 3.4.3 + Java 21\n:8081"]
     end
 
@@ -108,7 +108,7 @@ graph TB
 | Serviço | Tecnologia | Porta | Responsabilidade | Status |
 |---------|-----------|-------|-----------------|--------|
 | **Frontend** | Next.js 15 + React 19 | `:3000` | UI, auth flow, dashboard, proposals, briefings | ✅ Operacional |
-| **Monólito** | Spring Boot 3.4.3 + Java 21 | `:8080` | Briefing, Proposal, Workspace, Client, IA | ✅ Operacional |
+| **Monólito** | Spring Boot 3.2.0 + Java 21 | `:8080` | Briefing, Proposal, Workspace, IA | ✅ Operacional |
 | **User Service** | Spring Boot 3.4.3 + Java 21 | `:8081` | Auth, registro, perfil de usuário | ✅ Staging ativo |
 | **Traefik** | v3.0 | `:80 / :8888` | API Gateway, roteamento Strangler Fig | ✅ Operacional |
 | **PostgreSQL (monólito)** | v16 | `:5432` | `scopeflow` — todos os domínios do monólito | ✅ Operacional |
@@ -123,8 +123,9 @@ graph TB
 | **Briefing** | `BriefingSession` | 7 | ✅ Completo | ⏳ Card 04 |
 | **Proposal** | `Proposal` | 4 | ✅ Completo | ⏳ Card 03 |
 | **Workspace** | `Workspace` | 2 | ✅ Completo | 🔄 Card 02 — próxima |
-| **Client** | `Client` | 2 | ✅ Completo | — |
 | **User** | — | — | ✅ Decommissioned | ✅ Card 01 extraído |
+
+> **Nota:** `Client` não é um bounded context separado. É referenciado como `ClientId` (value object) no domínio Briefing e como `client_id` UUID em Proposal — candidato a contexto futuro.
 
 ### Relações entre Serviços
 
@@ -157,7 +158,7 @@ projeto-service-b2b/
 ├── docker-compose.staging.yml       ← override: DB-per-service
 ├── .env.example                     ← variáveis de ambiente documentadas
 │
-├── backend/                         ← Monólito Spring Boot 3.4.3 + Java 21
+├── backend/                         ← Monólito Spring Boot 3.2.0 + Java 21
 │   └── src/main/java/com/scopeflow/
 │       ├── core/domain/             ← domínio puro (zero Spring/JPA)
 │       ├── application/             ← use cases, outbox, idempotency, purge
@@ -680,7 +681,7 @@ Toda decisão arquitetural relevante gera um ADR em [`docs/architecture/adr/`](d
 |---------|-------|
 | Linhas de código Java (monólito) | ~15.000 |
 | Classes Java (user-service) | 40 |
-| Testes — monólito | 59 |
+| Testes — monólito | 62 arquivos (59 classes de teste + 3 fixtures/configs) |
 | Testes — user-service | 7 |
 | Suítes Vitest — frontend | 7 |
 | Flyway migrations (monólito) | V1–V9 (9 aplicadas) |

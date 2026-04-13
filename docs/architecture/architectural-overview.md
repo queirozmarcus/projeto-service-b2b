@@ -1,11 +1,12 @@
 # Architectural Overview — ScopeFlow AI
 
-**Data:** 2026-04-05  
-**Versão:** 1.0
+**Data:** 2026-04-05 | **Versão:** 1.0  
+> ⚠️ **Parcialmente desatualizado.** Este documento descreve a arquitetura do monólito. Para visão atualizada com User Service extraído e roteamento Traefik, ver [`README.md §2`](../../README.md#2-arquitetura) e [`docs/migration/README.md`](../migration/README.md).  
+> **Stack corrigida:** Monólito usa Spring Boot 3.2.0 (não 3.4). User Service usa Spring Boot 3.4.3.
 
 ## Visão Geral
 
-**ScopeFlow AI** é uma plataforma SaaS B2B para freelancers e micro-agências transformarem conversas comerciais em escopos claros usando IA. O sistema usa **arquitetura hexagonal (Ports & Adapters) + DDD** com Java 21 e Spring Boot 3.4.
+**ScopeFlow AI** é uma plataforma SaaS B2B para freelancers e micro-agências transformarem conversas comerciais em escopos claros usando IA. O sistema usa **arquitetura hexagonal (Ports & Adapters) + DDD** com Java 21 e Spring Boot 3.2.0 (monólito) / 3.4.3 (user-service).
 
 ---
 
