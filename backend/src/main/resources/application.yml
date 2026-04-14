@@ -76,8 +76,8 @@ spring:
 
   security:
     user:
-      name: admin
-      password: admin123
+      name: ${SPRING_SECURITY_USER_NAME:admin}
+      password: ${SPRING_SECURITY_USER_PASSWORD}
 
 server:
   port: ${SERVER_PORT:8080}
