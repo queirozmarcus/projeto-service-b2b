@@ -1,0 +1,58 @@
+# Claude Code Ignore File — Service B2B
+
+# === Environment & Secrets ===
+.env
+.env.local
+.env.*.local
+.env.production.local
+*.pem
+*.key
+
+# === Dependencies ===
+node_modules/
+.npm/
+.yarn/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+target/
+.gradle/
+
+# === Build & Artifacts ===
+dist/
+build/
+coverage/
+.nyc_output/
+out/
+
+# === IDE ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# === Testing ===
+.jest-cache/
+jest.config.js
+coverage/
+
+# === Logs ===
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# === Database ===
+*.db
+*.sqlite
+*.sqlite3
+
+# === Git ===
+.git/
+.github/
+
+# === OS ===
+.DS_Store
+Thumbs.db
