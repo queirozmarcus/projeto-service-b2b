@@ -49,6 +49,13 @@ const useToastStore = create<ToastStore>((set) => ({
     })),
 }));
 
+/**
+ * Acesso direto ao store para uso fora de componentes React (ex: interceptors axios).
+ */
+export function getToastStore() {
+  return useToastStore.getState();
+}
+
 interface UseToastReturn {
   toasts: Toast[];
   success: (message: string) => void;

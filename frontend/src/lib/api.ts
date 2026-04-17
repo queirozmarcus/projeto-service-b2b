@@ -2,6 +2,7 @@ import axios from 'axios';
 import { env } from '@/env';
 import { shouldRefreshToken } from './jwt';
 import useSessionStore from '@/stores/useSession';
+import { getToastStore } from '@/hooks/useToast';
 
 let refreshTokenPromise: Promise<string> | null = null;
 
@@ -74,20 +75,25 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Interceptor de response: redireciona para login em 401
+// Interceptor de response: redireciona para login em 401, toast em 5xx/network
 // Exclui /auth/refresh e /auth/login para evitar loops de redirecionamento
 api.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
-    if (axios.isAxiosError(error) && error.response?.status === 401) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
       const url = error.config?.url ?? '';
       const isAuthEndpoint =
         url.includes('/auth/refresh') || url.includes('/auth/login');
-      if (!isAuthEndpoint) {
+
+      if (status === 401 && !isAuthEndpoint) {
         useSessionStore.getState().clearSession();
         if (typeof window !== 'undefined') {
           window.location.href = '/auth/login';
         }
+      } else if (!status || status >= 500) {
+        // Erro de rede (sem resposta) ou erro interno do servidor
+        getToastStore().add('error', 'Erro ao conectar com o servidor. Tente novamente.');
       }
     }
     return Promise.reject(error);

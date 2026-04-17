@@ -91,15 +91,9 @@ const useDashboardStore = create<DashboardState>((set, get) => ({
   },
 
   deleteProposal: async (id: string) => {
-    const { removeProposal, setFetchError } = get();
-    try {
-      await proposalApi.remove(id);
-      removeProposal(id);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao deletar proposta.';
-      setFetchError(message);
-      throw err;
-    }
+    const { removeProposal } = get();
+    await proposalApi.remove(id);
+    removeProposal(id);
   },
 
   computeStats: () => {
@@ -109,7 +103,9 @@ const useDashboardStore = create<DashboardState>((set, get) => ({
       (p) => p.status === 'DRAFT' || p.status === 'PUBLISHED'
     ).length;
 
-    const completed = proposals.length;
+    // TODO: substituir por briefings com status COMPLETED via useBriefingSessionStore
+    // quando o store for compartilhado ou o dado for exposto via selector
+    const completed = proposals.filter((p) => p.status === 'APPROVED').length;
 
     const approved = proposals.filter((p) => p.status === 'APPROVED').length;
     const rejected = proposals.filter((p) => p.status === 'REJECTED').length;
@@ -123,7 +119,7 @@ const useDashboardStore = create<DashboardState>((set, get) => ({
 
     return [
       { id: 'active',    label: 'Propostas Ativas',   value: active,    trend: '', trendDirection: 'neutral' as const },
-      { id: 'completed', label: 'Briefings Completos', value: completed, trend: '', trendDirection: 'neutral' as const },
+      { id: 'completed', label: 'Propostas Aprovadas', value: completed, trend: '', trendDirection: 'neutral' as const },
       { id: 'approval',  label: 'Taxa de Aprovação',   value: approval,  trend: '', trendDirection: 'neutral' as const },
       { id: 'clients',   label: 'Novos Clientes',      value: clients,   trend: '', trendDirection: 'neutral' as const },
     ];

@@ -24,12 +24,13 @@ export function ProposalList({
 }: ProposalListProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const deleteProposal = useDashboardStore((s) => s.deleteProposal);
-  const { error: toastError } = useToast();
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
       await deleteProposal(id);
+      toastSuccess('Proposta excluída com sucesso.');
     } catch {
       toastError('Erro ao deletar proposta. Tente novamente.');
     } finally {
