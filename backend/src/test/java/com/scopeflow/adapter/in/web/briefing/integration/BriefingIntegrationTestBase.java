@@ -3,6 +3,7 @@ package com.scopeflow.adapter.in.web.briefing.integration;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scopeflow.adapter.in.web.briefing.mapper.BriefingMapper;
 import com.scopeflow.adapter.out.persistence.briefing.*;
+import com.scopeflow.config.JwtService;
 import com.scopeflow.core.domain.briefing.*;
 import com.scopeflow.core.domain.workspace.WorkspaceId;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +61,9 @@ abstract class BriefingIntegrationTestBase {
     protected BriefingMapper mapper;
 
     @Autowired
+    private JwtService jwtService;
+
+    @Autowired
     protected JpaBriefingSessionSpringRepository sessionRepository;
 
     @Autowired
@@ -67,9 +71,6 @@ abstract class BriefingIntegrationTestBase {
 
     @Autowired
     protected JpaBriefingAnswerSpringRepository answerRepository;
-
-    @Autowired
-    protected BriefingService briefingService;
 
     // Test constants
     protected static final UUID WORKSPACE_ID_A = UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -114,12 +115,21 @@ abstract class BriefingIntegrationTestBase {
 
     /**
      * Create and persist a completed briefing.
+     *
+     * Strategy: delete the IN_PROGRESS row created by createTestBriefing(), then insert
+     * a new row with status COMPLETED. This avoids PK violation because JpaBriefingSession
+     * is immutable (no setters), so Spring Data cannot merge — it would attempt INSERT.
+     * FK-safe: questions and answers are always created after this call.
      */
     protected BriefingSession createCompletedBriefing(UUID workspaceId, UUID clientId) {
         var session = createTestBriefing(workspaceId, clientId, DEFAULT_SERVICE);
         var completed = ((BriefingInProgress) session).completeBriefing(
                 new CompletionScore(95, java.util.List.of())
         );
+
+        // Remove the IN_PROGRESS row before inserting the COMPLETED one
+        sessionRepository.deleteById(completed.getId().value());
+        sessionRepository.flush();
 
         var entity = new JpaBriefingSession(
                 completed.getId().value(),
@@ -194,14 +204,14 @@ abstract class BriefingIntegrationTestBase {
     }
 
     /**
-     * Generate a valid JWT token for testing (mocked).
+     * Generate a real JWT token signed with the application's JwtService.
      *
-     * In real tests, this should be replaced with actual JWT generation
-     * using JwtService or similar.
+     * Claims included: sub (userId), email, workspace_id, role, type=access.
+     * Returns the full "Bearer {token}" header value.
      */
     protected String generateTestJwtToken(UUID workspaceId, String username) {
-        // TODO: Replace with actual JWT generation when auth module is complete
-        // For now, return a mock token that SecurityUtil can extract workspaceId from
-        return "Bearer mock-jwt-token-" + workspaceId + "-" + username;
+        UUID userId = UUID.randomUUID();
+        String token = jwtService.generateAccessToken(userId, username, workspaceId, "OWNER");
+        return "Bearer " + token;
     }
 }
