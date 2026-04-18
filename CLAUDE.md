@@ -8,10 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Current Status (2026-04-17):**
 - Backend monolith: ~85% — todos os domínios implementados, circuit breakers ativos, purge jobs
-- User Service: 100% extraído via Strangler Fig — DB-per-service ativo em staging
+- User Service: 100% extraído via Strangler Fig — DB-per-service consolidado e validado ✅
 - Frontend: ~70% — dashboard, proposals e briefings integrados com API real
 - Tests: ✅ Sprint 10 — 50 testes unitários criados, integration tests refatorados
-- Produção: user-service aguardando cut-over (plano aprovado em `.claude/plans/backlog/`)
+- Docker Stack: ✅ 7/7 serviços operacionais — validação completa executada
+- Ambiente: ✅ Pronto para desenvolvimento (DB-per-service isolado, Traefik routing OK)
 
 See [`README.md`](README.md) for tech stack, setup instructions, and full API documentation.
 

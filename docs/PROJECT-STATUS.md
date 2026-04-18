@@ -10,10 +10,10 @@
 | Camada | Status | Cobertura |
 |--------|--------|-----------|
 | Backend — Monólito | ✅ Operacional | ~85% |
-| User Service | ✅ Staging ativo | 100% extraído |
+| User Service | ✅ DB-per-service consolidado | 100% extraído e validado |
 | Frontend | ✅ Operacional | ~70% |
+| Docker Stack | ✅ 7/7 serviços healthy | Validação completa 2026-04-17 |
 | Infra / CI/CD | ✅ Operacional | — |
-| Produção | 🔄 Pendente | Cut-over user-service aguardando |
 
 ---
 
@@ -45,12 +45,12 @@
 | Endpoints Auth | `/register`, `/login`, `/refresh`, `/logout`, `/me` |
 | Endpoints User | `/by-email/{email}`, `/users/invited` |
 | JWT compartilhado | Mesmo `JWT_SECRET` do monólito — tokens cross-compatible |
-| DB-per-service | `scopeflow_users` PostgreSQL dedicado (porta 5433) |
+| DB-per-service ✅ | `scopeflow_users` PostgreSQL dedicado (porta 5433) — consolidado e validado |
 | Flyway V1 | Schema `users` independente do monólito |
-| Profile staging | `application-staging.yml` → `user-db:5432/scopeflow_users` |
-| Traefik routing | Prioridade 100 captura `/auth/*` e `/users/*` |
+| Traefik routing | Prioridade 100 captura `/auth/*` e `/users/*` — validado 2026-04-17 |
 | 5 testes | Contract tests + integration tests (Testcontainers) |
 | E2E smoke tests | `run-e2e-tests.sh` — auth flow completo monólito + user-service |
+| Validação ambiente ✅ | 7/7 serviços healthy, DB isolado confirmado (.claude/validation-report-2026-04-18.md) |
 
 ### Frontend (Next.js 15 + TypeScript)
 
@@ -70,9 +70,11 @@
 | Feature | Detalhes |
 |---------|---------|
 | Docker Compose | 7 serviços: postgres, user-db, rabbitmq, redis, traefik, app, user-service |
+| Stack validada ✅ | 7/7 serviços healthy (validação 2026-04-17) — DB-per-service isolado |
+| Traefik Strangler Fig | Routing OK: user-service prioridade 100, monólito prioridade 50 |
 | docker-compose.staging.yml | Override: `SPRING_PROFILES_ACTIVE=staging` → banco dedicado |
 | GitHub Actions | CI/CD para backend e frontend |
-| DB_MIGRATION_GUIDE.md | Passos documentados para cut-over e rollback em produção |
+| Validação Report | `.claude/validation-report-2026-04-18.md` + `.claude/validation-summary-final.md` |
 
 ---
 
@@ -80,7 +82,8 @@
 
 | Item | Prioridade | Referência |
 |------|-----------|------------|
-| Cut-over user-service em produção | **Alta** | `.claude/plans/backlog/2026-04-12-migration-fase3-cutover-producao.md` |
+| Workspace extraction (Strangler Fig Round 2) | **Alta** | Próximo bounded context — ADR-001 |
+| Dashboard Sprints 6-10 | Média | Frontend 70% → 90% (API integration completa) |
 | Circuit breaker OpenAI + S3 | Baixa | Phase 4 — adapters não existem. TODOs em `ITextPdfServiceAdapter` |
 | PDF real (iText 8) | Baixa | Stub existe, aguarda Phase 4 com S3 integration |
 | OpenAI real (sem mock) | Baixa | SDK presente, mock local ativo em dev |
