@@ -1,7 +1,7 @@
 # Documentação Arquitetural — ScopeFlow AI
 
-**Data:** 2026-04-13 (atualizado)
-**Status:** Atualizado — User Service extraído, circuit breakers e purge jobs implementados
+**Data:** 2026-04-17 (atualizado)
+**Status:** Atualizado — User Service extraído, circuit breakers e purge jobs implementados, Sprint 10 ✅
 
 Este diretório contém o mapeamento completo da arquitetura do ScopeFlow AI.
 

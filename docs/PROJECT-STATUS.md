@@ -1,6 +1,6 @@
 # ScopeFlow AI — Status do Projeto
 
-**Data:** 2026-04-13
+**Data:** 2026-04-17
 **Branch:** `develop`
 
 ---
@@ -34,7 +34,8 @@
 | Circuit breakers | user-service (CB+Retry) e SES (CB) via Resilience4j |
 | GlobalExceptionHandler | RFC 9457 completo — domain, JWT, circuit breaker, rate limit, 503 |
 | WorkspaceControllerV2 | Invite via user-service (`findByEmail` + `createInvitedUser`) |
-| 59 testes | Unitários + integração com Testcontainers (PostgreSQL real) |
+| Sprint 10 ✅ | 50 testes unitários criados, integration tests refatorados com JWT generation |
+| 100+ testes | Unitários + integração com Testcontainers (PostgreSQL real) |
 
 ### User Service — Strangler Fig (20/20 sprints ✅)
 
@@ -80,7 +81,6 @@
 | Item | Prioridade | Referência |
 |------|-----------|------------|
 | Cut-over user-service em produção | **Alta** | `.claude/plans/backlog/2026-04-12-migration-fase3-cutover-producao.md` |
-| Fix `BriefingControllerV1IntegrationTest` | Média | `.questionId()` não existe em `BriefingQuestion` — compile error pré-existente |
 | Circuit breaker OpenAI + S3 | Baixa | Phase 4 — adapters não existem. TODOs em `ITextPdfServiceAdapter` |
 | PDF real (iText 8) | Baixa | Stub existe, aguarda Phase 4 com S3 integration |
 | OpenAI real (sem mock) | Baixa | SDK presente, mock local ativo em dev |
@@ -91,5 +91,5 @@
 ## Histórico de Planos
 
 Ver `.claude/plans/`:
-- `concluido/` — 32 artefatos de planejamento e execução concluídos
+- `concluido/` — 41 artefatos de planejamento e execução concluídos
 - `backlog/` — planos aprovados aguardando execução

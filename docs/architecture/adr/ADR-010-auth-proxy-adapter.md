@@ -1,7 +1,7 @@
 # ADR-010: AuthProxyAdapter para proxy HTTP ao user-service
 
 **Status:** Aceito  
-**Data:** 2026-04-13  
+**Data:** 2026-04-17  
 **Contexto:** Strangler Fig — user-service extraído, monólito como proxy
 
 ---
