@@ -15,6 +15,7 @@ com/scopeflow/core/domain/workspace/WorkspaceNameAlreadyExistsException.class
 com/scopeflow/adapter/in/web/briefing/dto/QuestionResponse.class
 com/scopeflow/core/domain/briefing/BriefingSessionRepository.class
 com/scopeflow/core/domain/workspace/CannotRemoveLastOwnerException.class
+com/scopeflow/adapter/out/userservice/AuthProxyAdapter.class
 com/scopeflow/core/domain/briefing/BriefingAlreadyCompletedException.class
 com/scopeflow/adapter/in/web/HealthController.class
 com/scopeflow/core/domain/briefing/AnsweredDirect.class
@@ -30,6 +31,7 @@ com/scopeflow/adapter/in/web/security/SecurityUtil.class
 com/scopeflow/core/domain/proposal/ProposalService.class
 com/scopeflow/adapter/out/persistence/briefing/JpaBriefingAnswer.class
 com/scopeflow/core/domain/briefing/DomainEvent.class
+com/scopeflow/application/purge/PurgeJobService.class
 com/scopeflow/core/domain/briefing/event/BriefingCompletedEvent.class
 com/scopeflow/core/domain/briefing/BriefingQuestionRepository.class
 com/scopeflow/core/domain/proposal/ProposalDraft.class
