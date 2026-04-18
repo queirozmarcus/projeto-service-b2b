@@ -6,10 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **ScopeFlow AI** — AI-powered SaaS platform for B2B service providers (freelancers, microagencies) to transform client conversations into clear, approved scopes through structured AI-assisted discovery.
 
-**Current Status (2026-04-13):**
+**Current Status (2026-04-17):**
 - Backend monolith: ~85% — todos os domínios implementados, circuit breakers ativos, purge jobs
 - User Service: 100% extraído via Strangler Fig — DB-per-service ativo em staging
 - Frontend: ~70% — dashboard, proposals e briefings integrados com API real
+- Tests: ✅ Sprint 10 — 50 testes unitários criados, integration tests refatorados
 - Produção: user-service aguardando cut-over (plano aprovado em `.claude/plans/backlog/`)
 
 See [`README.md`](README.md) for tech stack, setup instructions, and full API documentation.
@@ -231,7 +232,6 @@ cd backend && ./mvnw package jacoco:report
 
 | Item | Severidade | Contexto |
 |------|-----------|---------|
-| `BriefingControllerV1IntegrationTest` compile error | Média | `.questionId()` não existe na classe `BriefingQuestion` — corrigir antes de `./mvnw verify` |
 | Circuit breaker OpenAI / S3 | Baixa | `ITextPdfServiceAdapter` tem TODOs completos com config sugerida; aguarda Phase 4 (adapters não existem) |
 | User service cut-over em produção | Alta | Plano em `.claude/plans/backlog/2026-04-12-migration-fase3-cutover-producao.md` |
 | Extração Workspace context | Backlog | Próximo bounded context — após user-service estável em prod |
