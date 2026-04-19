@@ -1,7 +1,7 @@
 package com.scopeflow.user.adapter.in.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.scopeflow.user.adapter.in.web.dto.RegisterRequest;
+import com.scopeflow.user.adapter.in.web.auth.dto.RegisterRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
