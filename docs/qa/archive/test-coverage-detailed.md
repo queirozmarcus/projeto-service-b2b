@@ -3,7 +3,7 @@
 **Data:** 2026-04-19
 **Sprint atual:** Sprint 10
 **Autor:** QA Lead
-**Atualizado por:** QA Lead (revisão completa)
+**Atualizado por:** QA Lead (revisão Sprint 10 — refactoring de mocks + correções comportamentais)
 
 ---
 
@@ -181,12 +181,73 @@ Todos os testes `@WebMvcTest` usam `TestSecurityConfig`:
 @MockBean(UserStatusCacheService.class)
 ```
 
+Controllers que dependem de `UserServiceClient` devem mockar o client diretamente — não `RestTemplate`:
+```java
+// Correto
+@MockBean UserServiceClient userServiceClient;
+
+// Errado — causa context failure pois o controller não injeta RestTemplate
+@MockBean RestTemplate authServiceRestTemplate;
+```
+Aplica-se a `WorkspaceControllerV2Test` e `InviteMemberTest`. ✅ Ambos migrados em Sprint 10.
+
+### `@WithScopeFlowUser` vs `@WithMockUser`
+
+Testes de workspace que exercitam lógica dependente de `ScopeFlowPrincipal` (ex: `createWorkspace`, `removeMember`) devem usar `@WithScopeFlowUser`, não `@WithMockUser`:
+
+```java
+// Correto — injeta ScopeFlowPrincipal com workspaceId e role
+@WithScopeFlowUser(role = "OWNER")
+
+// Evitar — injeta UserDetails genérico, causa NullPointerException em SecurityUtil.currentPrincipal()
+@WithMockUser(roles = "OWNER")
+```
+
+### Comportamento real com `TestSecurityConfig` (unauthenticated)
+
+`TestSecurityConfig` configura `permitAll()` — requisições sem autenticação **não são bloqueadas pelo Spring Security**. O controller chama `SecurityUtil.currentPrincipal()` que lança `SecurityException` quando não há `ScopeFlowPrincipal` no contexto → resultado: **500, não 401**.
+
+```java
+// Correto (Sprint 10)
+mockMvc.perform(get("/briefings"))
+        .andExpect(status().is5xxServerError());
+
+// Incorreto — TestSecurityConfig não bloqueia em 401
+mockMvc.perform(get("/briefings"))
+        .andExpect(status().isUnauthorized());
+```
+
+Aplica-se a `BriefingListAndServiceEncapsulationTest` e qualquer `@WebMvcTest` que use `TestSecurityConfig`.
+
 ### Rate limiting em testes
 Desabilitado via `src/test/resources/application.properties`:
 ```properties
 auth.rate-limit.enabled=false
 ```
 A classe `BriefingControllerRateLimitTest` testa o rate limiting com a propriedade habilitada explicitamente.
+
+### Separação unit vs integration
+
+`maven-surefire-plugin` no `backend/pom.xml` exclui `*IntegrationTest` e `*ContractTest` da fase `test`:
+- `./mvnw test` — unitários apenas, sem Docker
+- `./mvnw verify` — tudo (unitários + integração + contract)
+
+### Stubs em helpers compartilhados
+
+Helpers de mock usados por múltiplos testes usam `lenient().when()` para evitar `UnnecessaryStubbingException`. Stubs em `@Test` individuais permanecem estritos.
+
+Aplicado em `BriefingSessionServiceTest.mockProposal()` (Sprint 10 — nem todos os testes precisam de todos os getters do `JpaProposal`).
+
+Também evitar `spy()` desnecessário em entidades: se o método pode ser chamado diretamente no mock (ex: `when(mock.getPublicToken()).thenReturn(...)`), não use `spy()`.
+
+### `@Tag("integration")` em base classes de integração
+
+`MessagingIntegrationTestBase` (e subclasses) têm `@Tag("integration")`. Isso permite selecionar/excluir grupos de testes via Maven Surefire além do padrão `*IntegrationTest`:
+
+```bash
+# Rodar apenas testes com @Tag("integration")
+./mvnw verify -Dgroups=integration
+```
 
 ### Fixtures e helpers
 - `BriefingSessionTestFixtures`, `BriefingTestData`, `BriefingTestFixtures` — dados de teste para briefing

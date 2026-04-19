@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scopeflow.adapter.in.web.GlobalExceptionHandler;
 import com.scopeflow.adapter.in.web.workspace.dto.CreateWorkspaceRequest;
 import com.scopeflow.config.TestSecurityConfig;
+import com.scopeflow.config.WithScopeFlowUser;
+import com.scopeflow.application.port.out.UserServiceClient;
 import com.scopeflow.core.domain.workspace.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,7 +16,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.web.client.RestTemplate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -37,7 +38,7 @@ class WorkspaceControllerV2Test {
     private WorkspaceService workspaceService;
 
     @MockBean
-    private RestTemplate authServiceRestTemplate;
+    private UserServiceClient userServiceClient;
 
     @Test
     @DisplayName("POST /workspaces returns 400 when name missing")
@@ -55,7 +56,7 @@ class WorkspaceControllerV2Test {
 
     @Test
     @DisplayName("POST /workspaces returns 409 when name already exists")
-    @WithMockUser
+    @WithScopeFlowUser
     void create_shouldReturn409_whenNameAlreadyExists() throws Exception {
         // Given
         given(workspaceService.createWorkspace(any(), any(), any(), any()))
@@ -89,7 +90,7 @@ class WorkspaceControllerV2Test {
 
     @Test
     @DisplayName("DELETE /workspaces/{id}/members/{memberId} returns 409 when removing last owner")
-    @WithMockUser(roles = "OWNER")
+    @WithScopeFlowUser(role = "OWNER")
     void removeMember_shouldReturn409_whenLastOwner() throws Exception {
         // Given
         doThrow(new CannotRemoveLastOwnerException("Cannot remove the only OWNER"))

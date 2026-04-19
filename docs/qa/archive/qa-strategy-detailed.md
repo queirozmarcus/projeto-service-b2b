@@ -2,7 +2,7 @@
 
 **Data:** 2026-04-19
 **Autor:** QA Lead
-**Versão:** 1.0
+**Versão:** 1.1 (Sprint 10 — refactoring de mocks, `@WithScopeFlowUser`, `@Tag("integration")`)
 
 ---
 
@@ -88,8 +88,12 @@ Todos os testes `@WebMvcTest` devem usar `TestSecurityConfig`:
 // TestSecurityConfig injeta:
 //   @MockBean JwtService
 //   @MockBean UserStatusCacheService
-//   SecurityFilterChain sem autenticação real
+//   SecurityFilterChain com permitAll() — sem autenticação real
 ```
+
+**Importante:** `TestSecurityConfig` usa `permitAll()`. Requisições sem autenticação **não retornam 401** — chegam ao controller e falham em `SecurityUtil.currentPrincipal()` com 500. Para testar cenários autenticados, use `@WithScopeFlowUser` (não `@WithMockUser`).
+
+Controllers que dependem de `UserServiceClient` devem usar `@MockBean UserServiceClient` — não `@MockBean RestTemplate`. O controller injeta a interface, não a implementação HTTP.
 
 ### Rate limiting
 Desabilitado em todos os testes via `src/test/resources/application.properties`:
@@ -97,6 +101,45 @@ Desabilitado em todos os testes via `src/test/resources/application.properties`:
 auth.rate-limit.enabled=false
 ```
 Testar rate limiting apenas na classe dedicada `BriefingControllerRateLimitTest`.
+
+### Separação unit vs integration via Surefire
+
+`maven-surefire-plugin` configurado no `backend/pom.xml` exclui testes de integração e contrato da fase `test`:
+
+```xml
+<plugin>
+  <artifactId>maven-surefire-plugin</artifactId>
+  <configuration>
+    <excludes>
+      <exclude>**/*IntegrationTest.java</exclude>
+      <exclude>**/*ContractTest.java</exclude>
+    </excludes>
+  </configuration>
+</plugin>
+```
+
+- `./mvnw test` — apenas unitários, sem Docker, feedback rápido
+- `./mvnw verify` — unitários + integração + contract (requer Docker)
+
+Essa separação é obrigatória. Testes `@WebMvcTest` e testes de domínio puro devem sempre passar sem Docker.
+
+### Stubs em helpers compartilhados com `lenient()`
+
+Quando um método helper cria stubs para um objeto mock que será usado por múltiplos testes (e nem todos os testes precisam de todos os stubs), use `lenient()` para evitar `UnnecessaryStubbingException`:
+
+```java
+// Correto: helper usado por N testes, nem todos precisam de todos os getters
+private Proposal mockProposal() {
+    var proposal = mock(Proposal.class);
+    lenient().when(proposal.getId()).thenReturn(...);
+    lenient().when(proposal.getStatus()).thenReturn(...);
+    lenient().when(proposal.getTitle()).thenReturn(...);
+    lenient().when(proposal.getWorkspaceId()).thenReturn(...);
+    return proposal;
+}
+```
+
+`lenient()` não deve ser usado indiscriminadamente — apenas em helpers compartilhados onde o stub é defensivo por natureza. Stubs em métodos `@Test` individuais devem permanecer estritos (sem `lenient()`).
 
 ### Isolamento de banco
 - `@BeforeEach` limpa tabelas relevantes na ordem correta (FK)

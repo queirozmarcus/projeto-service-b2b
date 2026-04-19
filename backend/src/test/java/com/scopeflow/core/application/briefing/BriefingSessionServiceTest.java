@@ -381,8 +381,6 @@ class BriefingSessionServiceTest {
         void shouldReturnSession_byValidToken() {
             String token = UUID.randomUUID().toString();
             JpaBriefingSession session = mockSession(sessionId, workspaceId, clientId, "SOCIAL_MEDIA", "IN_PROGRESS");
-            session = spy(session);
-            when(session.getPublicToken()).thenReturn(token);
             when(sessionRepo.findByPublicToken(token)).thenReturn(Optional.of(session));
 
             JpaBriefingSession result = service.getByPublicToken(token);
@@ -454,10 +452,11 @@ class BriefingSessionServiceTest {
 
     private JpaProposal mockProposal(UUID id, UUID wkspId, UUID cId, UUID briefingId) {
         JpaProposal p = mock(JpaProposal.class);
-        when(p.getId()).thenReturn(id);
-        when(p.getWorkspaceId()).thenReturn(wkspId);
-        when(p.getClientId()).thenReturn(cId);
-        when(p.getBriefingId()).thenReturn(briefingId);
+        // lenient: nem todos os testes que usam este helper precisam de todos os getters
+        lenient().when(p.getId()).thenReturn(id);
+        lenient().when(p.getWorkspaceId()).thenReturn(wkspId);
+        lenient().when(p.getClientId()).thenReturn(cId);
+        lenient().when(p.getBriefingId()).thenReturn(briefingId);
         return p;
     }
 

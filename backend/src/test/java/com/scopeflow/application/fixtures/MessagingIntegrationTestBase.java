@@ -3,6 +3,7 @@ package com.scopeflow.application.fixtures;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scopeflow.application.idempotency.IdempotencyRepository;
 import com.scopeflow.application.outbox.OutboxEventRepository;
+import org.junit.jupiter.api.Tag;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,6 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * Design: Both containers are static (singleton pattern) — started once per JVM.
  * This avoids the ~5s per-class startup penalty while keeping tests isolated via @AfterEach cleanup.
  */
+@Tag("integration")
 @SpringBootTest
 @Testcontainers
 @ActiveProfiles("test")
