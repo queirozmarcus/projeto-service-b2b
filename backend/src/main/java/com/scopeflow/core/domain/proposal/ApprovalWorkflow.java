@@ -28,11 +28,12 @@ public record ApprovalWorkflow(
     }
 
     public static ApprovalWorkflow create(ProposalId proposalId, List<String> approverEmails) {
+        ApprovalWorkflowId workflowId = ApprovalWorkflowId.generate();
         List<Approval> approvals = approverEmails.stream()
-                .map(email -> Approval.createPending(UUID.randomUUID(), email))
+                .map(email -> Approval.createPending(UUID.randomUUID(), workflowId, email))
                 .toList();
         return new ApprovalWorkflow(
-                ApprovalWorkflowId.generate(),
+                workflowId,
                 proposalId,
                 ApprovalStatus.IN_PROGRESS,
                 approvals,

@@ -1,0 +1,2 @@
+- [Gaps de teste ScopeFlow (abril/2026)](project_test_gaps.md) — client sem teste, bug Email VO→500, AI mockada, PIT nunca rodado
+- [docs/qa consolidado (2026-04-19)](project_qa_docs_state.md) — 3 docs finais após revisão cirúrgica; 6 deletados

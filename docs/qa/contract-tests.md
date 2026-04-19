@@ -1,10 +1,42 @@
-# Contract Testing — Implementation Summary
+# Contract Testing — ScopeFlow AI
+
+**Data de revisão:** 2026-04-19
+**Status atual:** Fase 1 concluída (Auth & User). Fase 2 (Workspace) em backlog.
 
 ## Objetivo
 
 Garantir compatibilidade entre `user-service` (provider) e `monólito` (consumer) durante migração Strangler Fig.
 
 **Framework:** Spring Cloud Contract 4.1.0
+
+**Princípios:**
+- Consumer-driven: consumer define expectativas, provider verifica
+- Backward compatibility: mudanças devem ser retrocompatíveis
+- Fail fast: falha de contrato bloqueia deploy no CI
+- Shared secret validation: JWT do serviço extraído aceito pelo monólito
+
+## Arquitetura
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Contract Testing Flow                  │
+├─────────────────────────────────────────────────────────┤
+│  1. Provider (user-service):                             │
+│     └─ Define contratos (YAML)                           │
+│     └─ Run contract tests                                │
+│     └─ Publish stubs JAR                                 │
+│                                                          │
+│  2. Consumer (monólito):                                 │
+│     └─ Download stubs JAR                                │
+│     └─ Run tests against WireMock                        │
+│     └─ Validate JWT compatibility                        │
+│                                                          │
+│  3. CI Pipeline:                                         │
+│     └─ Provider CI → publish stubs artifact              │
+│     └─ Consumer CI → download stubs → run tests          │
+│     └─ Fail → block deploy / Pass → deploy allowed       │
+└─────────────────────────────────────────────────────────┘
+```
 
 ## O Que Foi Implementado
 

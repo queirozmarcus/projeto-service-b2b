@@ -1,184 +1,260 @@
-# Test Coverage Report — Sprint 2 QA Phase
+# Relatório de Cobertura de Testes — ScopeFlow AI
 
-**Data:** 2026-03-24
-**Sprint:** Sprint 2 — Adapter Layer
-**Autor:** QA Engineer
-
----
-
-## Resumo
-
-| Métrica                           | Antes (Fase 5)  | Depois (Fase 5) | Target  |
-|-----------------------------------|-----------------|-----------------|---------|
-| Total de testes (@Test)           | 79              | 179+            | 120+    |
-| Novos arquivos de teste           | 0               | 11              | —       |
-| Cobertura adapter layer           | Estimado ~60%   | Estimado 80%+   | 80%+    |
-| Fixes validados com testes        | 0/9             | 9/9             | 9/9     |
-| Security smoke tests              | 0               | 14              | —       |
+**Data:** 2026-04-19
+**Sprint atual:** Sprint 10
+**Autor:** QA Lead
+**Atualizado por:** QA Lead (revisão completa)
 
 ---
 
-## Arquivos Criados
+## Resumo Executivo
 
-### Testes Unitários
-
-| Arquivo                                               | Fix(es) | Testes |
-|-------------------------------------------------------|---------|--------|
-| `config/JwtAuthenticationFilterTest.java`             | C1      | 11     |
-| `config/UserStatusCacheServiceTest.java`              | C1      | 4      |
-| `adapter/in/web/workspace/InviteMemberTest.java`      | C2      | 9      |
-| `core/domain/briefing/DetectGapsTest.java`            | C3      | 8      |
-| `adapter/in/web/proposal/IpSpoofingMitigationTest.java` | I1    | 8      |
-| `adapter/in/web/proposal/WorkspaceIsolationAndPaginationTest.java` | I2, I3 | 11 |
-| `adapter/in/web/briefing/BriefingListAndServiceEncapsulationTest.java` | I4, I5 | 9 |
-| `adapter/out/persistence/TransactionalAdapterTest.java` | I6    | 7      |
-
-### Testes de Integração (Testcontainers)
-
-| Arquivo                                                          | Fix(es)        | Testes |
-|------------------------------------------------------------------|----------------|--------|
-| `adapter/in/web/integration/Sprint2FixesIntegrationTest.java`    | C1,C2,C3,I1-I4,I6 | 18  |
-
-### Smoke Tests
-
-| Arquivo                                          | Tipo         | Testes |
-|--------------------------------------------------|--------------|--------|
-| `adapter/in/web/smoke/SmokeTests.java`            | E2E journey  | 1      |
-| `adapter/in/web/smoke/SecuritySmokeTests.java`    | Security     | 14     |
+| Métrica | Valor atual |
+|---------|-------------|
+| Total de classes de teste (backend) | 47 |
+| Total de classes de teste (user-service) | 7 |
+| Testes unitários estimados | 250+ |
+| Testes de integração (Testcontainers) | 15+ classes |
+| Contract tests (Spring Cloud Contract) | 8 contratos / 10 cenários consumer |
+| Smoke tests | 2 classes (journey + security) |
+| Domínios com cobertura de integração | briefing, proposal, workspace, auth, user |
+| Domínios sem cobertura de integração | client, outbox (parcial), purge (unit only) |
 
 ---
 
-## Cobertura por Camada
+## Estrutura Real de Testes
 
-### adapter/in/web (Controllers)
+### Backend — `backend/src/test/java/com/scopeflow/`
 
-| Classe                         | Cobertura Estimada | Observações                              |
-|--------------------------------|--------------------|------------------------------------------|
-| AuthControllerV2               | 85%+               | login, register, me, validation          |
-| WorkspaceControllerV2          | 90%+               | CRUD, invite, roles — C2 tests added     |
-| ProposalControllerV2           | 85%+               | list, get, publish, isolation — I2/I3    |
-| ApprovalControllerV2           | 90%+               | approve, IP spoofing — I1 tests          |
-| BriefingControllerV1           | 80%+               | create, list, progress, answers — I4     |
-| JwtAuthenticationFilter        | 85%+               | cache, expired, invalid — C1 tests       |
+#### Testes de Domínio (unitários)
 
-### adapter/out/persistence (Repositories)
+| Arquivo | Domínio | Tipo |
+|---------|---------|------|
+| `core/domain/briefing/BriefingSessionTest.java` | briefing | Unit |
+| `core/domain/briefing/BriefingAnswerTest.java` | briefing | Unit |
+| `core/domain/briefing/BriefingServiceTest.java` | briefing | Unit |
+| `core/domain/briefing/DetectGapsTest.java` | briefing | Unit |
+| `core/domain/briefing/ValueObjectTests.java` | briefing | Unit |
+| `core/domain/proposal/ProposalServiceTest.java` | proposal | Unit |
+| `core/domain/user/UserTest.java` | user | Unit |
+| `core/domain/workspace/WorkspaceTest.java` | workspace | Unit |
+| `core/domain/workspace/WorkspaceMemberTest.java` | workspace | Unit |
+| `core/domain/workspace/WorkspaceServiceTest.java` | workspace | Unit |
+| `core/application/briefing/BriefingSessionServiceTest.java` | briefing | Unit |
 
-| Classe                                  | Cobertura Estimada | Observações               |
-|-----------------------------------------|--------------------|---------------------------|
-| JpaUserRepositoryAdapter                | 80%+               | CRUD, status transitions  |
-| JpaWorkspaceRepositoryAdapter           | 80%+               | CRUD, soft-delete         |
-| JpaWorkspaceMemberRepositoryAdapter     | 85%+               | save, delete, find — I6   |
-| JpaProposalRepositoryAdapter            | 80%+               | CRUD, status transitions  |
-| JpaProposalVersionRepositoryAdapter     | 70%+               | find by proposal          |
-| JpaApprovalWorkflowRepositoryAdapter    | 70%+               | workflow lifecycle        |
+#### Testes de Controller (unitários — `@WebMvcTest`)
 
-### core/domain (Domain Services)
+| Arquivo | Domínio |
+|---------|---------|
+| `adapter/in/web/auth/AuthControllerV2Test.java` | auth |
+| `adapter/in/web/briefing/BriefingListAndServiceEncapsulationTest.java` | briefing |
+| `adapter/in/web/briefing/mapper/BriefingMapperTest.java` | briefing |
+| `adapter/in/web/proposal/ApprovalControllerV2Test.java` | proposal |
+| `adapter/in/web/proposal/ProposalControllerV2Test.java` | proposal |
+| `adapter/in/web/proposal/ProposalCrudControllerTest.java` | proposal |
+| `adapter/in/web/proposal/IpSpoofingMitigationTest.java` | proposal/security |
+| `adapter/in/web/proposal/WorkspaceIsolationAndPaginationTest.java` | proposal |
+| `adapter/in/web/user/UserControllerTest.java` | user |
+| `adapter/in/web/workspace/InviteMemberTest.java` | workspace |
+| `adapter/in/web/workspace/WorkspaceControllerV2Test.java` | workspace |
 
-| Classe              | Cobertura | Observações                            |
-|---------------------|-----------|----------------------------------------|
-| BriefingService     | 90%+      | All methods tested, C3 gaps test added |
-| WorkspaceService    | 85%+      | RBAC invariants, C2 coverage added     |
-| UserService         | 85%+      | register, lookup, saveInvited (C2)     |
-| ProposalService     | 80%+      | lifecycle, workspace isolation         |
+#### Testes de Persistência (unitários/integração)
 
----
+| Arquivo | Tipo |
+|---------|------|
+| `adapter/out/persistence/JpaProposalRepositoryAdapterTest.java` | Unit/Reflection |
+| `adapter/out/persistence/JpaUserRepositoryAdapterTest.java` | Unit/Reflection |
+| `adapter/out/persistence/JpaWorkspaceMemberRepositoryAdapterTest.java` | Unit/Reflection |
+| `adapter/out/persistence/TransactionalAdapterTest.java` | Unit/Reflection |
+| `adapter/out/userservice/UserServiceRestAdapterTest.java` | Unit |
 
-## Mapeamento Fix → Testes
+#### Testes de Integração (Testcontainers — PostgreSQL real)
 
-### C1 — JwtAuthenticationFilter Cache
+| Arquivo | Domínios cobertos |
+|---------|-------------------|
+| `adapter/in/web/integration/ScopeFlowIntegrationTestBase.java` | base class |
+| `adapter/in/web/integration/AuthIntegrationTest.java` | auth |
+| `adapter/in/web/integration/WorkspaceIntegrationTest.java` | workspace |
+| `adapter/in/web/integration/ProposalIntegrationTest.java` | proposal |
+| `adapter/in/web/integration/ApprovalIntegrationTest.java` | proposal/approval |
+| `adapter/in/web/integration/Sprint2FixesIntegrationTest.java` | auth, workspace, briefing, proposal |
+| `adapter/in/web/briefing/integration/BriefingIntegrationTestBase.java` | base class |
+| `adapter/in/web/briefing/integration/BriefingControllerV1IntegrationTest.java` | briefing |
+| `adapter/in/web/briefing/integration/BriefingSessionControllerV2IntegrationTest.java` | briefing |
+| `adapter/in/web/briefing/integration/PublicBriefingControllerV1IntegrationTest.java` | briefing (public) |
+| `adapter/in/web/briefing/integration/BriefingControllerCompletionFlowTest.java` | briefing |
+| `adapter/in/web/briefing/integration/BriefingControllerErrorHandlingTest.java` | briefing |
+| `adapter/in/web/briefing/integration/BriefingControllerRateLimitTest.java` | briefing/rate-limit |
+| `adapter/in/web/briefing/integration/BriefingControllerSecurityTest.java` | briefing/security |
+| `adapter/in/web/user/UserControllerIntegrationTest.java` | user |
+| `application/idempotency/IdempotencyServiceIntegrationTest.java` | idempotency |
+| `application/outbox/OutboxEventPublisherIntegrationTest.java` | outbox |
+| `application/listener/BriefingCompletedListenerIntegrationTest.java` | eventos |
+| `application/listener/ProposalApprovalListenerIntegrationTest.java` | eventos |
+| `application/listener/UserRegistrationListenerIntegrationTest.java` | eventos |
 
-**Objetivo:** Verificar que `UserStatusCacheService` é chamado (e não o repository diretamente), que INACTIVE/null são rejeitados, e que tokens inválidos retornam 401.
+#### Testes de Aplicação (unitários)
 
-**Testes adicionados:**
-- `JwtAuthenticationFilterTest` — 11 testes unitários (mock-based)
-- `Sprint2FixesIntegrationTest#JwtCacheIntegrationTests` — 4 testes integração
-- `SecuritySmokeTests#AuthenticationBypassTests` — 3 testes
+| Arquivo | Domínio |
+|---------|---------|
+| `application/purge/PurgeJobServiceTest.java` | purge jobs |
 
-### C2 — inviteMember Real Logic
+#### Contract Tests
 
-**Objetivo:** Verificar que o fluxo cria `UserInactive` para email desconhecido, não duplica usuário existente, e que apenas OWNER/ADMIN pode convidar.
+| Arquivo | Papel |
+|---------|-------|
+| `contract/UserServiceContractTest.java` | Consumer (monólito → user-service) |
 
-**Testes adicionados:**
-- `InviteMemberTest` — 9 testes unitários (WebMvcTest)
-- `Sprint2FixesIntegrationTest#InviteMemberIntegrationTests` — 3 testes integração com DB real
-- `SecuritySmokeTests#AuthorizationBypassTests` — teste MEMBER não pode convidar
+#### Smoke Tests
 
-### C3 — detectGaps Never Null
+| Arquivo | Tipo |
+|---------|------|
+| `adapter/in/web/smoke/SmokeTests.java` | Full journey (12 steps) |
+| `adapter/in/web/smoke/SecuritySmokeTests.java` | OWASP Top 10 (14 testes) |
 
-**Objetivo:** `detectGaps()` retorna `GapAnalysis` não-nulo em qualquer estado (0-100 respostas), score nunca excede 100%.
+#### Infraestrutura de Testes
 
-**Testes adicionados:**
-- `DetectGapsTest` — 8 testes unitários cobrindo 0/5/8/10/15 respostas
-- `Sprint2FixesIntegrationTest#DetectGapsIntegrationTests` — via `/briefings/{id}/progress`
-
-### I1 — IP Spoofing Mitigation
-
-**Objetivo:** `X-Forwarded-For` aceito apenas de proxy confiável (private/loopback), rejeitado de IP público. IP armazenado na resposta de aprovação.
-
-**Testes adicionados:**
-- `IpSpoofingMitigationTest` — 8 testes unitários com `request.setRemoteAddr()`
-- `Sprint2FixesIntegrationTest#IpSpoofingIntegrationTests` — validação via approval real
-- `SecuritySmokeTests#IpSpoofingSecurityTests` — smoke do fluxo completo
-
-### I2 — Workspace Isolation on Versions
-
-**Objetivo:** `GET /proposals/{id}/versions` retorna 403 quando proposal pertence a workspace diferente do JWT.
-
-**Testes adicionados:**
-- `WorkspaceIsolationAndPaginationTest#VersionsWorkspaceIsolationTests` — 4 testes unitários
-- `Sprint2FixesIntegrationTest#WorkspaceIsolationIntegrationTests` — 3 testes com DB real
-- `SecuritySmokeTests#AuthorizationBypassTests` — teste de bypass
-
-### I3 — Pagination on Proposals
-
-**Objetivo:** `GET /proposals` retorna estrutura paginada com `content`, `totalElements`, `size`, `number`, `first`, `last`. Size máximo = 100.
-
-**Testes adicionados:**
-- `WorkspaceIsolationAndPaginationTest#PaginationTests` — 7 testes unitários
-- `ProposalControllerV2Test` (pré-existente) — 3 testes de paginação
-- `Sprint2FixesIntegrationTest#PaginationIntegrationTests` — 2 testes com DB real
-
-### I4 — GET /briefings Intent
-
-**Objetivo:** Confirmar que `GET /briefings` retorna lista paginada do workspace autenticado.
-
-**Testes adicionados:**
-- `BriefingListAndServiceEncapsulationTest#BriefingListTests` — 5 testes
-- `Sprint2FixesIntegrationTest#BriefingListIntegrationTests` — 2 testes integração
-
-### I5 — BriefingService No Public Getters
-
-**Objetivo:** `BriefingService` não expõe repositórios como getters públicos — controllers delegam para métodos de domínio.
-
-**Testes adicionados:**
-- `BriefingListAndServiceEncapsulationTest#ServiceEncapsulationTests` — 4 testes de reflexão e delegação
-
-### I6 — @Transactional on Adapters
-
-**Objetivo:** Adapters de persistência têm `@Transactional(readOnly = true)` na classe e `@Transactional` nos métodos mutantes.
-
-**Testes adicionados:**
-- `TransactionalAdapterTest` — 7 testes de reflexão verificando anotações
-- `Sprint2FixesIntegrationTest#TransactionalIntegrationTests` — 2 testes de commit/rollback
+| Arquivo | Propósito |
+|---------|-----------|
+| `config/TestSecurityConfig.java` | `@MockBean(JwtService.class)` + `@MockBean(UserStatusCacheService.class)` — desabilita auth real nos testes de controller |
+| `config/UserStatusCacheServiceTest.java` | Testa o serviço de cache de status |
+| `config/JwtAuthenticationFilterTest.java` | Testa o filtro JWT |
+| `config/WithScopeFlowUser.java` | Anotação customizada para injetar usuário autenticado |
+| `config/WithScopeFlowUserSecurityContextFactory.java` | Factory da anotação acima |
 
 ---
 
-## Lacunas Conhecidas
+### User Service — `user-service/src/test/`
 
-| Área                                   | Lacuna                                      | Prioridade |
-|----------------------------------------|---------------------------------------------|------------|
-| Cache TTL expiry                       | Sem teste de TTL real (evita `Thread.sleep`) | Baixa      |
-| Briefing complete via API              | Smoke usa DB seeding, não API                | Baixa      |
-| RabbitMQ event publishing              | WorkspaceMemberInvited ainda é TODO          | Média      |
-| PDF generation                         | PdfService não implementado ainda            | Média      |
-| AI generation integration              | Mocked em todos os testes                    | Alta       |
-| Mutation testing                       | `./mvnw pitest:mutationCoverage` não rodado  | Média      |
+| Arquivo | Tipo |
+|---------|------|
+| `domain/UserTest.java` | Unit |
+| `adapter/in/web/auth/AuthControllerTest.java` | Unit (`@WebMvcTest`) |
+| `adapter/in/web/auth/AuthControllerIntegrationTest.java` | Integração (Testcontainers) |
+| `adapter/in/web/user/UserControllerIntegrationTest.java` | Integração (Testcontainers) |
+| `config/TestSecurityConfig.java` | Config de segurança para testes |
+| `contract/ContractVerifierBase.java` | Provider base class (Spring Cloud Contract) |
+| `contract/ContractVerifierSecurityConfig.java` | Security config para verificação de contratos |
 
 ---
 
-## Próximos Passos
+## Cobertura por Domínio
 
-1. Rodar `./mvnw clean verify` e confirmar todos os testes passam
-2. Rodar `./mvnw jacoco:report` e validar 80%+ na camada adapter
-3. Fazer merge para develop
-4. Sprint 3: implementar AI integration + PDF generation
+| Domínio | Unit | Integração | Contract | Gaps críticos |
+|---------|------|-----------|---------|---------------|
+| **briefing** | Alta (5 classes) | Alta (6 classes) | Nenhum | AI generation mockado; completion via DB seed |
+| **proposal** | Alta (3 classes) | Alta (3 classes) | Nenhum | PDF generation não implementado |
+| **workspace** | Alta (3 classes) | Média (1 classe) | Nenhum | Nenhum crítico |
+| **auth (monólito)** | Média (1 classe) | Alta (1 classe) | Consumer | — |
+| **user (monólito)** | Alta (1 classe) | Alta (1 classe) | Consumer | Email VO invalido retorna 500 em vez de 400 |
+| **user (user-service)** | Alta (1 classe) | Alta (2 classes) | Provider (8 contratos) | — |
+| **client** | Nenhum | Nenhum | Nenhum | **SEM NENHUM TESTE** |
+| **idempotency** | Nenhum | Alta (1 classe) | Nenhum | — |
+| **outbox** | Nenhum | Alta (1 classe + 3 listeners) | Nenhum | — |
+| **purge** | Alta (1 classe) | Nenhum | Nenhum | Jobs agendados não testados com scheduler real |
+
+---
+
+## Padrões de Teste Adotados
+
+### Stack obrigatória
+- **JUnit 5** + **AssertJ** + **Mockito**
+- **Testcontainers** com PostgreSQL 16-alpine — nunca H2
+- **Spring Cloud Contract 4.1.0** para contratos entre serviços
+
+### Naming
+```
+{Classe}Test           → unitário
+{Classe}IntegrationTest → integração com Testcontainers
+{Classe}ContractTest   → consumer/provider contract test
+```
+
+### Nomenclatura de métodos
+```java
+void shouldBehavior_whenCondition()
+```
+
+### Segurança em testes de controller
+Todos os testes `@WebMvcTest` usam `TestSecurityConfig`:
+```java
+@MockBean(JwtService.class)
+@MockBean(UserStatusCacheService.class)
+```
+
+### Rate limiting em testes
+Desabilitado via `src/test/resources/application.properties`:
+```properties
+auth.rate-limit.enabled=false
+```
+A classe `BriefingControllerRateLimitTest` testa o rate limiting com a propriedade habilitada explicitamente.
+
+### Fixtures e helpers
+- `BriefingSessionTestFixtures`, `BriefingTestData`, `BriefingTestFixtures` — dados de teste para briefing
+- `MessagingEventFixtures`, `MessagingIntegrationTestBase` — base para testes de messaging
+- `TestAwsConfig` — mock da configuração AWS para testes
+- `WithScopeFlowUser` — anotação para injetar contexto autenticado em testes de integração
+
+---
+
+## Gaps de Cobertura por Prioridade
+
+### Prioridade Alta
+| Gap | Domínio | Justificativa |
+|-----|---------|---------------|
+| Domínio `client` sem nenhum teste | client | Dado existente no produto — risco de regressão silenciosa |
+| Email VO inválido retorna 500 | user | Bug confirmado no `user-controller-integration-tests.md` — deveria retornar 400 |
+| AI generation sempre mockado | briefing | Fluxo principal do produto não testado com stub realista |
+
+### Prioridade Média
+| Gap | Domínio | Justificativa |
+|-----|---------|---------------|
+| Mutation testing não executado | todos | `./mvnw pitest:mutationCoverage` nunca rodado — cobertura de linha pode ser enganosa |
+| Briefing completion via API | briefing | `SmokeTests` usa DB seeding para simular conclusão |
+| Purge jobs com scheduler real | purge | Testes unitários verificam lógica mas não o disparo agendado |
+| RabbitMQ publishing de WorkspaceMemberInvited | workspace | Evento ainda é TODO no controller |
+
+### Prioridade Baixa
+| Gap | Domínio | Justificativa |
+|-----|---------|---------------|
+| Cache TTL expiry real | auth | Requer `Thread.sleep` — excluído intencionalmente |
+| PDF generation | proposal | `ITextPdfServiceAdapter` ainda é stub (Phase 4) |
+| Circuit breaker OpenAI | ai | Adapter não existe ainda |
+
+---
+
+## Quality Gates para Release
+
+- [ ] `./mvnw clean verify` — zero falhas no backend
+- [ ] `./mvnw clean verify` no user-service — zero falhas
+- [ ] JaCoCo: cobertura de linha >= 80% em `core/domain/` e `adapter/`
+- [ ] `./scripts/validate-contracts.sh` — 8 contratos passando
+- [ ] SmokeTests (12 steps de journey) — todos PASS
+- [ ] SecuritySmokeTests (14 testes OWASP) — todos PASS
+- [ ] Sonar: zero critical/blocker
+- [ ] Segurança: zero critical/high
+
+---
+
+## Como Executar
+
+```bash
+# Unitários apenas (rápido, sem Docker)
+cd backend && ./mvnw test
+
+# Testes completos com Testcontainers (requer Docker)
+cd backend && ./mvnw verify
+
+# User service
+cd user-service && ./mvnw verify
+
+# Contract tests
+./scripts/validate-contracts.sh
+
+# Cobertura JaCoCo
+cd backend && ./mvnw verify jacoco:report
+# Abrir: backend/target/site/jacoco/index.html
+
+# Classe específica
+./mvnw test -Dtest=BriefingSessionTest
+./mvnw test -Dtest=UserControllerIntegrationTest
+```

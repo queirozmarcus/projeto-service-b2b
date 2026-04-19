@@ -47,7 +47,7 @@ class UserStatusCacheServiceTest {
         UserActive activeUser = new UserActive(
                 userId,
                 new Email("user@example.com"),
-                new PasswordHash("hash"),
+                new PasswordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"),
                 "Test User", null,
                 Instant.now(), Instant.now()
         );
@@ -83,7 +83,7 @@ class UserStatusCacheServiceTest {
         UserInactive inactiveUser = new UserInactive(
                 userId,
                 new Email("invited@example.com"),
-                new PasswordHash("temp-hash"),
+                new PasswordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"),
                 "Invited User",
                 null,
                 Instant.now(), Instant.now()
@@ -105,7 +105,7 @@ class UserStatusCacheServiceTest {
         UserDeleted deletedUser = new UserDeleted(
                 userId,
                 new Email("deleted@example.com"),
-                new PasswordHash("hash"),
+                new PasswordHash("$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"),
                 "Deleted User", null,
                 Instant.now(), Instant.now()
         );
