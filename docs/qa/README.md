@@ -1,10 +1,16 @@
 # Testes — ScopeFlow AI
 
-**Última atualização:** 2026-04-19 (Sprint 10)
+**Última atualização:** 2026-04-19 (Sprint 10)  
+**Última validação completa:** 2026-04-19 — ✅ 426 testes, 0 falhas
 
 ## Quick Start
 
 ```bash
+# 🚀 VALIDAÇÃO COMPLETA (recomendado antes de commit/deploy)
+./scripts/validate-qa-full.sh
+# Executa: unitários + integração + user-service + contracts + cobertura
+# Tempo: ~8-10 min | Log: logs/qa-validation-{timestamp}.log
+
 # Unitários (rápido, sem Docker)
 cd backend && ./mvnw test
 
@@ -35,12 +41,15 @@ cd backend && ./mvnw verify jacoco:report
 
 | Métrica | Valor |
 |---------|-------|
+| **Testes executados (última run)** | **426** (380 backend + 46 user-service) |
+| **Taxa de sucesso** | **100%** (0 falhas, 0 erros) |
 | Classes de teste (backend) | 47 |
 | Classes de teste (user-service) | 7 |
 | Testes unitários estimados | 250+ |
 | Testes de integração (Testcontainers) | 15+ classes |
 | Contract tests (Spring Cloud Contract) | 8 contratos / 10 cenários consumer |
 | Smoke tests | 2 classes (12 journey + 14 OWASP) |
+| Script de validação completa | ✅ `./scripts/validate-qa-full.sh` |
 
 ### Cobertura por Domínio
 
@@ -312,15 +321,36 @@ static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-
 
 ---
 
+## Logs e Rastreabilidade
+
+Todas as execuções do `validate-qa-full.sh` salvam logs timestamped em `logs/`:
+
+```bash
+logs/
+├── qa-validation-20260419-175542.log  # Última execução
+├── qa-validation-YYYYMMDD-HHMMSS.log  # Pattern
+└── incident-*.log                      # Logs de incidentes (histórico)
+```
+
+**Ver última execução:**
+```bash
+ls -t logs/qa-validation-*.log | head -1 | xargs cat
+```
+
+---
+
 ## CI/CD Pipeline
 
 ```yaml
-# Sequência recomendada
+# Sequência recomendada (automatizada via validate-qa-full.sh)
 1. ./mvnw test                       # Unitários (sem Docker) — feedback rápido
 2. ./mvnw verify                     # Integração (Testcontainers)
 3. cd user-service && ./mvnw verify
 4. ./scripts/validate-contracts.sh  # Contract tests
 5. jacoco:report                     # Cobertura
+
+# Ou usar o script completo:
+./scripts/validate-qa-full.sh       # Executa 1-5 + logs
 ```
 
 Contract tests bloqueiam deploy se falharem (step 4 falha o pipeline).

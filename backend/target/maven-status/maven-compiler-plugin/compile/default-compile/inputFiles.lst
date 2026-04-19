@@ -143,6 +143,7 @@
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/GenerationType.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/workspace/WorkspaceService.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/proposal/ProposalId.java
+/home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/common/InvalidValueObjectException.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/application/briefing/BriefingSessionService.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/core/domain/briefing/GapAnalysis.java
 /home/mq/iGitHub/projeto-service-b2b/backend/src/main/java/com/scopeflow/config/AwsConfig.java
