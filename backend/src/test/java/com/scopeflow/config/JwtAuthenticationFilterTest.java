@@ -136,9 +136,9 @@ class JwtAuthenticationFilterTest {
         }
 
         @Test
-        @DisplayName("should NOT populate SecurityContext when user status is null (not found)")
-        void shouldSkipAuthentication_whenUserNotFound() throws Exception {
-            // Given — user deleted or missing from DB/cache
+        @DisplayName("should authenticate request when user not found in local DB — trusting JWT (user-service managed)")
+        void shouldAuthenticateRequest_whenUserNotFoundInLocalDB_trustingJwt() throws Exception {
+            // Given — user exists only in user-service, not in monolith DB (Strangler Fig)
             given(request.getHeader("Authorization")).willReturn(BEARER_TOKEN);
             given(jwtService.validateAndExtract(VALID_TOKEN)).willReturn(claims);
             given(claims.get("type", String.class)).willReturn("access");
@@ -151,8 +151,15 @@ class JwtAuthenticationFilterTest {
             // When
             filter.doFilterInternal(request, response, filterChain);
 
-            // Then — no auth
-            assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+            // Then — SecurityContext IS populated (JWT is trusted as proof of authentication)
+            var authentication = SecurityContextHolder.getContext().getAuthentication();
+            assertThat(authentication).isNotNull();
+            assertThat(authentication.getPrincipal()).isInstanceOf(ScopeFlowPrincipal.class);
+
+            ScopeFlowPrincipal principal = (ScopeFlowPrincipal) authentication.getPrincipal();
+            assertThat(principal.userId()).isEqualTo(USER_ID);
+            assertThat(principal.workspaceId()).isEqualTo(WORKSPACE_ID);
+            verify(filterChain).doFilter(request, response);
         }
     }
 

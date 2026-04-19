@@ -15,6 +15,9 @@ set -euo pipefail
 # Usage:
 #   ./tests/e2e/auth-flow.test.sh
 #   AUTH_SERVICE_EXTRACTED=true ./tests/e2e/auth-flow.test.sh
+#   
+#
+# smoke-test-@example.com / SmokeTest123!
 # ==============================================================================
 
 # Colors

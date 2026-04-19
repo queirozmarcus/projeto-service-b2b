@@ -75,11 +75,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Verify user still exists and is active.
             // UserStatusCacheService uses UserRepository (domain port) — not JPA directly.
             // Cache TTL: 5min (configured in application.properties via Caffeine spec).
+            //
+            // null status means user is not in the local monolith DB — they are managed
+            // exclusively by the user-service (Strangler Fig). Trust the JWT in this case.
+            // Only reject if we explicitly know the status is INACTIVE or DELETED.
             String status = userStatusCacheService.getUserStatus(userId);
-            if (!"ACTIVE".equals(status)) {
+            if (status != null && !"ACTIVE".equals(status)) {
                 log.debug("Rejecting token for userId={}: status={}", userId, status);
                 filterChain.doFilter(request, response);
                 return;
+            }
+            if (status == null) {
+                log.debug("User userId={} not found in local DB — trusting JWT (user-service managed)", userId);
             }
 
             ScopeFlowPrincipal principal = new ScopeFlowPrincipal(userId, email, workspaceId, role);
