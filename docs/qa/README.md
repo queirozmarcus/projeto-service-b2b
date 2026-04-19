@@ -59,8 +59,8 @@ cd backend && ./mvnw verify jacoco:report
 | **proposal** | ✅ Alta (3 classes) | ✅ Alta (3 classes) | — | PDF não implementado |
 | **workspace** | ✅ Alta (3 classes) | ⚠️ Média (1 classe) | — | — |
 | **auth (monólito)** | ⚠️ Média (1 classe) | ✅ Alta (1 classe) | ✅ Consumer | — |
-| **user (monólito)** | ✅ Alta (1 classe) | ✅ Alta (1 classe) | ✅ Consumer | Email VO → 500 (bug) |
-| **user (user-service)** | ✅ Alta (1 classe) | ✅ Alta (2 classes) | ✅ Provider (8 contratos) | — |
+| **user (monólito)** | ✅ Alta (2 classes) | ✅ Alta (2 classes) | ✅ Consumer | — |
+| **user (user-service)** | ✅ Alta (2 classes) | ✅ Alta (3 classes) | ✅ Provider (8 contratos) | — |
 | **client** | ❌ Nenhum | ❌ Nenhum | — | **SEM NENHUM TESTE** |
 | **idempotency** | — | ✅ Alta (1 classe) | — | — |
 | **outbox** | — | ✅ Alta (1 classe + 3 listeners) | — | — |
@@ -72,8 +72,7 @@ cd backend && ./mvnw verify jacoco:report
 
 ### Prioridade Alta
 1. **Domínio `client` sem nenhum teste** — risco de regressão silenciosa
-2. **Email VO inválido retorna 500** em vez de 400 (bug confirmado)
-3. **AI generation sempre mockado** — fluxo principal não testado com stub realista
+2. **AI generation sempre mockado** — fluxo principal não testado com stub realista
 
 ### Prioridade Média
 - Mutation testing não executado (cobertura de linha pode ser enganosa)

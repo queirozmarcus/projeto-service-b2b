@@ -49,6 +49,7 @@ com/scopeflow/core/domain/workspace/WorkspaceRepository.class
 com/scopeflow/core/application/briefing/BriefingSessionService$CompletionResult.class
 com/scopeflow/adapter/in/web/proposal/dto/ProposalResponse.class
 com/scopeflow/adapter/in/web/proposal/dto/ApprovalWorkflowResponse.class
+com/scopeflow/core/domain/common/InvalidValueObjectException.class
 com/scopeflow/adapter/in/web/briefing/dto/BriefingCompletionResponse.class
 com/scopeflow/adapter/out/persistence/briefing/JpaServiceContextProfile.class
 com/scopeflow/adapter/out/persistence/briefing/JpaAIGeneration.class

@@ -1,9 +1,11 @@
 ---
 title: "Fix: Email VO inválido deve retornar 400 (não 500)"
-status: APROVADO
+status: CONCLUÍDO ✅
 created: 2026-04-19
+completed: 2026-04-19
 priority: MÉDIA
 estimated_time: 2-3h (5 sprints)
+actual_time: 2h (5 sprints executados)
 ---
 
 # Plano: Email VO Inválido → 400 Bad Request

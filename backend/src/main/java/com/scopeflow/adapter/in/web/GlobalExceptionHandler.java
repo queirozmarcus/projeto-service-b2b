@@ -1,6 +1,7 @@
 package com.scopeflow.adapter.in.web;
 
 import com.scopeflow.core.domain.briefing.*;
+import com.scopeflow.core.domain.common.InvalidValueObjectException;
 import com.scopeflow.core.domain.proposal.*;
 import com.scopeflow.core.domain.user.*;
 import com.scopeflow.core.domain.workspace.*;
@@ -596,6 +597,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(problemDetail);
+    }
+
+    /**
+     * Handle invalid value object (VO-001).
+     *
+     * Thrown when a domain value object fails validation during construction.
+     * Maps to HTTP 400 Bad Request with RFC 9457 Problem Details.
+     */
+    @ExceptionHandler(InvalidValueObjectException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidValueObject(
+            InvalidValueObjectException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-value-object"));
+        problemDetail.setTitle("Invalid Value Object");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        problemDetail.setProperty("vo_type", ex.getVoType());
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.scopeflow.core.domain.user;
 
+import com.scopeflow.core.domain.common.InvalidValueObjectException;
 import java.util.Objects;
 
 /**
@@ -16,7 +17,7 @@ public record Email(String value) {
             throw new IllegalArgumentException("Email cannot be empty");
         }
         if (!trimmed.matches(EMAIL_REGEX)) {
-            throw new IllegalArgumentException("Invalid email format: " + value);
+            throw new InvalidValueObjectException("Email", "Invalid email format: " + value);
         }
     }
 

@@ -1,5 +1,6 @@
 package com.scopeflow.user.adapter.in.web;
 
+import com.scopeflow.user.domain.InvalidValueObjectException;
 import com.scopeflow.user.domain.exception.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -95,6 +96,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         pd.setTitle("Invalid Role");
         pd.setDetail(ex.getMessage());
         pd.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(pd, ex.getErrorCode());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(pd);
+    }
+
+    /**
+     * Handle invalid value object (VO-001).
+     *
+     * Thrown when a domain value object fails validation during construction.
+     * Maps to HTTP 400 Bad Request with RFC 9457 Problem Details.
+     */
+    @ExceptionHandler(InvalidValueObjectException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidValueObject(
+            InvalidValueObjectException ex, WebRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        pd.setType(URI.create(PROBLEM_BASE_URL + "invalid-value-object"));
+        pd.setTitle("Invalid Value Object");
+        pd.setDetail(ex.getMessage());
+        pd.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        pd.setProperty("vo_type", ex.getVoType());
         addCustomProperties(pd, ex.getErrorCode());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(pd);
     }

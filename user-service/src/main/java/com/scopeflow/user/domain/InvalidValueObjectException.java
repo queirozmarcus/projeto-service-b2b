@@ -1,4 +1,4 @@
-package com.scopeflow.core.domain.common;
+package com.scopeflow.user.domain;
 
 /**
  * Exception thrown when a Value Object fails validation.
@@ -19,7 +19,7 @@ package com.scopeflow.core.domain.common;
  *
  * <p>The {@code GlobalExceptionHandler} maps this to HTTP 400 Bad Request with RFC 9457 Problem Details.
  *
- * @see com.scopeflow.adapter.in.web.GlobalExceptionHandler
+ * @see com.scopeflow.user.adapter.in.web.GlobalExceptionHandler
  */
 public class InvalidValueObjectException extends RuntimeException {
 
