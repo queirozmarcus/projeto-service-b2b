@@ -1,5 +1,6 @@
 package com.scopeflow.user.domain;
 
+import com.scopeflow.user.domain.common.InvalidValueObjectException;
 import com.scopeflow.user.domain.model.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -58,14 +59,14 @@ class UserTest {
         @Test
         void shouldThrowOnInvalidEmailFormat() {
             assertThatThrownBy(() -> new Email("invalid-email"))
-                    .isInstanceOf(IllegalArgumentException.class)
+                    .isInstanceOf(InvalidValueObjectException.class)
                     .hasMessageContaining("Invalid email format");
         }
 
         @Test
         void shouldThrowOnEmptyEmail() {
             assertThatThrownBy(() -> new Email(""))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(InvalidValueObjectException.class);
         }
     }
 
