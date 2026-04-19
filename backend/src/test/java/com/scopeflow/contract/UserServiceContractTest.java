@@ -12,6 +12,11 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.cloud.contract.stubrunner.spring.AutoConfigureStubRunner;
 import org.springframework.cloud.contract.stubrunner.spring.StubRunnerProperties;
 import org.springframework.http.*;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.UUID;
 
@@ -38,7 +43,25 @@ import static org.assertj.core.api.Assertions.assertThat;
         ids = "com.scopeflow:user-service:+:stubs:8090",
         stubsMode = StubRunnerProperties.StubsMode.LOCAL
 )
+@Testcontainers(disabledWithoutDocker = true)
 class UserServiceContractTest {
+
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
+            .withDatabaseName("scopeflow_test")
+            .withUsername("test")
+            .withPassword("test");
+
+    @DynamicPropertySource
+    static void configureDataSource(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+        registry.add("spring.flyway.enabled", () -> "true");
+        // Point RabbitMQ to localhost (connection will fail gracefully — no AMQP messaging in tests)
+        registry.add("spring.rabbitmq.host", () -> "localhost");
+    }
 
     @LocalServerPort
     private int port;
