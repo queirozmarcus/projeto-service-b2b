@@ -7,7 +7,7 @@
 
 ```bash
 # 🚀 VALIDAÇÃO COMPLETA (recomendado antes de commit/deploy)
-./scripts/validate-qa-full.sh
+./scripts/validate-qa-full.sh --with-stack
 # Executa: unitários + integração + user-service + contracts + cobertura
 # Tempo: ~8-10 min | Log: logs/qa-validation-{timestamp}.log
 
@@ -367,13 +367,12 @@ Contract tests bloqueiam deploy se falharem (step 4 falha o pipeline).
 
 ## Documentação Arquivada
 
-Este README contém toda a informação necessária para uso diário. Documentação histórica e detalhada está em **[`archive/`](archive/)** (16 documentos):
+Este README contém toda a informação necessária para uso diário. Documentação histórica consolidada está em **[`archive/`](archive/)** (3 documentos):
 
 ### Quando Consultar o Archive
 
-- **Troubleshooting avançado** → `archive/contract-tests-detailed.md` (341 linhas, debugging profundo)
-- **Planejamento de novos testes** → `archive/test-coverage-detailed.md` (321 linhas, mapa completo de gaps)
-- **Contexto histórico** → `archive/sprint{5-10}-*-report.md` (relatórios de execução das 10 sprints)
-- **Decisões técnicas** → `archive/SPRINT-RETROSPECTIVE.md` (retrospectiva das sprints)
+- **Troubleshooting avançado de contract tests** → `archive/contract-tests-detailed.md` (341 linhas, debugging profundo WireMock/stubs)
+- **Contexto histórico e lessons learned** → `archive/SPRINT-RETROSPECTIVE.md` (504 linhas, 10 sprints consolidados)
+- **Índice navegável** → `archive/README.md`
 
-**Ver índice completo:** [`archive/README.md`](archive/README.md)
+Relatórios individuais de sprints foram **consolidados** na retrospectiva. Toda informação essencial está preservada ou derivável do código atual.
