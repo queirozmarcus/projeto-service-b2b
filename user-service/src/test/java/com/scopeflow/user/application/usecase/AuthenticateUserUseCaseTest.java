@@ -32,7 +32,7 @@ class AuthenticateUserUseCaseTest {
 
     private final UUID userId = UUID.randomUUID();
     private final Email email = new Email("user@example.com");
-    private final PasswordHash passwordHash = new PasswordHash("$2a$12$hashed");
+    private final PasswordHash passwordHash = new PasswordHash("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
     @BeforeEach
     void setUp() {
@@ -45,7 +45,7 @@ class AuthenticateUserUseCaseTest {
         // Given
         UserActive activeUser = User.create(new UserId(userId), email, passwordHash, "John Doe", null);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(activeUser));
-        when(passwordHasher.matches("rawpass", "$2a$12$hashed")).thenReturn(true);
+        when(passwordHasher.matches("rawpass", "$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")).thenReturn(true);
         when(tokenIssuer.issueAccessToken(userId, "user@example.com", "USER")).thenReturn("access.token");
         when(tokenIssuer.issueRefreshToken(userId)).thenReturn("refresh.token");
 
@@ -77,7 +77,7 @@ class AuthenticateUserUseCaseTest {
         // Given
         UserActive activeUser = User.create(new UserId(userId), email, passwordHash, "Jane", null);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(activeUser));
-        when(passwordHasher.matches("wrongpass", "$2a$12$hashed")).thenReturn(false);
+        when(passwordHasher.matches("wrongpass", "$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")).thenReturn(false);
 
         // When / Then
         assertThatThrownBy(() -> useCase.execute("user@example.com", "wrongpass"))

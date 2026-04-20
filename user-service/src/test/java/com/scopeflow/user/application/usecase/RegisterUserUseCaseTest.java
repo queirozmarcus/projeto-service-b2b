@@ -35,7 +35,7 @@ class RegisterUserUseCaseTest {
     void shouldRegisterUser_whenEmailIsNew() {
         // Given
         when(userRepository.existsByEmail(any(Email.class))).thenReturn(false);
-        when(passwordHasher.hash("secret123")).thenReturn("$2a$12$hashed");
+        when(passwordHasher.hash("secret123")).thenReturn("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
         // When
         UserActive result = useCase.execute("User@Example.COM", "secret123", "John Doe", null);
@@ -53,7 +53,7 @@ class RegisterUserUseCaseTest {
     void shouldNormalizeEmail_beforeCheckingRepository() {
         // Given
         when(userRepository.existsByEmail(new Email("user@example.com"))).thenReturn(false);
-        when(passwordHasher.hash(any())).thenReturn("$2a$12$hashed");
+        when(passwordHasher.hash(any())).thenReturn("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
         // When
         UserActive result = useCase.execute("  USER@EXAMPLE.COM  ", "pass", "Name", null);
@@ -93,13 +93,13 @@ class RegisterUserUseCaseTest {
     void shouldHashPassword_andNeverStoreRawPassword() {
         // Given
         when(userRepository.existsByEmail(any())).thenReturn(false);
-        when(passwordHasher.hash("rawpassword")).thenReturn("$2a$12$hashed_value");
+        when(passwordHasher.hash("rawpassword")).thenReturn("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
         // When
         UserActive result = useCase.execute("user@example.com", "rawpassword", "Name", null);
 
         // Then
-        assertThat(result.getPasswordHash().value()).isEqualTo("$2a$12$hashed_value");
+        assertThat(result.getPasswordHash().value()).isEqualTo("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
         assertThat(result.getPasswordHash().value()).doesNotContain("rawpassword");
         verify(passwordHasher).hash("rawpassword");
     }

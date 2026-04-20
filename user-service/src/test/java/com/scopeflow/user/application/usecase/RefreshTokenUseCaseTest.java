@@ -30,7 +30,7 @@ class RefreshTokenUseCaseTest {
 
     private final UUID userId = UUID.randomUUID();
     private final Email email = new Email("user@example.com");
-    private final PasswordHash hash = new PasswordHash("$2a$12$hashed");
+    private final PasswordHash hash = new PasswordHash("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
     @BeforeEach
     void setUp() {

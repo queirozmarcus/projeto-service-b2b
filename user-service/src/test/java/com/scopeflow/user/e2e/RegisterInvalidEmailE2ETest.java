@@ -29,10 +29,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * E2E tests for user registration with invalid email validation.
  *
  * Validates complete flow:
- * Frontend → HTTP POST → AuthController → Application Service → Email VO validation
- * → InvalidValueObjectException → GlobalExceptionHandler → RFC 9457 Problem Details
+ * Frontend → HTTP POST → AuthController → Jakarta Bean Validation (@NotBlank/@Email)
+ * → MethodArgumentNotValidException → GlobalExceptionHandler → RFC 9457 Problem Details
  *
- * Sprint 8: End-to-End validation of VO-001 error flow.
+ * Sprint 9: @NotBlank + @Email added to RegisterRequest/LoginRequest DTOs.
+ * Bean Validation now intercepts invalid emails at the HTTP boundary BEFORE
+ * reaching the Email VO — returning VALIDATION-400 instead of VO-001.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
@@ -78,8 +80,8 @@ class RegisterInvalidEmailE2ETest {
     }
 
     @Test
-    @DisplayName("should return 400 with VO-001 when email format is invalid")
-    void shouldReturn400WithVO001_whenEmailFormatInvalid() throws Exception {
+    @DisplayName("should return 400 with VALIDATION-400 when email format is invalid")
+    void shouldReturn400WithValidation400_whenEmailFormatInvalid() throws Exception {
         RegisterRequest request = new RegisterRequest(
                 "invalid-email", VALID_PASSWORD, VALID_NAME, null
         );
@@ -89,17 +91,19 @@ class RegisterInvalidEmailE2ETest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/problem+json"))
-                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/invalid-value-object"))
-                .andExpect(jsonPath("$.title").value("Invalid Value Object"))
+                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/validation-error"))
+                .andExpect(jsonPath("$.title").value("Validation Error"))
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error_code").value("VO-001"))
+                .andExpect(jsonPath("$.error_code").value("VALIDATION-400"))
                 .andExpect(jsonPath("$.error_id", matchesPattern("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")))
-                .andExpect(jsonPath("$.timestamp", notNullValue()));
+                .andExpect(jsonPath("$.timestamp", notNullValue()))
+                .andExpect(jsonPath("$.violations", hasSize(greaterThan(0))))
+                .andExpect(jsonPath("$.violations[0].field").value("email"));
     }
 
     @Test
-    @DisplayName("should return 400 with VO-001 when email missing @ symbol")
-    void shouldReturn400WithVO001_whenEmailMissingAtSymbol() throws Exception {
+    @DisplayName("should return 400 with VALIDATION-400 when email missing @ symbol")
+    void shouldReturn400WithValidation400_whenEmailMissingAtSymbol() throws Exception {
         RegisterRequest request = new RegisterRequest(
                 "testexample.com", VALID_PASSWORD, VALID_NAME, null
         );
@@ -109,13 +113,14 @@ class RegisterInvalidEmailE2ETest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/problem+json"))
-                .andExpect(jsonPath("$.error_code").value("VO-001"))
-                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/invalid-value-object"));
+                .andExpect(jsonPath("$.error_code").value("VALIDATION-400"))
+                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/validation-error"))
+                .andExpect(jsonPath("$.violations[0].field").value("email"));
     }
 
     @Test
-    @DisplayName("should return 400 with VO-001 when email missing domain")
-    void shouldReturn400WithVO001_whenEmailMissingDomain() throws Exception {
+    @DisplayName("should return 400 with VALIDATION-400 when email missing domain")
+    void shouldReturn400WithValidation400_whenEmailMissingDomain() throws Exception {
         RegisterRequest request = new RegisterRequest(
                 "test@", VALID_PASSWORD, VALID_NAME, null
         );
@@ -125,13 +130,14 @@ class RegisterInvalidEmailE2ETest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/problem+json"))
-                .andExpect(jsonPath("$.error_code").value("VO-001"))
-                .andExpect(jsonPath("$.title").value("Invalid Value Object"));
+                .andExpect(jsonPath("$.error_code").value("VALIDATION-400"))
+                .andExpect(jsonPath("$.title").value("Validation Error"))
+                .andExpect(jsonPath("$.violations[0].field").value("email"));
     }
 
     @Test
-    @DisplayName("should return 400 with VO-001 when email is blank")
-    void shouldReturn400WithVO001_whenEmailIsBlank() throws Exception {
+    @DisplayName("should return 400 with VALIDATION-400 when email is blank")
+    void shouldReturn400WithValidation400_whenEmailIsBlank() throws Exception {
         RegisterRequest request = new RegisterRequest(
                 "", VALID_PASSWORD, VALID_NAME, null
         );
@@ -141,13 +147,14 @@ class RegisterInvalidEmailE2ETest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/problem+json"))
-                .andExpect(jsonPath("$.error_code").value("VO-001"))
-                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/invalid-value-object"));
+                .andExpect(jsonPath("$.error_code").value("VALIDATION-400"))
+                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/validation-error"))
+                .andExpect(jsonPath("$.violations[0].field").value("email"));
     }
 
     @Test
-    @DisplayName("should return 400 with VO-001 when email contains spaces")
-    void shouldReturn400WithVO001_whenEmailContainsSpaces() throws Exception {
+    @DisplayName("should return 400 with VALIDATION-400 when email contains spaces")
+    void shouldReturn400WithValidation400_whenEmailContainsSpaces() throws Exception {
         RegisterRequest request = new RegisterRequest(
                 "test user@example.com", VALID_PASSWORD, VALID_NAME, null
         );
@@ -157,7 +164,8 @@ class RegisterInvalidEmailE2ETest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentType("application/problem+json"))
-                .andExpect(jsonPath("$.error_code").value("VO-001"));
+                .andExpect(jsonPath("$.error_code").value("VALIDATION-400"))
+                .andExpect(jsonPath("$.violations[0].field").value("email"));
     }
 
     @Test

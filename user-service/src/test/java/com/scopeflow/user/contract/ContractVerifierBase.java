@@ -9,6 +9,7 @@ import com.scopeflow.user.application.usecase.RefreshTokenUseCase;
 import com.scopeflow.user.application.usecase.RegisterUserUseCase;
 import com.scopeflow.user.config.JwtService;
 import com.scopeflow.user.domain.port.out.TokenIssuer;
+import com.scopeflow.user.domain.port.out.UserBlocklist;
 import com.scopeflow.user.domain.exception.DuplicateEmailException;
 import com.scopeflow.user.domain.exception.EmailAlreadyRegisteredException;
 import com.scopeflow.user.domain.exception.InvalidCredentialsException;
@@ -82,6 +83,9 @@ public abstract class ContractVerifierBase {
     // Required by JwtAuthenticationFilter (@Component that is loaded in @WebMvcTest context)
     @MockBean
     private UserRepository userRepository;
+
+    @MockBean
+    private UserBlocklist userBlocklist;
 
     // Test data constants
     private static final UUID TEST_USER_ID = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");

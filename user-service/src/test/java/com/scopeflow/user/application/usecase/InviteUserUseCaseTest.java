@@ -40,7 +40,7 @@ class InviteUserUseCaseTest {
     void shouldCreateInactiveUser_whenInviteSucceeds() {
         // Given
         Email email = new Email("john.doe@example.com");
-        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$temp_hash");
+        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
         // When
         UserInactive result = useCase.execute(email, invitedBy);
@@ -58,7 +58,7 @@ class InviteUserUseCaseTest {
     void shouldDeriveDisplayName_withDots() {
         // Given
         Email email = new Email("john.doe@example.com");
-        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$hash");
+        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
         // When
         UserInactive result = useCase.execute(email, invitedBy);
@@ -72,7 +72,7 @@ class InviteUserUseCaseTest {
     void shouldDeriveDisplayName_withUnderscores() {
         // Given
         Email email = new Email("maria_silva@example.com");
-        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$hash");
+        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
         // When
         UserInactive result = useCase.execute(email, invitedBy);
@@ -86,7 +86,7 @@ class InviteUserUseCaseTest {
     void shouldDeriveDisplayName_fromSimpleLocalPart() {
         // Given
         Email email = new Email("alice@company.org");
-        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$hash");
+        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
         // When
         UserInactive result = useCase.execute(email, invitedBy);
@@ -100,7 +100,7 @@ class InviteUserUseCaseTest {
     void shouldGenerateTempPassword_notUseInviterPassword() {
         // Given
         Email email = new Email("new@example.com");
-        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$temp");
+        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
 
         // When
         useCase.execute(email, invitedBy);
@@ -114,7 +114,7 @@ class InviteUserUseCaseTest {
     void shouldPropagateException_whenEmailAlreadyExists() {
         // Given — repository throws (simulates UNIQUE constraint catch in JpaUserRepositoryAdapter)
         Email email = new Email("existing@example.com");
-        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$hash");
+        when(passwordHasher.hash(anyString())).thenReturn("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
         doThrow(new EmailAlreadyRegisteredException("Email already registered: existing@example.com"))
                 .when(userRepository).save(any());
 

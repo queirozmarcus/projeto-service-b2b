@@ -15,6 +15,7 @@ import com.scopeflow.user.domain.exception.EmailAlreadyRegisteredException;
 import com.scopeflow.user.domain.exception.InvalidCredentialsException;
 import com.scopeflow.user.domain.model.*;
 import com.scopeflow.user.domain.port.out.TokenIssuer;
+import com.scopeflow.user.domain.port.out.UserBlocklist;
 import com.scopeflow.user.domain.port.out.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -67,6 +68,9 @@ class AuthControllerTest {
 
     @MockBean
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
+    @MockBean
+    private UserBlocklist userBlocklist;
 
     private static final String BCRYPT_HASH = "$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 
