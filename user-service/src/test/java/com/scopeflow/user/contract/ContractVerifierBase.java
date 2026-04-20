@@ -8,7 +8,7 @@ import com.scopeflow.user.domain.exception.DuplicateEmailException;
 import com.scopeflow.user.domain.exception.EmailAlreadyRegisteredException;
 import com.scopeflow.user.domain.exception.InvalidCredentialsException;
 import com.scopeflow.user.domain.exception.InvalidInvitedByUserException;
-import com.scopeflow.user.domain.exception.InvalidValueObjectException;
+import com.scopeflow.user.domain.shared.InvalidValueObjectException;
 import com.scopeflow.user.domain.exception.UserNotFoundException;
 import com.scopeflow.user.domain.model.*;
 import com.scopeflow.user.domain.port.out.UserRepository;

@@ -217,7 +217,7 @@ class GlobalExceptionHandlerTest {
     @DisplayName("Should handle InvalidCredentialsException with HTTP 401")
     void shouldHandleInvalidCredentialsException_withHttp401() {
         // Given
-        var exception = new InvalidCredentialsException();
+        var exception = new InvalidCredentialsException("Invalid credentials");
 
         // When
         var response = handler.handleInvalidCredentials(exception, mockRequest);
@@ -233,7 +233,7 @@ class GlobalExceptionHandlerTest {
     @DisplayName("Should handle UserNotFoundException with HTTP 404")
     void shouldHandleUserNotFoundException_withHttp404() {
         // Given
-        var exception = new UserNotFoundException(UUID.randomUUID());
+        var exception = new UserNotFoundException("User not found: " + UUID.randomUUID());
 
         // When
         var response = handler.handleUserNotFound(exception, mockRequest);

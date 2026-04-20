@@ -57,7 +57,7 @@ class UserTest {
         void shouldThrowOnEmptyEmail() {
             // When & Then
             assertThatThrownBy(() -> new Email(""))
-                    .isInstanceOf(IllegalArgumentException.class);
+                    .isInstanceOf(InvalidValueObjectException.class);
         }
     }
 

@@ -61,20 +61,20 @@ class EmailTest {
     }
 
     @Test
-    @DisplayName("should throw IllegalArgumentException when email is empty")
+    @DisplayName("should throw InvalidValueObjectException when email is empty")
     void shouldThrowException_whenEmpty() {
         // When/Then
         assertThatThrownBy(() -> new Email(""))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidValueObjectException.class)
                 .hasMessageContaining("Email cannot be empty");
     }
 
     @Test
-    @DisplayName("should throw IllegalArgumentException when email is blank")
+    @DisplayName("should throw InvalidValueObjectException when email is blank")
     void shouldThrowException_whenBlank() {
         // When/Then
         assertThatThrownBy(() -> new Email("   "))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidValueObjectException.class)
                 .hasMessageContaining("Email cannot be empty");
     }
 
