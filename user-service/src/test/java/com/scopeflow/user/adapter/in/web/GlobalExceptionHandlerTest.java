@@ -210,7 +210,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         ProblemDetail pd = response.getBody();
         assertThat(pd).isNotNull();
-        assertThat(pd.getProperties()).containsEntry("error_code", "USER-010");
+        assertThat(pd.getProperties()).containsEntry("error_code", "USER-001");
     }
 
     @Test
@@ -242,7 +242,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         ProblemDetail pd = response.getBody();
         assertThat(pd).isNotNull();
-        assertThat(pd.getProperties()).containsEntry("error_code", "USER-011");
+        assertThat(pd.getProperties()).containsEntry("error_code", "USER-010");
     }
 
     @Test
@@ -258,7 +258,7 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         ProblemDetail pd = response.getBody();
         assertThat(pd).isNotNull();
-        assertThat(pd.getProperties()).containsEntry("error_code", "USER-012");
+        assertThat(pd.getProperties()).containsEntry("error_code", "USER-011");
     }
 
     @Test

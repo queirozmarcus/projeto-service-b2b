@@ -158,9 +158,9 @@ class InvalidEmailValidationIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/validation-error"))
-                .andExpect(jsonPath("$.title").value("Validation Error"))
-                .andExpect(jsonPath("$.error_code").value("VALIDATION-400"));
+                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/invalid-value-object"))
+                .andExpect(jsonPath("$.title").value("Invalid Value Object"))
+                .andExpect(jsonPath("$.vo_type").value("Email"));
     }
 
     @Test
