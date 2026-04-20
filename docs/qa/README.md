@@ -365,7 +365,15 @@ Contract tests bloqueiam deploy se falharem (step 4 falha o pipeline).
 
 ---
 
-**Documentos detalhados arquivados:**
-- `archive/contract-tests-detailed.md` — guia completo de 341 linhas (se necessário consultar troubleshooting avançado)
-- `archive/test-coverage-detailed.md` — mapa completo de 321 linhas com todas as classes
-- `archive/qa-strategy-detailed.md` — análise de risco e plano de ação detalhado
+## Documentação Arquivada
+
+Este README contém toda a informação necessária para uso diário. Documentação histórica e detalhada está em **[`archive/`](archive/)** (16 documentos):
+
+### Quando Consultar o Archive
+
+- **Troubleshooting avançado** → `archive/contract-tests-detailed.md` (341 linhas, debugging profundo)
+- **Planejamento de novos testes** → `archive/test-coverage-detailed.md` (321 linhas, mapa completo de gaps)
+- **Contexto histórico** → `archive/sprint{5-10}-*-report.md` (relatórios de execução das 10 sprints)
+- **Decisões técnicas** → `archive/SPRINT-RETROSPECTIVE.md` (retrospectiva das sprints)
+
+**Ver índice completo:** [`archive/README.md`](archive/README.md)
