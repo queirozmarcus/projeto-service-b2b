@@ -163,7 +163,7 @@ class UserControllerIntegrationTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.error_code", is("USER-011")));
+                    .andExpect(jsonPath("$.error_code", is("USER-001")));  // EmailAlreadyRegisteredException.ERROR_CODE
         }
 
         @Test

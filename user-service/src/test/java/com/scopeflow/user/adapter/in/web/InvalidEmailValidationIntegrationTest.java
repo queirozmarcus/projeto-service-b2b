@@ -62,16 +62,17 @@ class InvalidEmailValidationIntegrationTest {
         );
 
         // When/Then
+        // Jakarta @Email on RegisterRequest intercepts before the Email VO is constructed.
+        // The response follows the validation-error format (VALIDATION-400).
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/invalid-value-object"))
-                .andExpect(jsonPath("$.title").value("Invalid Value Object"))
+                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/validation-error"))
+                .andExpect(jsonPath("$.title").value("Validation Error"))
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.detail").value(containsString("Invalid email format")))
-                .andExpect(jsonPath("$.error_code").value("VO-001"))
-                .andExpect(jsonPath("$.vo_type").value("Email"))
+                .andExpect(jsonPath("$.error_code").value("VALIDATION-400"))
+                .andExpect(jsonPath("$.violations[0].field").value("email"))
                 .andExpect(jsonPath("$.error_id").exists())
                 .andExpect(jsonPath("$.timestamp").exists());
     }
@@ -92,12 +93,11 @@ class InvalidEmailValidationIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/invalid-value-object"))
-                .andExpect(jsonPath("$.title").value("Invalid Value Object"))
+                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/validation-error"))
+                .andExpect(jsonPath("$.title").value("Validation Error"))
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.detail").value(containsString("Invalid email format")))
-                .andExpect(jsonPath("$.error_code").value("VO-001"))
-                .andExpect(jsonPath("$.vo_type").value("Email"));
+                .andExpect(jsonPath("$.error_code").value("VALIDATION-400"))
+                .andExpect(jsonPath("$.violations[0].field").value("email"));
     }
 
     @Test
@@ -116,10 +116,10 @@ class InvalidEmailValidationIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/invalid-value-object"))
-                .andExpect(jsonPath("$.title").value("Invalid Value Object"))
+                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/validation-error"))
+                .andExpect(jsonPath("$.title").value("Validation Error"))
                 .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.vo_type").value("Email"));
+                .andExpect(jsonPath("$.violations[0].field").value("email"));
     }
 
     @Test
@@ -138,8 +138,8 @@ class InvalidEmailValidationIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/invalid-value-object"))
-                .andExpect(jsonPath("$.vo_type").value("Email"));
+                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/validation-error"))
+                .andExpect(jsonPath("$.violations[0].field").value("email"));
     }
 
     @Test
@@ -158,9 +158,9 @@ class InvalidEmailValidationIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/invalid-value-object"))
-                .andExpect(jsonPath("$.title").value("Invalid Value Object"))
-                .andExpect(jsonPath("$.vo_type").value("Email"));
+                .andExpect(jsonPath("$.type").value("https://api.scopeflow.com/errors/validation-error"))
+                .andExpect(jsonPath("$.title").value("Validation Error"))
+                .andExpect(jsonPath("$.violations[0].field").value("email"));
     }
 
     @Test
@@ -185,9 +185,9 @@ class InvalidEmailValidationIntegrationTest {
                 .andExpect(jsonPath("$.status").isNumber())
                 .andExpect(jsonPath("$.detail").isString())
                 .andExpect(jsonPath("$.instance").isString())
-                // Custom extension fields
-                .andExpect(jsonPath("$.error_code").value("VO-001"))
-                .andExpect(jsonPath("$.vo_type").value("Email"))
+                // Custom extension fields — validation-error format (Jakarta @Email fires before VO)
+                .andExpect(jsonPath("$.error_code").value("VALIDATION-400"))
+                .andExpect(jsonPath("$.violations[0].field").value("email"))
                 .andExpect(jsonPath("$.error_id").isString())
                 .andExpect(jsonPath("$.timestamp").isString());
     }
