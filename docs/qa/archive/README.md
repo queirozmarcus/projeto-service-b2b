@@ -1,53 +1,39 @@
-# Arquivo Histórico — Documentação QA
+# Archive — Documentação QA Histórica
 
-Este diretório contém documentação histórica consolidada. Para uso diário, consulte `../README.md`.
+Documentação consolidada de referência. Para uso diário, consulte [`../README.md`](../README.md).
 
 ---
 
 ## Arquivos Mantidos
 
-### 📋 Guia Técnico Profundo
+### 📋 Troubleshooting Avançado
 
-**`contract-tests-detailed.md`** (341 linhas)
+**[`contract-tests-detailed.md`](contract-tests-detailed.md)** (341 linhas)
 - Arquitetura completa de contract tests
-- Troubleshooting avançado de WireMock/stubs
+- Debugging WireMock/stubs avançado
 - JWT validation patterns
-- Migração para Pact Broker (quando necessário)
+- Migração para Pact Broker
 
-**Quando consultar:** Problemas complexos com contract tests, setup de novo consumer/provider
+**Quando consultar:** Problemas complexos com contract tests, setup de novos consumers/providers
 
 ---
 
-### 📊 Retrospectiva Consolidada
+### 📊 Lessons Learned
 
-**`SPRINT-RETROSPECTIVE.md`** (504 linhas)
-- Lessons learned de 10 sprints (Email VO Validation Sync)
+**[`SPRINT-RETROSPECTIVE.md`](SPRINT-RETROSPECTIVE.md)** (504 linhas)
+- Retrospectiva de 10 sprints (Email VO Validation Sync)
 - Métricas: 53 testes, 6h duração, 0% defect leakage
-- Best practices: incremental approach, test-first mindset, RFC 9457
-- Action items para Sprint 11+
+- Best practices: incremental approach, test-first, RFC 9457
+- Action items para próximas iterações
 
-**Quando consultar:** Entender decisões históricas, aplicar lessons learned em novos projetos
-
----
-
-## Documentação Consolidada
-
-Relatórios individuais de sprints foram **consolidados** em `SPRINT-RETROSPECTIVE.md`:
-- Sprints 5-10 (test fixes, unit, contract, E2E, code review, final audit)
-- Análises pontuais (AUTH, EMAIL-VALIDATION, user-service audit)
-- Estratégia e coverage detalhados
-
-Toda informação essencial está preservada na retrospectiva ou derivável do código atual.
+**Quando consultar:** Entender decisões históricas, aplicar patterns validados em novos projetos
 
 ---
 
-## Referências Rápidas
+## Sobre Este Archive
 
-**Uso diário:** `../README.md`
-- Quick start (comandos prontos)
-- Estado atual (126 testes, 0 failures)
-- Quality gates & padrões
+Relatórios individuais de sprints (Sprints 5-10) foram **consolidados** em `SPRINT-RETROSPECTIVE.md`.
 
-**Troubleshooting avançado:** `contract-tests-detailed.md`
+Documentação técnica detalhada (strategy, coverage) foi **derivada do código** atual e está em [`../README.md`](../README.md).
 
-**Contexto histórico:** `SPRINT-RETROSPECTIVE.md`
+Toda informação essencial está preservada. Este archive serve como **referência histórica** e **troubleshooting profundo**.
