@@ -42,7 +42,7 @@ public class InviteUserUseCase {
         Objects.requireNonNull(invitedBy, "InvitedBy cannot be null");
 
         String tempPassword = UUID.randomUUID().toString().substring(0, 12);
-        PasswordHash tempHash = passwordHasher.hash(tempPassword);
+        PasswordHash tempHash = new PasswordHash(passwordHasher.hash(tempPassword));
 
         String displayName = extractDisplayName(email.normalized());
 
