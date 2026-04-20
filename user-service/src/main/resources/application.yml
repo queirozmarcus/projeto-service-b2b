@@ -119,3 +119,10 @@ app:
   cookie:
     secure: ${APP_COOKIE_SECURE:false}
   requires-https: ${APP_REQUIRES_HTTPS:false}
+  rate-limit:
+    # IPs dos reverse proxies confiáveis (ex: IP do container Traefik), separados por vírgula.
+    # Quando configurado, X-Forwarded-For só é lido se a conexão vier de um desses IPs.
+    # Se vazio (padrão), RemoteAddr é sempre usado — comportamento seguro sem proxy.
+    # Risco de IP spoofing: nunca confiar em X-Forwarded-For sem validar RemoteAddr contra esta lista.
+    # Para descobrir o IP do Traefik: docker inspect scopeflow-traefik | grep IPAddress
+    trusted-proxies: ${APP_RATE_LIMIT_TRUSTED_PROXIES:}

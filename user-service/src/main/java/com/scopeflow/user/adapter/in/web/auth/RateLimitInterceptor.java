@@ -14,11 +14,23 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Rate limiting interceptor: 5 attempts per IP per 5 minutes.
+ *
+ * <p><b>IP Spoofing Protection:</b> Trusting X-Forwarded-For unconditionally allows
+ * an attacker to forge any IP on each request, bypassing rate limiting entirely.
+ * This interceptor only reads X-Forwarded-For when the immediate connection
+ * (RemoteAddr) comes from a known trusted proxy.
+ *
+ * <p><b>Configuration:</b> Set {@code app.rate-limit.trusted-proxies} to the
+ * comma-separated list of your proxy IPs (e.g., Traefik container IP).
+ * If left empty (default), RemoteAddr is always used — safe with no proxy.
  */
 public class RateLimitInterceptor implements HandlerInterceptor {
 
@@ -26,10 +38,31 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     private static final int MAX_ATTEMPTS = 5;
     private static final Duration WINDOW = Duration.ofMinutes(5);
 
+    private final Set<String> trustedProxies;
+
     private final Map<String, Bucket> buckets = Caffeine.newBuilder()
             .expireAfterAccess(10, TimeUnit.MINUTES)
             .<String, Bucket>build()
             .asMap();
+
+    public RateLimitInterceptor(String trustedProxiesConfig) {
+        this.trustedProxies = parseTrustedProxies(trustedProxiesConfig);
+        if (trustedProxies.isEmpty()) {
+            log.info("RateLimitInterceptor: no trusted proxies configured — using RemoteAddr always (safe default)");
+        } else {
+            log.info("RateLimitInterceptor: trusted proxies configured: {}", trustedProxies);
+        }
+    }
+
+    private static Set<String> parseTrustedProxies(String config) {
+        if (config == null || config.isBlank()) {
+            return Set.of();
+        }
+        return Arrays.stream(config.split(","))
+                .map(String::strip)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toUnmodifiableSet());
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -72,11 +105,42 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         return Bucket.builder().addLimit(limit).build();
     }
 
-    private static String resolveClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            return xForwardedFor.split(",")[0].strip();
+    /**
+     * Resolves the real client IP in a spoofing-resistant way.
+     *
+     * <p>Strategy:
+     * <ul>
+     *   <li>If no trusted proxies are configured → use RemoteAddr (safe default, no proxy).</li>
+     *   <li>If RemoteAddr is a trusted proxy → the proxy appended the client IP to X-Forwarded-For;
+     *       take the last entry added by the trusted proxy (penultimate in the list, i.e. the entry
+     *       just before the proxy itself). Falls back to RemoteAddr if the header is missing/malformed.</li>
+     *   <li>If RemoteAddr is NOT a trusted proxy → request came directly (or from an unknown proxy);
+     *       ignore X-Forwarded-For entirely to prevent spoofing.</li>
+     * </ul>
+     */
+    private String resolveClientIp(HttpServletRequest request) {
+        String remoteAddr = request.getRemoteAddr();
+
+        if (trustedProxies.isEmpty()) {
+            return remoteAddr;
         }
-        return request.getRemoteAddr();
+
+        if (!trustedProxies.contains(remoteAddr)) {
+            // Direct connection or unknown proxy — never trust the header
+            return remoteAddr;
+        }
+
+        // RemoteAddr is a trusted proxy: extract rightmost client IP from X-Forwarded-For.
+        // Traefik appends the real client IP, so the list is: [original-client, ..., last-hop-client]
+        // We want the last entry that the trusted proxy added — i.e. the rightmost one.
+        String xForwardedFor = request.getHeader("X-Forwarded-For");
+        if (xForwardedFor == null || xForwardedFor.isBlank()) {
+            return remoteAddr;
+        }
+
+        String[] parts = xForwardedFor.split(",");
+        // Rightmost entry is the IP closest to the trusted proxy — the real client.
+        String clientIp = parts[parts.length - 1].strip();
+        return clientIp.isEmpty() ? remoteAddr : clientIp;
     }
 }
