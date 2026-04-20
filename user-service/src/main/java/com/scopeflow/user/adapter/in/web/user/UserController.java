@@ -3,6 +3,7 @@ package com.scopeflow.user.adapter.in.web.user;
 import com.scopeflow.user.adapter.in.web.user.dto.CreateInvitedUserRequest;
 import com.scopeflow.user.adapter.in.web.user.dto.UserResponse;
 import com.scopeflow.user.application.service.UserService;
+import com.scopeflow.user.application.usecase.InviteUserUseCase;
 import com.scopeflow.user.domain.exception.InvalidInvitedByUserException;
 import com.scopeflow.user.domain.exception.InvalidRoleException;
 import com.scopeflow.user.domain.exception.UserNotFoundException;
@@ -13,10 +14,7 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.UUID;
 
 /**
  * User management endpoints.
@@ -24,6 +22,8 @@ import java.util.UUID;
  * Path: /api/v1/users
  * Supports workspace invite flow: lookup by email, create invited user.
  * All endpoints require authentication (JWT).
+ *
+ * Controller responsibility: HTTP translation only (validate input, call use case, build response).
  */
 @RestController
 @RequestMapping("/api/v1/users")
@@ -33,11 +33,11 @@ public class UserController {
     private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
+    private final InviteUserUseCase inviteUserUseCase;
 
-    public UserController(UserService userService, PasswordEncoder passwordEncoder) {
+    public UserController(UserService userService, InviteUserUseCase inviteUserUseCase) {
         this.userService = userService;
-        this.passwordEncoder = passwordEncoder;
+        this.inviteUserUseCase = inviteUserUseCase;
     }
 
     @GetMapping("/by-email")
@@ -57,49 +57,19 @@ public class UserController {
     public UserResponse createInvited(@Valid @RequestBody CreateInvitedUserRequest request) {
         Email email = new Email(request.email());
 
-        // Duplicate email check is enforced by the UNIQUE constraint on the email column.
-        // DataIntegrityViolationException is caught in JpaUserRepositoryAdapter and converted
-        // to EmailAlreadyRegisteredException, eliminating the check-then-act race condition.
-
         UserId invitedByUserId = new UserId(request.invitedByUserId());
         userService.getUserById(invitedByUserId)
                 .orElseThrow(() -> new InvalidInvitedByUserException(invitedByUserId));
 
-        validateRole(request.role());
-
-        UserId newUserId = UserId.generate();
-        String tempPasswordHash = passwordEncoder.encode(UUID.randomUUID().toString());
-        PasswordHash tempHash = new PasswordHash(tempPasswordHash);
-        String displayName = extractDisplayNameFromEmail(email.normalized());
-
-        UserInactive invitedUser = User.createInvited(newUserId, email, tempHash, displayName);
-        userService.saveInvitedUser(invitedUser);
-
-        log.info("Invited user created: userId={}, email={}, invitedBy={}, role={}",
-                newUserId.value(), email.normalized(), request.invitedByUserId(), request.role());
-
-        return UserResponse.from(invitedUser);
-    }
-
-    private void validateRole(Role role) {
-        if (role == Role.OWNER) {
+        if (request.role() == Role.OWNER) {
             throw new InvalidRoleException("Cannot invite user with OWNER role. Use workspace creation instead.");
         }
-    }
 
-    private String extractDisplayNameFromEmail(String email) {
-        String localPart = email.split("@")[0];
-        return localPart.replace(".", " ").replace("_", " ")
-                .chars()
-                .collect(StringBuilder::new,
-                        (sb, c) -> {
-                            if (sb.isEmpty() || sb.charAt(sb.length() - 1) == ' ') {
-                                sb.append((char) Character.toUpperCase(c));
-                            } else {
-                                sb.append((char) c);
-                            }
-                        },
-                        StringBuilder::append)
-                .toString();
+        UserInactive invitedUser = inviteUserUseCase.execute(email, invitedByUserId);
+
+        log.info("Invited user created: userId={}, email={}, invitedBy={}, role={}",
+                invitedUser.getId().value(), email.normalized(), request.invitedByUserId(), request.role());
+
+        return UserResponse.from(invitedUser);
     }
 }

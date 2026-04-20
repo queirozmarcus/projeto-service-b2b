@@ -1,45 +1,24 @@
 package com.scopeflow.user.application.service;
 
-import com.scopeflow.user.domain.exception.EmailAlreadyRegisteredException;
 import com.scopeflow.user.domain.exception.UserNotFoundException;
 import com.scopeflow.user.domain.model.*;
 import com.scopeflow.user.domain.port.out.UserRepository;
 
 import java.util.Objects;
-import java.util.Optional; // usado em getUserById / getUserByEmail
+import java.util.Optional;
 
 /**
- * UserService: domain service for user lifecycle.
+ * UserService: residual domain service for user queries and lifecycle operations
+ * not yet migrated to dedicated use cases.
  *
- * Contains business logic (invariants, workflows).
- *
- * Invariants:
- * - Email must be unique across system
- * - Password must be hashed (never plaintext in domain)
- * - User can only be in one state (sealed class enforces)
+ * registerUser() removed in S7 — fully replaced by RegisterUserUseCase (S6).
+ * saveInvitedUser() retained for compatibility; logic now lives in InviteUserUseCase (S7).
  */
 public class UserService {
     private final UserRepository userRepository;
 
     public UserService(UserRepository userRepository) {
         this.userRepository = Objects.requireNonNull(userRepository, "UserRepository cannot be null");
-    }
-
-    /**
-     * Register a new user.
-     *
-     * @deprecated Replaced by RegisterUserUseCase (S6). TODO: remover após S6.
-     */
-    @Deprecated
-    public UserActive registerUser(Email email, PasswordHash passwordHash, String fullName, String phone) {
-        if (userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyRegisteredException("Email already registered: " + email.normalized());
-        }
-
-        UserId userId = UserId.generate();
-        UserActive user = User.create(userId, email, passwordHash, fullName, phone);
-        userRepository.save(user);
-        return user;
     }
 
     public Optional<User> getUserById(UserId userId) {

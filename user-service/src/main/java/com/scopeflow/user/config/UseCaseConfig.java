@@ -3,6 +3,7 @@ package com.scopeflow.user.config;
 import com.scopeflow.user.adapter.out.security.BcryptPasswordHasherAdapter;
 import com.scopeflow.user.adapter.out.security.JwtTokenIssuerAdapter;
 import com.scopeflow.user.application.usecase.AuthenticateUserUseCase;
+import com.scopeflow.user.application.usecase.InviteUserUseCase;
 import com.scopeflow.user.application.usecase.RefreshTokenUseCase;
 import com.scopeflow.user.application.usecase.RegisterUserUseCase;
 import com.scopeflow.user.domain.port.out.PasswordHasher;
@@ -48,5 +49,11 @@ public class UseCaseConfig {
     public RefreshTokenUseCase refreshTokenUseCase(TokenIssuer tokenIssuer,
                                                    UserRepository userRepository) {
         return new RefreshTokenUseCase(tokenIssuer, userRepository);
+    }
+
+    @Bean
+    public InviteUserUseCase inviteUserUseCase(UserRepository userRepository,
+                                               PasswordHasher passwordHasher) {
+        return new InviteUserUseCase(userRepository, passwordHasher);
     }
 }
