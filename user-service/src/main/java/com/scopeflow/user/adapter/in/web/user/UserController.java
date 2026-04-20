@@ -27,7 +27,7 @@ import java.util.UUID;
  * All endpoints require authentication (JWT).
  */
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/v1/users")
 @Tag(name = "Users", description = "User management operations")
 public class UserController {
 

@@ -2,7 +2,7 @@ description: Get user by email that does not exist
 name: shouldReturn404OnUserNotFound
 request:
   method: GET
-  url: /users/by-email/notfound@example.com
+  url: /api/v1/users/by-email/notfound@example.com
   headers:
     Content-Type: application/json
     Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.test"

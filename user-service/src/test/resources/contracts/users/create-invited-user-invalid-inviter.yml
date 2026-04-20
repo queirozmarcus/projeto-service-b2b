@@ -2,7 +2,7 @@ description: Create invited user fails when invitedByUserId does not exist
 name: shouldReturn400OnInvalidInvitedByUser
 request:
   method: POST
-  url: /users/invited
+  url: /api/v1/users/invited
   headers:
     Content-Type: application/json
     Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.test"

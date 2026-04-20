@@ -2,7 +2,7 @@ description: User login with valid credentials
 name: shouldLoginSuccessfully
 request:
   method: POST
-  url: /auth/login
+  url: /api/v1/auth/login
   headers:
     Content-Type: application/json
   body:

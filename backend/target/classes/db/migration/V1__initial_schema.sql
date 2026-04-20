@@ -1,9 +1,0 @@
--- V1__initial_schema.sql
--- ScopeFlow MVP: Initial Schema placeholder
--- Version 1.0.0
--- Created: 2026-03-22
---
--- NOTE: This migration is intentionally empty.
--- The full schema is defined in V2__user_workspace_domain_schema.sql
--- which contains the hexagonal architecture domain schema.
--- V1 was superseded before any production data existed.

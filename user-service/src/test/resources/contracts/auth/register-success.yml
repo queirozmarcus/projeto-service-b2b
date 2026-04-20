@@ -2,7 +2,7 @@ description: Register new user account with valid data
 name: shouldRegisterUserSuccessfully
 request:
   method: POST
-  url: /auth/register
+  url: /api/v1/auth/register
   headers:
     Content-Type: application/json
   body:

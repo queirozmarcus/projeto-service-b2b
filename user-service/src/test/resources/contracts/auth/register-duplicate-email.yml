@@ -2,7 +2,7 @@ description: Register with an email that already exists
 name: shouldReturn409OnDuplicateEmailRegistration
 request:
   method: POST
-  url: /auth/register
+  url: /api/v1/auth/register
   headers:
     Content-Type: application/json
   body:

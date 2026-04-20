@@ -73,7 +73,7 @@ class AuthControllerTest {
                 "user@example.com", "Password1!", "Test User", "+5511999999999"
         );
 
-        mockMvc.perform(post("/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -90,7 +90,7 @@ class AuthControllerTest {
     void register_shouldReturn400_whenWeakPassword() throws Exception {
         RegisterRequest request = new RegisterRequest("user@example.com", "weak", "Test User", null);
 
-        mockMvc.perform(post("/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
@@ -106,7 +106,7 @@ class AuthControllerTest {
 
         RegisterRequest request = new RegisterRequest("user@example.com", "Password1!", "Test User", null);
 
-        mockMvc.perform(post("/auth/register")
+        mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -121,7 +121,7 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest("user@example.com", "WrongPass1!");
 
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -144,7 +144,7 @@ class AuthControllerTest {
 
         LoginRequest request = new LoginRequest("user@example.com", "Password1!");
 
-        mockMvc.perform(post("/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

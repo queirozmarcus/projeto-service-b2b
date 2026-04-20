@@ -2,7 +2,7 @@ description: Get current user profile with valid JWT
 name: shouldReturnCurrentUserProfile
 request:
   method: GET
-  url: /auth/me
+  url: /api/v1/auth/me
   headers:
     Content-Type: application/json
     Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.test"

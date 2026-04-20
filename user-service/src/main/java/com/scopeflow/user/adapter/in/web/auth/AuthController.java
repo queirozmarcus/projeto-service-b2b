@@ -36,7 +36,7 @@ import java.util.UUID;
  * - Refresh token: long-lived (7d), delivered via httpOnly Set-Cookie
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 @Tag(name = "Authentication", description = "User registration, login, and token management")
 public class AuthController {
 

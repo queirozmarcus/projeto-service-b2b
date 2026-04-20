@@ -2,7 +2,7 @@ description: Get current user without valid JWT token
 name: shouldReturn401OnMissingJwt
 request:
   method: GET
-  url: /auth/me
+  url: /api/v1/auth/me
   headers:
     Content-Type: application/json
 response:
