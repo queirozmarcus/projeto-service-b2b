@@ -1,7 +1,6 @@
 package com.scopeflow.user.config;
 
-import com.scopeflow.user.domain.model.UserId;
-import com.scopeflow.user.domain.port.out.UserRepository;
+import com.scopeflow.user.domain.port.out.UserBlocklist;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -24,7 +23,12 @@ import java.util.UUID;
 /**
  * JWT authentication filter for user-service.
  *
- * Validates Bearer token, checks user status in DB, and populates SecurityContext.
+ * Validates Bearer token signature and expiration via JwtService, then checks
+ * the Redis blocklist (O(1)) to detect accounts deactivated after token issuance.
+ * No DB hit per request — only blocked users incur a Redis lookup.
+ *
+ * Fail-open: if Redis is unavailable, UserBlocklist.isBlocked() returns false
+ * and the request proceeds normally (JWT validity is still enforced).
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -32,11 +36,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
-    private final UserRepository userRepository;
+    private final UserBlocklist userBlocklist;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserBlocklist userBlocklist) {
         this.jwtService = jwtService;
-        this.userRepository = userRepository;
+        this.userBlocklist = userBlocklist;
     }
 
     @Override
@@ -67,21 +71,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             UUID userId = UUID.fromString(claims.getSubject());
+
+            // O(1) Redis lookup — replaces per-request DB query.
+            // isBlocked() is fail-open: returns false if Redis is unavailable.
+            if (userBlocklist.isBlocked(userId.toString())) {
+                log.debug("Rejecting token for blocked userId={}", userId);
+                filterChain.doFilter(request, response);
+                return;
+            }
+
             String email = claims.get("email", String.class);
             String workspaceIdStr = claims.get("workspace_id", String.class);
             String role = claims.get("role", String.class);
             UUID workspaceId = workspaceIdStr != null ? UUID.fromString(workspaceIdStr) : null;
-
-            // Verify user still exists and is active
-            String status = userRepository.findById(new UserId(userId))
-                    .map(u -> u.status())
-                    .orElse(null);
-
-            if (!"ACTIVE".equals(status)) {
-                log.debug("Rejecting token for userId={}: status={}", userId, status);
-                filterChain.doFilter(request, response);
-                return;
-            }
 
             ScopeFlowPrincipal principal = new ScopeFlowPrincipal(userId, email, workspaceId, role);
             List<SimpleGrantedAuthority> authorities = role != null

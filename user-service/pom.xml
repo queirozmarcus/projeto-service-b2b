@@ -107,6 +107,12 @@
             <version>8.10.1</version>
         </dependency>
 
+        <!-- Redis: blocklist de usuários desativados (elimina DB hit por request autenticado) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- Caffeine (in-memory cache para rate limit buckets) -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
