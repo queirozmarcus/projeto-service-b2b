@@ -41,9 +41,9 @@ public class UserController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @GetMapping("/by-email/{email}")
+    @GetMapping("/by-email")
     @Operation(summary = "Get user by email")
-    public UserResponse getByEmail(@PathVariable String email) {
+    public UserResponse getByEmail(@RequestParam(required = true) String email) {
         Email emailVO = new Email(email);
         User user = userService.getUserByEmail(emailVO)
                 .orElseThrow(() -> new UserNotFoundException(emailVO));
