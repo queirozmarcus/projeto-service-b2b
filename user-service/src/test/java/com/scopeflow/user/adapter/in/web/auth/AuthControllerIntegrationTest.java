@@ -124,6 +124,20 @@ class AuthControllerIntegrationTest {
         }
 
         @Test
+        @DisplayName("should return 400 with violations when request body is invalid")
+        void shouldReturn400_whenRequestBodyIsInvalid() throws Exception {
+            // blank email and blank password → @NotBlank @Email violations
+            RegisterRequest request = new RegisterRequest("", "", "Name", null);
+
+            mockMvc.perform(post("/api/v1/auth/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.violations").isArray())
+                    .andExpect(jsonPath("$.violations.length()").value(org.hamcrest.Matchers.greaterThan(0)));
+        }
+
+        @Test
         @DisplayName("should return 409 when email already registered")
         void shouldReturn409_whenEmailExists() throws Exception {
             // Create user first

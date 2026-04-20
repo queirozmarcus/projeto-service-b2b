@@ -108,6 +108,24 @@ class EmailTest {
     }
 
     @Test
+    @DisplayName("should trim whitespace and normalize to lowercase")
+    void shouldTrimWhitespace_andNormalize() {
+        // Given email with surrounding spaces and mixed case
+        Email email = new Email("  USER@EXAMPLE.COM  ");
+
+        // Then — value and normalized() must be identical trimmed lowercase
+        assertThat(email.value()).isEqualTo("user@example.com");
+        assertThat(email.normalized()).isEqualTo(email.value());
+    }
+
+    @Test
+    @DisplayName("normalized() should return same value as value()")
+    void normalizedShouldEqualValue() {
+        Email email = new Email("Test@Domain.IO");
+        assertThat(email.normalized()).isEqualTo(email.value());
+    }
+
+    @Test
     @DisplayName("should accept valid email with dots and hyphens")
     void shouldAcceptEmailWithDotsAndHyphens() {
         // When
