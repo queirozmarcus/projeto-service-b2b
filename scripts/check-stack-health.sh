@@ -32,7 +32,7 @@ check_service() {
 FAILED=0
 
 # PostgreSQL (monólito)
-if ! check_service "postgres (monólito)" "docker exec scopeflow-db pg_isready -U postgres"; then
+if ! check_service "postgres (monólito)" "docker exec scopeflow-postgres pg_isready -U postgres"; then
     FAILED=$((FAILED + 1))
 fi
 

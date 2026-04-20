@@ -67,7 +67,7 @@ if [ "$WITH_STACK" = true ]; then
     echo "⏳ Aguardando serviços ficarem prontos..."
 
     # Aguardar PostgreSQL (monólito)
-    until docker exec scopeflow-db pg_isready -U postgres &> /dev/null; do
+    until docker exec scopeflow-postgres pg_isready -U postgres &> /dev/null; do
         echo "   Aguardando postgres..."
         sleep 2
     done
