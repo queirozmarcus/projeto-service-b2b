@@ -6,12 +6,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **ScopeFlow AI** — AI-powered SaaS platform for B2B service providers (freelancers, microagencies) to transform client conversations into clear, approved scopes through structured AI-assisted discovery.
 
-**Current Status (2026-04-17):**
+**Current Status (2026-04-20):**
 - Backend monolith: ~85% — todos os domínios implementados, circuit breakers ativos, purge jobs
 - User Service: 100% extraído via Strangler Fig — DB-per-service consolidado e validado ✅
 - Frontend: ~70% — dashboard, proposals e briefings integrados com API real
-- Tests: ✅ Sprint 10 — 50 testes unitários criados, integration tests refatorados
-- Docker Stack: ✅ 7/7 serviços operacionais — validação completa executada
+- Tests: ✅ 126 testes passando (50 backend + 76 user-service), 0 failures
+- QA System: ✅ Scripts de validação automatizada implementados e documentados
+- Docker Stack: ✅ 7/7 serviços operacionais — health check funcional
 - Ambiente: ✅ Pronto para desenvolvimento (DB-per-service isolado, Traefik routing OK)
 
 See [`README.md`](README.md) for tech stack, setup instructions, and full API documentation.
@@ -182,25 +183,36 @@ Bash("./mvnw test")
 ### Running Tests
 
 ```bash
-# Backend — unit tests only (fast, no Docker)
-cd backend && ./mvnw test
+# ✅ RECOMENDADO: Validação completa automatizada (~4 min)
+./scripts/validate-qa-full.sh
+# Executa: pré-requisitos → unitários → integração → user-service → contracts → cobertura
+# Log: logs/qa-validation-*.log
+# Relatório: backend/target/site/jacoco/index.html
 
-# Backend — unit + integration (Testcontainers — requires Docker)
-cd backend && ./mvnw verify
+# Validação com stack Docker Compose (debug/staging)
+./scripts/validate-qa-full.sh --with-stack
+# Sobe postgres, user-db, rabbitmq, redis antes dos testes
+# Aguarda serviços ficarem prontos automaticamente
+# Limpa stack ao final
 
-# Single test class
-./mvnw test -Dtest=PurgeJobServiceTest
+# Health check rápido da stack (~2s)
+./scripts/check-stack-health.sh
+# Valida: postgres, user-db, rabbitmq, redis
+# Exit code: 0 = saudável, 1 = problemas
 
-# User service tests
-cd user-service && ./mvnw verify
+# Testes individuais (desenvolvimento)
+cd backend && ./mvnw test              # Unitários (~30s, sem Docker)
+cd backend && ./mvnw verify            # Integração (~3min, Testcontainers)
+./mvnw test -Dtest=PurgeJobServiceTest # Teste único
+cd user-service && ./mvnw verify       # User service (~2min)
+cd frontend && npm run test            # Frontend
 
-# Frontend
-cd frontend && npm run test
-
-# Coverage report
-cd backend && ./mvnw package jacoco:report
+# Coverage report manual
+cd backend && ./mvnw jacoco:report
 # Open: backend/target/site/jacoco/index.html
 ```
+
+> **Documentação completa dos scripts:** [scripts/README.md](scripts/README.md)
 
 ### Database Migrations
 
@@ -338,6 +350,10 @@ docker logs scopeflow-user-service -f
 | Flyway checksum mismatch | `./mvnw flyway:info` | Nunca modificar migration aplicada — criar V{n+1} |
 | Testcontainers falha | `docker ps` | Docker rodando + mínimo 4GB RAM |
 | Circuit breaker aberto (503) | Logs do serviço + `Retry-After` header | Aguardar 30s ou reiniciar serviço dependente |
+| Validação QA falha | `./scripts/check-stack-health.sh` | Verifica stack; logs em `logs/qa-validation-*.log` |
+| Script trava no "Aguardando..." | Nomes de containers incorretos | Verificar `docker ps` e corrigir script |
+
+> **Troubleshooting detalhado:** [scripts/README.md § Troubleshooting](scripts/README.md#troubleshooting)
 
 ---
 
@@ -346,12 +362,17 @@ docker logs scopeflow-user-service -f
 | File | Propósito |
 |------|-----------|
 | `README.md` | Setup, stack, API endpoints, Docker commands |
+| `CLAUDE.md` | Este arquivo — guia técnico para Claude Code |
 | `docker-compose.yml` | Stack completa (7 serviços) |
 | `docker-compose.staging.yml` | Override: user-service → DB dedicado |
+| `scripts/validate-qa-full.sh` | Validação completa automatizada |
+| `scripts/check-stack-health.sh` | Health check rápido da stack |
+| `scripts/README.md` | Documentação completa dos scripts de validação |
 | `backend/src/main/resources/application.yml` | Config base + Resilience4j + Purge |
 | `docs/migration/DB-MIGRATION-USER-SERVICE.md` | Passos de cut-over e rollback para produção |
 | `backend/src/main/resources/db/migration/` | Flyway V1–V9 (monólito) |
 | `user-service/src/main/resources/db/migration/` | Flyway V1 (user-service) |
+| `logs/qa-validation-*.log` | Logs de validação QA (gerados automaticamente) |
 | `.claude/plans/backlog/` | Planos aprovados aguardando execução |
 | `.claude/plans/concluido/` | Histórico de planos executados |
 | `docs/architecture/adr/` | Architecture Decision Records |
