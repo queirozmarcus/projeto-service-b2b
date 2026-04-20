@@ -612,17 +612,23 @@ cd frontend && npm install && npm run dev  # http://localhost:3000
 ### Testes
 
 ```bash
-# Monólito — unitários (sem Docker, < 30s)
-cd backend && ./mvnw test
+# ✅ RECOMENDADO: Validação completa automatizada (~4 min)
+./scripts/validate-qa-full.sh
+# Executa: unitários + integração + contract tests + cobertura
+# Log: logs/qa-validation-*.log
+# Relatório: backend/target/site/jacoco/index.html
 
-# Monólito — integração (Testcontainers, requer Docker, ≈ 3 min)
-cd backend && ./mvnw verify
+# Com stack Docker Compose (debug/staging)
+./scripts/validate-qa-full.sh --with-stack
 
-# User Service
-cd user-service && ./mvnw verify
+# Health check da stack
+./scripts/check-stack-health.sh
 
-# Frontend
-cd frontend && npm run test
+# Testes individuais (desenvolvimento)
+cd backend && ./mvnw test              # Unitários (~30s)
+cd backend && ./mvnw verify            # Integração (~3min)
+cd user-service && ./mvnw verify       # User service (~2min)
+cd frontend && npm run test            # Frontend
 
 # E2E — auth flow completo (requer stack rodando)
 ./run-e2e-tests.sh
@@ -630,6 +636,8 @@ cd frontend && npm run test
 # Briefing E2E
 ./RUN-BRIEFING-TESTS.sh
 ```
+
+> **Documentação completa:** [scripts/README.md](scripts/README.md)
 
 ### Troubleshooting Rápido
 
