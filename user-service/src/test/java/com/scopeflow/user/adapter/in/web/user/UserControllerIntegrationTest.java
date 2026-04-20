@@ -86,7 +86,7 @@ class UserControllerIntegrationTest {
     }
 
     @Nested
-    @DisplayName("GET /users/by-email/{email}")
+    @DisplayName("GET /users/by-email?email=...")
     class GetByEmail {
 
         @Test
@@ -95,7 +95,8 @@ class UserControllerIntegrationTest {
             JpaUser user = createActiveUser(TEST_EMAIL);
             String token = createAuthToken(user.getId(), user.getEmail());
 
-            mockMvc.perform(get("/api/v1/users/by-email/{email}", TEST_EMAIL)
+            mockMvc.perform(get("/api/v1/users/by-email")
+                            .param("email", TEST_EMAIL)
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id", is(user.getId().toString())))
@@ -110,7 +111,8 @@ class UserControllerIntegrationTest {
             JpaUser user = createActiveUser(TEST_EMAIL);
             String token = createAuthToken(user.getId(), user.getEmail());
 
-            mockMvc.perform(get("/api/v1/users/by-email/{email}", "nonexistent@example.com")
+            mockMvc.perform(get("/api/v1/users/by-email")
+                            .param("email", "nonexistent@example.com")
                             .header("Authorization", "Bearer " + token))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.error_code", is("USER-010")))

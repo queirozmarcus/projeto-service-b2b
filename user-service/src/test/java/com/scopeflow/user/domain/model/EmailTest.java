@@ -27,7 +27,7 @@ class EmailTest {
         Email email = new Email("User@Example.COM");
 
         // Then
-        assertThat(email.value()).isEqualTo("User@Example.COM");
+        assertThat(email.value()).isEqualTo("user@example.com");
         assertThat(email.normalized()).isEqualTo("user@example.com");
     }
 

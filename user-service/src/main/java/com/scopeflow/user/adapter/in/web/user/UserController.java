@@ -1,7 +1,7 @@
 package com.scopeflow.user.adapter.in.web.user;
 
 import com.scopeflow.user.adapter.in.web.user.dto.CreateInvitedUserRequest;
-import com.scopeflow.user.adapter.in.web.user.dto.UserResponse;
+import com.scopeflow.user.adapter.in.web.user.dto.UserProfileResponse;
 import com.scopeflow.user.application.service.UserService;
 import com.scopeflow.user.application.usecase.InviteUserUseCase;
 import com.scopeflow.user.domain.exception.InvalidInvitedByUserException;
@@ -42,19 +42,19 @@ public class UserController {
 
     @GetMapping("/by-email")
     @Operation(summary = "Get user by email")
-    public UserResponse getByEmail(@RequestParam(required = true) String email) {
+    public UserProfileResponse getByEmail(@RequestParam(required = true) String email) {
         Email emailVO = new Email(email);
         User user = userService.getUserByEmail(emailVO)
                 .orElseThrow(() -> new UserNotFoundException(emailVO));
 
         log.info("User found by email: userId={}, email={}", user.getId().value(), email);
-        return UserResponse.from(user);
+        return UserProfileResponse.from(user);
     }
 
     @PostMapping("/invited")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create invited user")
-    public UserResponse createInvited(@Valid @RequestBody CreateInvitedUserRequest request) {
+    public UserProfileResponse createInvited(@Valid @RequestBody CreateInvitedUserRequest request) {
         Email email = new Email(request.email());
 
         UserId invitedByUserId = new UserId(request.invitedByUserId());
@@ -70,6 +70,6 @@ public class UserController {
         log.info("Invited user created: userId={}, email={}, invitedBy={}, role={}",
                 invitedUser.getId().value(), email.normalized(), request.invitedByUserId(), request.role());
 
-        return UserResponse.from(invitedUser);
+        return UserProfileResponse.from(invitedUser);
     }
 }

@@ -7,6 +7,8 @@ import com.scopeflow.user.adapter.in.web.auth.dto.RegisterRequest;
 import com.scopeflow.user.application.usecase.AuthenticateUserUseCase;
 import com.scopeflow.user.application.usecase.RefreshTokenUseCase;
 import com.scopeflow.user.application.usecase.RegisterUserUseCase;
+import com.scopeflow.user.config.JwtAuthenticationEntryPoint;
+import com.scopeflow.user.config.JwtAuthenticationFilter;
 import com.scopeflow.user.config.JwtService;
 import com.scopeflow.user.config.TestSecurityConfig;
 import com.scopeflow.user.domain.exception.EmailAlreadyRegisteredException;
@@ -59,6 +61,12 @@ class AuthControllerTest {
 
     @MockBean
     private UserRepository userRepository;
+
+    @MockBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockBean
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     private static final String BCRYPT_HASH = "$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 

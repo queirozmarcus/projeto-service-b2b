@@ -5,7 +5,7 @@ import com.scopeflow.user.domain.model.User;
 import java.time.Instant;
 import java.util.UUID;
 
-public record UserResponse(
+public record UserProfileResponse(
         UUID id,
         String email,
         String fullName,
@@ -13,8 +13,8 @@ public record UserResponse(
         String status,
         Instant createdAt
 ) {
-    public static UserResponse from(User user) {
-        return new UserResponse(
+    public static UserProfileResponse from(User user) {
+        return new UserProfileResponse(
                 user.getId().value(),
                 user.getEmail().normalized(),
                 user.getFullName(),

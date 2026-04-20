@@ -1,6 +1,10 @@
 package com.scopeflow.user.adapter.in.web.auth;
 
-import com.scopeflow.user.adapter.in.web.auth.dto.*;
+import com.scopeflow.user.adapter.in.web.auth.dto.AccessTokenResponse;
+import com.scopeflow.user.adapter.in.web.auth.dto.AuthUserResponse;
+import com.scopeflow.user.adapter.in.web.auth.dto.LoginRequest;
+import com.scopeflow.user.adapter.in.web.auth.dto.LoginResponse;
+import com.scopeflow.user.adapter.in.web.auth.dto.RegisterRequest;
 import com.scopeflow.user.application.usecase.AuthenticateUserUseCase;
 import com.scopeflow.user.application.usecase.RefreshTokenUseCase;
 import com.scopeflow.user.application.usecase.RegisterUserUseCase;
@@ -107,11 +111,11 @@ public class AuthController {
 
     @GetMapping("/me")
     @Operation(summary = "Get current user profile")
-    public UserResponse me() {
+    public AuthUserResponse me() {
         UUID userId = SecurityUtil.getUserId();
         User user = userRepository.findById(new UserId(userId))
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
-        return UserResponse.from(user);
+        return AuthUserResponse.from(user);
     }
 
     @PostMapping("/logout")
