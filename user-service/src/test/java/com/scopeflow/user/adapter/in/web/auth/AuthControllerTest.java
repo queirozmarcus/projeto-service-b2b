@@ -4,12 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scopeflow.user.adapter.in.web.GlobalExceptionHandler;
 import com.scopeflow.user.adapter.in.web.auth.dto.LoginRequest;
 import com.scopeflow.user.adapter.in.web.auth.dto.RegisterRequest;
-import com.scopeflow.user.application.service.UserService;
+import com.scopeflow.user.application.usecase.AuthenticateUserUseCase;
+import com.scopeflow.user.application.usecase.RefreshTokenUseCase;
+import com.scopeflow.user.application.usecase.RegisterUserUseCase;
 import com.scopeflow.user.config.JwtService;
 import com.scopeflow.user.config.TestSecurityConfig;
 import com.scopeflow.user.domain.exception.EmailAlreadyRegisteredException;
 import com.scopeflow.user.domain.exception.InvalidCredentialsException;
 import com.scopeflow.user.domain.model.*;
+import com.scopeflow.user.domain.port.out.TokenIssuer;
 import com.scopeflow.user.domain.port.out.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,11 +21,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
-import java.util.Optional;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,13 +43,19 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private UserService userService;
+    private RegisterUserUseCase registerUserUseCase;
+
+    @MockBean
+    private AuthenticateUserUseCase authenticateUserUseCase;
+
+    @MockBean
+    private RefreshTokenUseCase refreshTokenUseCase;
+
+    @MockBean
+    private TokenIssuer tokenIssuer;
 
     @MockBean
     private JwtService jwtService;
-
-    @MockBean
-    private PasswordEncoder passwordEncoder;
 
     @MockBean
     private UserRepository userRepository;
@@ -62,12 +69,11 @@ class AuthControllerTest {
                 UserId.generate(), new Email("user@example.com"), new PasswordHash(BCRYPT_HASH),
                 "Test User", "+5511999999999", Instant.now(), Instant.now()
         );
-        given(passwordEncoder.encode(any())).willReturn(BCRYPT_HASH);
-        given(userService.registerUser(any(), any(), any(), any())).willReturn(mockUser);
-        given(jwtService.generateAccessToken(any(), any(), any(), any())).willReturn("access-token");
-        given(jwtService.generateRefreshToken(any())).willReturn("refresh-token");
-        given(jwtService.getAccessTokenExpirationMs()).willReturn(900000L);
-        given(jwtService.getRefreshTokenExpirationMs()).willReturn(604800000L);
+        given(registerUserUseCase.execute(any(), any(), any(), any())).willReturn(mockUser);
+        given(tokenIssuer.issueAccessToken(any(), any(), any())).willReturn("access-token");
+        given(tokenIssuer.issueRefreshToken(any())).willReturn("refresh-token");
+        given(tokenIssuer.accessTokenExpirationSeconds()).willReturn(900L);
+        given(tokenIssuer.refreshTokenExpirationSeconds()).willReturn(604800L);
 
         RegisterRequest request = new RegisterRequest(
                 "user@example.com", "Password1!", "Test User", "+5511999999999"
@@ -100,8 +106,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /auth/register returns 409 when email already registered")
     void register_shouldReturn409_whenEmailTaken() throws Exception {
-        given(passwordEncoder.encode(any())).willReturn(BCRYPT_HASH);
-        given(userService.registerUser(any(), any(), any(), any()))
+        given(registerUserUseCase.execute(any(), any(), any(), any()))
                 .willThrow(new EmailAlreadyRegisteredException("Email already registered: user@example.com"));
 
         RegisterRequest request = new RegisterRequest("user@example.com", "Password1!", "Test User", null);
@@ -116,7 +121,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /auth/login returns 401 when credentials invalid")
     void login_shouldReturn401_whenInvalidCredentials() throws Exception {
-        given(userService.getUserByEmail(any()))
+        given(authenticateUserUseCase.execute(any(), any()))
                 .willThrow(new InvalidCredentialsException("Invalid email or password"));
 
         LoginRequest request = new LoginRequest("user@example.com", "WrongPass1!");
@@ -135,12 +140,13 @@ class AuthControllerTest {
                 UserId.generate(), new Email("user@example.com"), new PasswordHash(BCRYPT_HASH),
                 "Test User", null, Instant.now(), Instant.now()
         );
-        given(userService.getUserByEmail(any())).willReturn(Optional.of(mockUser));
-        given(passwordEncoder.matches(any(), any())).willReturn(true);
-        given(jwtService.generateAccessToken(any(), any(), any(), any())).willReturn("access-token");
-        given(jwtService.generateRefreshToken(any())).willReturn("refresh-token");
-        given(jwtService.getAccessTokenExpirationMs()).willReturn(900000L);
-        given(jwtService.getRefreshTokenExpirationMs()).willReturn(604800000L);
+        var authTokens = new AuthenticateUserUseCase.AuthTokens("access-token", "refresh-token");
+        given(authenticateUserUseCase.execute(any(), any()))
+                .willReturn(new AuthenticateUserUseCase.Result(mockUser, authTokens));
+        given(tokenIssuer.issueAccessToken(any(), any(), any())).willReturn("access-token");
+        given(tokenIssuer.issueRefreshToken(any())).willReturn("refresh-token");
+        given(tokenIssuer.accessTokenExpirationSeconds()).willReturn(900L);
+        given(tokenIssuer.refreshTokenExpirationSeconds()).willReturn(604800L);
 
         LoginRequest request = new LoginRequest("user@example.com", "Password1!");
 

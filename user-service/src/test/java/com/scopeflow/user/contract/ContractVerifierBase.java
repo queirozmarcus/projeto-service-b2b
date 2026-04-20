@@ -3,7 +3,12 @@ package com.scopeflow.user.contract;
 import com.scopeflow.user.adapter.in.web.auth.AuthController;
 import com.scopeflow.user.adapter.in.web.user.UserController;
 import com.scopeflow.user.application.service.UserService;
+import com.scopeflow.user.application.usecase.AuthenticateUserUseCase;
+import com.scopeflow.user.application.usecase.InviteUserUseCase;
+import com.scopeflow.user.application.usecase.RefreshTokenUseCase;
+import com.scopeflow.user.application.usecase.RegisterUserUseCase;
 import com.scopeflow.user.config.JwtService;
+import com.scopeflow.user.domain.port.out.TokenIssuer;
 import com.scopeflow.user.domain.exception.DuplicateEmailException;
 import com.scopeflow.user.domain.exception.EmailAlreadyRegisteredException;
 import com.scopeflow.user.domain.exception.InvalidCredentialsException;
@@ -52,6 +57,21 @@ public abstract class ContractVerifierBase {
 
     @MockBean
     private UserService userService;
+
+    @MockBean
+    private RegisterUserUseCase registerUserUseCase;
+
+    @MockBean
+    private AuthenticateUserUseCase authenticateUserUseCase;
+
+    @MockBean
+    private RefreshTokenUseCase refreshTokenUseCase;
+
+    @MockBean
+    private InviteUserUseCase inviteUserUseCase;
+
+    @MockBean
+    private TokenIssuer tokenIssuer;
 
     @MockBean
     private JwtService jwtService;
@@ -122,28 +142,30 @@ public abstract class ContractVerifierBase {
 
         // ============ Auth mocks ============
 
-        // Mock successful login
+        // Mock successful login via AuthenticateUserUseCase
+        var authTokens = new AuthenticateUserUseCase.AuthTokens(TEST_JWT_TOKEN, "refresh_token_mock");
+        when(authenticateUserUseCase.execute(eq(TEST_EMAIL), eq(TEST_PASSWORD)))
+                .thenReturn(new AuthenticateUserUseCase.Result(testUser, authTokens));
+
+        doThrow(new InvalidCredentialsException("Invalid email or password"))
+                .when(authenticateUserUseCase).execute(eq(TEST_EMAIL), eq("WrongPassword"));
+
+        // Mock getUserByEmail (still used by UserController)
         when(userService.getUserByEmail(new Email(TEST_EMAIL)))
                 .thenReturn(Optional.of(testUser));
 
-        when(passwordEncoder.matches(TEST_PASSWORD, testUser.getPasswordHash().value()))
-                .thenReturn(true);
-
-        when(passwordEncoder.matches("WrongPassword", testUser.getPasswordHash().value()))
-                .thenReturn(false);
-
-        // Mock JWT generation
-        when(jwtService.generateAccessToken(TEST_USER_ID, TEST_EMAIL, null, null))
+        // Mock TokenIssuer for register and /me flows
+        when(tokenIssuer.issueAccessToken(any(), any(), any()))
                 .thenReturn(TEST_JWT_TOKEN);
 
-        when(jwtService.generateRefreshToken(TEST_USER_ID))
+        when(tokenIssuer.issueRefreshToken(any()))
                 .thenReturn("refresh_token_mock");
 
-        when(jwtService.getAccessTokenExpirationMs())
-                .thenReturn(ACCESS_TOKEN_EXPIRATION * 1000);
+        when(tokenIssuer.accessTokenExpirationSeconds())
+                .thenReturn(ACCESS_TOKEN_EXPIRATION);
 
-        when(jwtService.getRefreshTokenExpirationMs())
-                .thenReturn(REFRESH_TOKEN_EXPIRATION * 1000);
+        when(tokenIssuer.refreshTokenExpirationSeconds())
+                .thenReturn(REFRESH_TOKEN_EXPIRATION);
 
         // Mock JWT extraction for /auth/me
         when(jwtService.extractUserId(any()))
@@ -169,26 +191,26 @@ public abstract class ContractVerifierBase {
 
         // ============ Register mocks ============
 
-        when(userService.registerUser(
-                eq(new Email("newuser@example.com")), any(), any(), any()))
+        when(registerUserUseCase.execute(
+                eq("newuser@example.com"), any(), any(), any()))
                 .thenReturn(testUser);
 
         doThrow(new EmailAlreadyRegisteredException("Email already registered: test@example.com"))
-                .when(userService).registerUser(eq(new Email(TEST_EMAIL)), any(), any(), any());
+                .when(registerUserUseCase).execute(eq(TEST_EMAIL), any(), any(), any());
 
         // ============ InvalidValueObjectException mocks (VO-001) ============
 
         // Invalid email format: "invalid-email" (no @)
         doThrow(new InvalidValueObjectException("VO-001", "Invalid email format: invalid-email"))
-                .when(userService).registerUser(eq(new Email("invalid-email")), any(), any(), any());
+                .when(registerUserUseCase).execute(eq("invalid-email"), any(), any(), any());
 
         // Invalid email format: "user@" (missing domain)
         doThrow(new InvalidValueObjectException("VO-001", "Invalid email format: user@"))
-                .when(userService).registerUser(eq(new Email("user@")), any(), any(), any());
+                .when(registerUserUseCase).execute(eq("user@"), any(), any(), any());
 
         // Invalid email format: "" (blank)
         doThrow(new InvalidValueObjectException("VO-001", "Invalid email format: "))
-                .when(userService).registerUser(eq(new Email("")), any(), any(), any());
+                .when(registerUserUseCase).execute(eq(""), any(), any(), any());
 
         // ============ Refresh token mocks ============
 
