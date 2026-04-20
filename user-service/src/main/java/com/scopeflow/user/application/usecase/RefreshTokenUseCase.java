@@ -32,7 +32,7 @@ public class RefreshTokenUseCase {
 
     public Result execute(String refreshToken) {
         if (refreshToken == null || !tokenIssuer.isValidRefreshToken(refreshToken)) {
-            throw new InvalidCredentialsException("Refresh token invalido ou expirado. Faca login novamente.");
+            throw new InvalidCredentialsException("Invalid or expired refresh token");
         }
 
         UUID userId = tokenIssuer.extractUserIdFromRefreshToken(refreshToken);

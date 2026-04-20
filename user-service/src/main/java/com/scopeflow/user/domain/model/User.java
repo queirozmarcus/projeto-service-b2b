@@ -85,8 +85,7 @@ public abstract sealed class User permits UserActive, UserInactive, UserDeleted 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof User)) return false;
-        User user = (User) o;
+        if (!(o instanceof User user)) return false;
         return Objects.equals(id, user.id);
     }
 
