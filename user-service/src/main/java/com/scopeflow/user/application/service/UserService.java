@@ -28,9 +28,9 @@ public class UserService {
     /**
      * Register a new user.
      *
-     * Invariant: Email must be unique.
-     * Returns: UserActive (ready to login).
+     * @deprecated Replaced by RegisterUserUseCase (S6). TODO: remover após S6.
      */
+    @Deprecated
     public UserActive registerUser(Email email, PasswordHash passwordHash, String fullName, String phone) {
         if (userRepository.existsByEmail(email)) {
             throw new EmailAlreadyRegisteredException("Email already registered: " + email.normalized());

@@ -1,11 +1,14 @@
 package com.scopeflow.user.adapter.in.web.auth;
 
 import com.scopeflow.user.adapter.in.web.auth.dto.*;
-import com.scopeflow.user.application.service.UserService;
-import com.scopeflow.user.config.JwtService;
+import com.scopeflow.user.application.usecase.AuthenticateUserUseCase;
+import com.scopeflow.user.application.usecase.RefreshTokenUseCase;
+import com.scopeflow.user.application.usecase.RegisterUserUseCase;
 import com.scopeflow.user.config.SecurityUtil;
-import com.scopeflow.user.domain.exception.InvalidCredentialsException;
-import com.scopeflow.user.domain.model.*;
+import com.scopeflow.user.domain.model.User;
+import com.scopeflow.user.domain.model.UserId;
+import com.scopeflow.user.domain.port.out.TokenIssuer;
+import com.scopeflow.user.domain.port.out.UserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
@@ -18,7 +21,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
@@ -34,6 +36,9 @@ import java.util.UUID;
  * Security model:
  * - Access token: short-lived (15min), returned in response body
  * - Refresh token: long-lived (7d), delivered via httpOnly Set-Cookie
+ *
+ * Controller responsibility: HTTP translation only.
+ * Business logic lives in RegisterUserUseCase, AuthenticateUserUseCase, RefreshTokenUseCase.
  */
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -47,26 +52,32 @@ public class AuthController {
     @Value("${app.cookie.secure:true}")
     private boolean cookieSecure;
 
-    private final UserService userService;
-    private final JwtService jwtService;
-    private final PasswordEncoder passwordEncoder;
+    private final RegisterUserUseCase registerUserUseCase;
+    private final AuthenticateUserUseCase authenticateUserUseCase;
+    private final RefreshTokenUseCase refreshTokenUseCase;
+    private final TokenIssuer tokenIssuer;
+    private final UserRepository userRepository;
 
-    public AuthController(UserService userService, JwtService jwtService, PasswordEncoder passwordEncoder) {
-        this.userService = userService;
-        this.jwtService = jwtService;
-        this.passwordEncoder = passwordEncoder;
+    public AuthController(RegisterUserUseCase registerUserUseCase,
+                          AuthenticateUserUseCase authenticateUserUseCase,
+                          RefreshTokenUseCase refreshTokenUseCase,
+                          TokenIssuer tokenIssuer,
+                          UserRepository userRepository) {
+        this.registerUserUseCase = registerUserUseCase;
+        this.authenticateUserUseCase = authenticateUserUseCase;
+        this.refreshTokenUseCase = refreshTokenUseCase;
+        this.tokenIssuer = tokenIssuer;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/register")
     @RateLimit
     @Operation(summary = "Register new user account")
     public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
-        Email email = new Email(request.email());
-        PasswordHash hash = new PasswordHash(passwordEncoder.encode(request.password()));
+        var user = registerUserUseCase.execute(
+                request.email(), request.password(), request.fullName(), request.phone());
 
-        UserActive user = userService.registerUser(email, hash, request.fullName(), request.phone());
-
-        log.info("User registered: userId={}, email={}", user.getId().value(), email.normalized());
+        log.info("User registered: userId={}, email={}", user.getId().value(), user.getEmail().normalized());
 
         return buildLoginResponse(user, HttpStatus.CREATED);
     }
@@ -75,22 +86,11 @@ public class AuthController {
     @RateLimit
     @Operation(summary = "Authenticate and obtain tokens")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        Email email = new Email(request.email());
+        var result = authenticateUserUseCase.execute(request.email(), request.password());
 
-        User user = userService.getUserByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+        log.info("User logged in: userId={}", result.user().getId().value());
 
-        if (!user.canLogin()) {
-            throw new InvalidCredentialsException("Account is not active");
-        }
-
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash().value())) {
-            throw new InvalidCredentialsException("Invalid email or password");
-        }
-
-        log.info("User logged in: userId={}", user.getId().value());
-
-        return buildLoginResponse(user, HttpStatus.OK);
+        return buildLoginResponse(result.user(), HttpStatus.OK);
     }
 
     @PostMapping("/refresh")
@@ -98,35 +98,18 @@ public class AuthController {
     public ResponseEntity<AccessTokenResponse> refresh(HttpServletRequest request) {
         String refreshToken = extractCookie(request, REFRESH_TOKEN_COOKIE);
 
-        if (refreshToken == null || !jwtService.isRefreshToken(refreshToken)) {
-            throw new InvalidCredentialsException("Refresh token invalido ou expirado. Faca login novamente.");
-        }
+        var result = refreshTokenUseCase.execute(refreshToken);
 
-        UUID userId = jwtService.extractUserId(refreshToken);
+        log.info("Access token refreshed");
 
-        User user = userService.getUserById(new UserId(userId))
-                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
-
-        if (!user.canLogin()) {
-            throw new InvalidCredentialsException("Account is not active");
-        }
-
-        String newAccessToken = jwtService.generateAccessToken(
-                user.getId().value(), user.getEmail().normalized(), null, "USER"
-        );
-
-        log.info("Access token refreshed: userId={}", userId);
-
-        return ResponseEntity.ok(new AccessTokenResponse(
-                newAccessToken, jwtService.getAccessTokenExpirationMs() / 1000
-        ));
+        return ResponseEntity.ok(new AccessTokenResponse(result.accessToken(), result.expiresInSeconds()));
     }
 
     @GetMapping("/me")
     @Operation(summary = "Get current user profile")
     public UserResponse me() {
         UUID userId = SecurityUtil.getUserId();
-        User user = userService.getUserById(new UserId(userId))
+        User user = userRepository.findById(new UserId(userId))
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
         return UserResponse.from(user);
     }
@@ -157,10 +140,9 @@ public class AuthController {
     // ============ Private helpers ============
 
     private ResponseEntity<LoginResponse> buildLoginResponse(User user, HttpStatus status) {
-        String accessToken = jwtService.generateAccessToken(
-                user.getId().value(), user.getEmail().normalized(), null, "USER"
-        );
-        String refreshToken = jwtService.generateRefreshToken(user.getId().value());
+        String accessToken = tokenIssuer.issueAccessToken(
+                user.getId().value(), user.getEmail().normalized(), "USER");
+        String refreshToken = tokenIssuer.issueRefreshToken(user.getId().value());
 
         ResponseCookie cookie = ResponseCookie
                 .from(REFRESH_TOKEN_COOKIE, refreshToken)
@@ -168,12 +150,12 @@ public class AuthController {
                 .secure(cookieSecure)
                 .sameSite("Lax")
                 .path(REFRESH_COOKIE_PATH)
-                .maxAge(jwtService.getRefreshTokenExpirationMs() / 1000)
+                .maxAge(tokenIssuer.refreshTokenExpirationSeconds())
                 .build();
 
         LoginResponse body = new LoginResponse(
                 accessToken,
-                jwtService.getAccessTokenExpirationMs() / 1000,
+                tokenIssuer.accessTokenExpirationSeconds(),
                 user.getId().value(),
                 user.getEmail().value(),
                 user.getFullName()
