@@ -135,14 +135,33 @@ docs/
 │   ├── dependency-matrix.md         # Matriz de dependências
 │   ├── data-ownership.md            # Ownership de dados
 │   ├── schema-inventory.md          # Inventário de schema
-│   └── security-model.md            # Modelo de segurança
+│   ├── security-model.md            # Modelo de segurança
+│   └── adr/                         # Architecture Decision Records
 │
-├── migration/                       # Estratégia de migração (se necessário)
-│   └── README.md                    # Guia de migração para microsserviços
+├── migration/                       # Estratégia de migração
+│   ├── README.md                    # Guia de migração para microsserviços
+│   └── archive/                     # Histórico de extração (user-service)
 │
-└── api/                             # Documentação de API (OpenAPI)
-    ├── BRIEFING-API-GUIDE.md
-    └── briefing-api.yaml
+├── api/                             # Documentação de API
+│   ├── README.md                    # Quick reference
+│   └── briefing-api.yaml            # OpenAPI spec
+│
+├── database/                        # Database docs
+│   ├── README.md                    # Quick reference
+│   └── archive/                     # Migrations history
+│
+├── deployment/                      # Deployment procedures
+│   └── README.md
+│
+├── devops/                          # Scripts e operations
+│   └── README.md
+│
+├── frontend/                        # Frontend docs
+│   ├── README.md                    # Quick reference
+│   └── archive/                     # Implementation history
+│
+└── qa/                              # Testing docs
+    └── README.md
 ```
 
 ---

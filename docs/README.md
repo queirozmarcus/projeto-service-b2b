@@ -1,31 +1,23 @@
 # ScopeFlow AI — Documentação
 
-Índice central de toda a documentação técnica do projeto.
-Para setup e comandos, ver [`README.md`](../README.md) na raiz. Para status atual, ver [`PROJECT-STATUS.md`](PROJECT-STATUS.md).
+**Status:** User Service extraído ✅ | 126 testes passando | 7/7 serviços operacionais
 
 ---
 
-## Navegação Rápida
+## 🎯 Quick Start
 
-| Preciso de... | Vá para |
-|--------------|---------|
-| Estado atual do projeto | [`PROJECT-STATUS.md`](PROJECT-STATUS.md) |
-| Setup e comandos | [`../README.md`](../README.md) |
-| Visão de produto | [`scopeflow_ai_documento_master_completo.md`](scopeflow_ai_documento_master_completo.md) |
-| API do Briefing | [`api/BRIEFING-API-GUIDE.md`](api/BRIEFING-API-GUIDE.md) |
-| Arquitetura + ADRs | [`architecture/README.md`](architecture/README.md) |
-| Migração Strangler Fig | [`migration/README.md`](migration/README.md) |
-| Schema do banco | [`database/schema-diagram.md`](database/schema-diagram.md) |
-| Deploy em staging | [`deployment/DEPLOYMENT-GUIDE.md`](deployment/DEPLOYMENT-GUIDE.md) |
-| Cut-over produção | [`migration/DB-MIGRATION-USER-SERVICE.md`](migration/DB-MIGRATION-USER-SERVICE.md) |
-| Dashboard (componentes, Zustand, API) | [`frontend/DASHBOARD-GUIDE.md`](frontend/DASHBOARD-GUIDE.md) |
-| Landing page (SEO, SSG, customização) | [`frontend/LANDING-PAGE-GUIDE.md`](frontend/LANDING-PAGE-GUIDE.md) |
-| Auditoria SEO | [`frontend/SEO_AUDIT_REPORT.md`](frontend/SEO_AUDIT_REPORT.md) |
-| Monitor & Heal (script de infra) | [`devops/MONITOR-AND-HEAL-VALIDATION.md`](devops/MONITOR-AND-HEAL-VALIDATION.md) |
-| Testes de contrato | [`qa/contracts/README.md`](qa/contracts/README.md) |
-| Cobertura de testes | [`qa/test-coverage-report.md`](qa/test-coverage-report.md) |
-| Smoke tests | [`qa/smoke-tests.md`](qa/smoke-tests.md) |
-| Integration tests (UserController) | [`qa/user-controller-integration-tests.md`](qa/user-controller-integration-tests.md) |
+| Preciso... | Ver |
+|-----------|-----|
+| **Entender o projeto** | [CLAUDE.md](../CLAUDE.md) — Architecture, conventions, troubleshooting |
+| **Rodar localmente** | [README.md](../README.md) — Setup instructions |
+| **API REST** | [api/README.md](api/README.md) — Briefing API guide |
+| **Escrever testes** | [qa/README.md](qa/README.md) — Testing guide |
+| **Deploy** | [deployment/README.md](deployment/README.md) — Deployment procedures |
+| **Arquitetura** | [architecture/README.md](architecture/README.md) — Architecture docs |
+| **Banco de dados** | [database/README.md](database/README.md) — Database guide |
+| **Migração** | [migration/README.md](migration/README.md) — Migration strategy |
+| **Scripts** | [devops/README.md](devops/README.md) — DevOps scripts |
+| **Frontend** | [frontend/README.md](frontend/README.md) — Frontend docs |
 
 ---
 
@@ -33,104 +25,111 @@ Para setup e comandos, ver [`README.md`](../README.md) na raiz. Para status atua
 
 ```
 docs/
-├── README.md                                  # Este arquivo — índice central
-├── PROJECT-STATUS.md                          # Status atual do projeto
-├── scopeflow_ai_documento_master_completo.md  # Produto: spec, personas, roadmap
+├── README.md                    # Este arquivo — índice central
 │
-├── api/
-│   └── BRIEFING-API-GUIDE.md                 # API do Briefing com exemplos
+├── api/                         # API Documentation
+│   ├── README.md                # Briefing API quick reference
+│   └── briefing-api.yaml        # OpenAPI 3.1 spec
 │
-├── architecture/
-│   ├── README.md                              # Índice de arquitetura
-│   ├── architectural-overview.md             # Visão geral hexagonal + DDD
-│   ├── bounded-contexts.md                   # Mapa de bounded contexts
-│   ├── coupling-matrix.md                    # Matriz de acoplamento entre contextos
-│   ├── data-ownership.md                     # Ownership de dados por contexto
-│   ├── dependency-matrix.md                  # Dependências entre módulos
-│   ├── schema-inventory.md                   # Inventário de tabelas por contexto
-│   ├── security-model.md                     # Modelo de segurança e auth
-│   └── adr/                                  # Architecture Decision Records
-│       ├── ADR-002 — Briefing domain design
-│       ├── ADR-003 — Sealed classes + JPA separation
-│       ├── ADR-004 — Records for DTOs
-│       ├── ADR-005 — Lazy loading default
-│       ├── ADR-006 — RFC 9457 Problem Details
-│       ├── ADR-007 — Landing + Dashboard architecture
-│       ├── ADR-008 — User service extraction complete
-│       └── ADR-009 — User module decommission
+├── architecture/                # Architectural Documentation
+│   ├── README.md                # Overview + navigation
+│   ├── architectural-overview.md
+│   ├── bounded-contexts.md
+│   ├── coupling-matrix.md
+│   ├── dependency-matrix.md
+│   ├── data-ownership.md
+│   ├── schema-inventory.md
+│   ├── security-model.md
+│   └── adr/                     # Architecture Decision Records
 │
-├── database/
-│   ├── schema-diagram.md                     # Diagrama do schema
-│   ├── flyway-changelog.md                   # Histórico de migrations
-│   ├── index-strategy.md                     # Estratégia de índices
-│   └── query-performance-baseline.md         # Baseline de performance de queries
+├── database/                    # Database Documentation
+│   ├── README.md                # Schema, migrations, performance
+│   └── archive/                 # Historical migration details
 │
-├── deployment/
-│   └── DEPLOYMENT-GUIDE.md                   # Guia de deploy staging
+├── deployment/                  # Deployment Guides
+│   └── README.md                # Local, Staging, Production
 │
-├── devops/
-│   └── MONITOR-AND-HEAL-VALIDATION.md        # Validação monitor-and-heal script
+├── devops/                      # DevOps & Operations
+│   └── README.md                # Scripts and monitoring
 │
-├── migration/
-│   ├── README.md                              # Status da migração Strangler Fig
-│   ├── DB-MIGRATION-USER-SERVICE.md          # Cut-over produção: pg_dump, restore, rollback
-│   ├── ETAPA-3-CONCLUSAO.md                  # Etapa 3 — conclusão
-│   ├── ETAPA-3-VALIDACAO.md                  # Etapa 3 — validação
-│   ├── EXTRACAO-USER-SERVICE-RESUMO.md       # Resumo da extração user-service
-│   ├── adr/                                  # ADRs específicos de migração
-│   │   ├── ADR-001 — Ordem de extração
-│   │   ├── ADR-002 — Database strategy (shared inicial)
-│   │   ├── ADR-003 — Comunicação entre serviços
-│   │   └── ADR-004 — Ownership service context
-│   └── extraction-cards/
-│       ├── 01-user-auth.md                   # ✅ Extraído
-│       ├── 02-workspace.md                   # 🔄 Próximo
-│       ├── 03-proposal.md                    # ⏳ Backlog
-│       └── 04-briefing.md                    # ⏳ Backlog
+├── frontend/                    # Frontend Documentation
+│   ├── README.md                # Next.js app guide
+│   └── archive/                 # Implementation history
 │
-├── frontend/
-│   ├── DASHBOARD-GUIDE.md                    # Componentes do dashboard, Zustand, integração API
-│   ├── LANDING-PAGE-GUIDE.md                 # Landing page: SEO, SSG, customização
-│   ├── LANDING-ARCHITECTURE.md              # Arquitetura dos componentes landing
-│   └── SEO_AUDIT_REPORT.md                  # Auditoria SEO (landing + dashboard)
+├── migration/                   # Migration Strategy
+│   ├── README.md                # Strangler Fig overview
+│   ├── db-per-service-cutover.md
+│   ├── adr/                     # Migration ADRs
+│   ├── extraction-cards/        # Roadmap
+│   └── archive/                 # Historical docs
 │
-├── qa/
-│   ├── CONTRACT-TESTING-SUMMARY.md           # Resumo dos contract tests
-│   ├── CONTRACT-TESTS-USER-SERVICE.md        # Contract tests do user-service (provider)
-│   ├── CONTRACT-TESTS-MONOLITH.md            # Contract tests do monólito (consumer)
-│   ├── test-coverage-report.md               # Relatório de cobertura
-│   ├── smoke-tests.md                        # Smoke tests documentados
-│   ├── user-controller-integration-tests.md  # Integration tests do UserController
-│   └── contracts/
-│       ├── README.md                          # Índice de contratos
-│       └── CONTRACT-TESTING-GUIDE.md         # Guia de contract testing
-│
-└── sessions/
-    └── archive/                              # Histórico de sessões e artefatos antigos
+└── qa/                          # Quality Assurance
+    └── README.md                # Testing guide
 ```
 
 ---
 
-## ADRs — Decisões Arquiteturais
+## 📊 Status do Projeto
 
-### Arquitetura do Sistema
+| Componente | Status | Notas |
+|-----------|--------|-------|
+| **Backend (Monólito)** | ✅ Operacional | 50 testes passando |
+| **User Service** | ✅ Staging ativo | 76 testes, 8 contratos |
+| **Frontend** | ✅ Pronto | Next.js 15 + Tailwind |
+| **Database** | ✅ V9 aplicado | PostgreSQL 16 |
+| **Docker Stack** | ✅ 7/7 healthy | Traefik routing ativo |
+| **QA Scripts** | ✅ Automatizado | validate-qa-full.sh |
 
-| ADR | Decisão | Status |
-|-----|---------|--------|
-| [ADR-002](architecture/adr/ADR-002-briefing-domain.md) | Briefing domain design | ✅ Ativo |
-| [ADR-003](architecture/adr/ADR-003-sealed-domain-separate-jpa.md) | Sealed classes + JPA separation | ✅ Ativo |
-| [ADR-004](architecture/adr/ADR-004-records-for-dtos.md) | Records para DTOs | ✅ Ativo |
-| [ADR-005](architecture/adr/ADR-005-lazy-loading-default.md) | Lazy loading como default | ✅ Ativo |
-| [ADR-006](architecture/adr/ADR-006-rfc9457-problem-details.md) | RFC 9457 Problem Details | ✅ Ativo |
-| [ADR-007](architecture/adr/ADR-007-landing-dashboard-architecture.md) | Landing + Dashboard architecture | ✅ Ativo |
-| [ADR-008](architecture/adr/ADR-008-user-service-extraction-complete.md) | User service extraction complete | ✅ Ativo |
-| [ADR-009](architecture/adr/ADR-009-user-module-decommission.md) | User module decommission | ✅ Ativo |
+---
 
-### Migração (Strangler Fig)
+## 🔍 Por Onde Começar?
 
-| ADR | Decisão | Status |
-|-----|---------|--------|
-| [ADR-001](migration/adr/ADR-001-ordem-de-extracao-bounded-contexts.md) | Ordem de extração dos bounded contexts | ✅ Ativo |
-| [ADR-002](migration/adr/ADR-002-database-strategy-shared-inicial.md) | Database strategy — shared inicial → DB-per-service | ✅ Ativo |
-| [ADR-003](migration/adr/ADR-003-comunicacao-entre-servicos.md) | Comunicação entre serviços | ✅ Ativo |
-| [ADR-004](migration/adr/ADR-004-ownership-service-context.md) | Ownership de service context | ✅ Ativo |
+### Novo no Projeto
+1. [CLAUDE.md](../CLAUDE.md) — contexto completo
+2. [README.md](../README.md) — setup e quick start
+3. [architecture/README.md](architecture/README.md) — arquitetura
+
+### Desenvolvedor Backend
+- [CLAUDE.md](../CLAUDE.md) — conventions
+- [database/README.md](database/README.md) — schema e migrations
+- [qa/README.md](qa/README.md) — como escrever testes
+
+### Desenvolvedor Frontend
+- [frontend/README.md](frontend/README.md) — componentes
+- [api/README.md](api/README.md) — endpoints
+
+### DevOps/SRE
+- [deployment/README.md](deployment/README.md) — deploy procedures
+- [devops/README.md](devops/README.md) — scripts operacionais
+- [migration/README.md](migration/README.md) — estratégia de migração
+
+---
+
+## 🤝 Contribuindo com Documentação
+
+| Mudança | Atualizar |
+|---------|-----------|
+| Novo endpoint REST | `api/README.md` + `api/briefing-api.yaml` |
+| Nova migration | `database/README.md` |
+| Mudança arquitetural | `architecture/*` + criar ADR se necessário |
+| Novo bounded context | `architecture/bounded-contexts.md` + `coupling-matrix.md` |
+| Mudança em auth/security | `architecture/security-model.md` |
+| Novo procedimento deploy | `deployment/README.md` |
+| Novo script operacional | `devops/README.md` |
+
+**Princípios:**
+- ✅ Mantenha conciso — links para detalhes, não duplique
+- ✅ Quick reference primeiro — exemplos práticos antes de teoria
+- ✅ Archive o que passou — histórico em `archive/`, não delete
+
+---
+
+## 📞 Suporte
+
+- **Dúvidas técnicas:** [CLAUDE.md](../CLAUDE.md)
+- **Troubleshooting:** [CLAUDE.md](../CLAUDE.md) § Troubleshooting
+- **Scripts:** [devops/README.md](devops/README.md) + `scripts/README.md`
+
+---
+
+**Mantido por:** Equipe ScopeFlow
