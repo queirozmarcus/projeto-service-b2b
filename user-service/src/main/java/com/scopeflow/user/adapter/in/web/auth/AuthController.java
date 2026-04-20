@@ -112,7 +112,7 @@ public class AuthController {
         }
 
         String newAccessToken = jwtService.generateAccessToken(
-                user.getId().value(), user.getEmail().normalized(), null, null
+                user.getId().value(), user.getEmail().normalized(), null, "USER"
         );
 
         log.info("Access token refreshed: userId={}", userId);
@@ -158,7 +158,7 @@ public class AuthController {
 
     private ResponseEntity<LoginResponse> buildLoginResponse(User user, HttpStatus status) {
         String accessToken = jwtService.generateAccessToken(
-                user.getId().value(), user.getEmail().normalized(), null, null
+                user.getId().value(), user.getEmail().normalized(), null, "USER"
         );
         String refreshToken = jwtService.generateRefreshToken(user.getId().value());
 
