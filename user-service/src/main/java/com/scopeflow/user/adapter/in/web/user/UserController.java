@@ -3,7 +3,6 @@ package com.scopeflow.user.adapter.in.web.user;
 import com.scopeflow.user.adapter.in.web.user.dto.CreateInvitedUserRequest;
 import com.scopeflow.user.adapter.in.web.user.dto.UserResponse;
 import com.scopeflow.user.application.service.UserService;
-import com.scopeflow.user.domain.exception.DuplicateEmailException;
 import com.scopeflow.user.domain.exception.InvalidInvitedByUserException;
 import com.scopeflow.user.domain.exception.InvalidRoleException;
 import com.scopeflow.user.domain.exception.UserNotFoundException;
@@ -58,9 +57,9 @@ public class UserController {
     public UserResponse createInvited(@Valid @RequestBody CreateInvitedUserRequest request) {
         Email email = new Email(request.email());
 
-        if (userService.getUserByEmail(email).isPresent()) {
-            throw new DuplicateEmailException(email);
-        }
+        // Duplicate email check is enforced by the UNIQUE constraint on the email column.
+        // DataIntegrityViolationException is caught in JpaUserRepositoryAdapter and converted
+        // to EmailAlreadyRegisteredException, eliminating the check-then-act race condition.
 
         UserId invitedByUserId = new UserId(request.invitedByUserId());
         userService.getUserById(invitedByUserId)

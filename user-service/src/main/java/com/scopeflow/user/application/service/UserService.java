@@ -1,11 +1,12 @@
 package com.scopeflow.user.application.service;
 
 import com.scopeflow.user.domain.exception.EmailAlreadyRegisteredException;
+import com.scopeflow.user.domain.exception.UserNotFoundException;
 import com.scopeflow.user.domain.model.*;
 import com.scopeflow.user.domain.port.out.UserRepository;
 
 import java.util.Objects;
-import java.util.Optional;
+import java.util.Optional; // usado em getUserById / getUserByEmail
 
 /**
  * UserService: domain service for user lifecycle.
@@ -58,9 +59,8 @@ public class UserService {
     }
 
     public void deactivateUser(UserId userId) {
-        Optional<User> user = userRepository.findById(userId);
-        if (user.isPresent()) {
-            userRepository.delete(userId);
-        }
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        userRepository.delete(userId);
     }
 }
