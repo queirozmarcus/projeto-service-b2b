@@ -14,7 +14,7 @@ public record Email(String value) {
         Objects.requireNonNull(value, "Email value cannot be null");
         String trimmed = value.trim();
         if (trimmed.isEmpty()) {
-            throw new IllegalArgumentException("Email cannot be empty");
+            throw new InvalidValueObjectException("Email", "Email cannot be empty");
         }
         if (!trimmed.matches(EMAIL_REGEX)) {
             throw new InvalidValueObjectException("Email", "Invalid email format: " + value);

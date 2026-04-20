@@ -1,6 +1,6 @@
 package com.scopeflow.user.adapter.in.web;
 
-import com.scopeflow.user.domain.InvalidValueObjectException;
+import com.scopeflow.user.domain.shared.InvalidValueObjectException;
 import com.scopeflow.user.domain.exception.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

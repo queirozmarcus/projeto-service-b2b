@@ -1,6 +1,6 @@
 package com.scopeflow.user.domain.model;
 
-import com.scopeflow.user.domain.InvalidValueObjectException;
+import com.scopeflow.user.domain.shared.InvalidValueObjectException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

@@ -1,4 +1,4 @@
-package com.scopeflow.user.domain;
+package com.scopeflow.user.domain.shared;
 
 /**
  * Exception thrown when a Value Object fails validation.

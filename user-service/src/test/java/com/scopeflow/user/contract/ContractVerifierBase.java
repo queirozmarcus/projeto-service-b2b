@@ -8,6 +8,7 @@ import com.scopeflow.user.domain.exception.DuplicateEmailException;
 import com.scopeflow.user.domain.exception.EmailAlreadyRegisteredException;
 import com.scopeflow.user.domain.exception.InvalidCredentialsException;
 import com.scopeflow.user.domain.exception.InvalidInvitedByUserException;
+import com.scopeflow.user.domain.exception.InvalidValueObjectException;
 import com.scopeflow.user.domain.exception.UserNotFoundException;
 import com.scopeflow.user.domain.model.*;
 import com.scopeflow.user.domain.port.out.UserRepository;
@@ -174,6 +175,20 @@ public abstract class ContractVerifierBase {
 
         doThrow(new EmailAlreadyRegisteredException("Email already registered: test@example.com"))
                 .when(userService).registerUser(eq(new Email(TEST_EMAIL)), any(), any(), any());
+
+        // ============ InvalidValueObjectException mocks (VO-001) ============
+
+        // Invalid email format: "invalid-email" (no @)
+        doThrow(new InvalidValueObjectException("VO-001", "Invalid email format: invalid-email"))
+                .when(userService).registerUser(eq(new Email("invalid-email")), any(), any(), any());
+
+        // Invalid email format: "user@" (missing domain)
+        doThrow(new InvalidValueObjectException("VO-001", "Invalid email format: user@"))
+                .when(userService).registerUser(eq(new Email("user@")), any(), any(), any());
+
+        // Invalid email format: "" (blank)
+        doThrow(new InvalidValueObjectException("VO-001", "Invalid email format: "))
+                .when(userService).registerUser(eq(new Email("")), any(), any(), any());
 
         // ============ Refresh token mocks ============
 

@@ -1,0 +1,35 @@
+description: Register with invalid email (missing domain)
+name: shouldReturn400OnInvalidEmailMissingDomain
+request:
+  method: POST
+  url: /api/v1/auth/register
+  headers:
+    Content-Type: application/json
+  body:
+    email: "user@"
+    password: "ValidPassword123!"
+    fullName: "Test User"
+response:
+  status: 400
+  headers:
+    Content-Type: application/problem+json
+  body:
+    type: "https://api.scopeflow.com/errors/invalid-value-object"
+    title: "Invalid Value Object"
+    status: 400
+    detail: "Invalid email format: user@"
+    error_code: "VO-001"
+    error_id: "550e8400-e29b-41d4-a716-446655440000"
+    timestamp: "2025-01-15T10:30:00Z"
+  matchers:
+    body:
+      - path: $.error_code
+        type: by_equality
+      - path: $.status
+        type: by_equality
+      - path: $.error_id
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.timestamp
+        type: by_regex
+        value: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})"

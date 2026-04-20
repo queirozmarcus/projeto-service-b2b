@@ -268,6 +268,89 @@ class UserServiceContractTest {
         assertThat(response.getBody()).contains("\"status\":409");
     }
 
+    @Test
+    void shouldReturn400WithVO001_whenRegisteringWithInvalidEmailFormat() {
+        // Given: invalid email format (no @)
+        var registerRequest = new com.scopeflow.adapter.in.web.auth.dto.RegisterRequest(
+                "invalid-email",
+                "ValidPassword123!",
+                "Test User",
+                null
+        );
+
+        // When: registering with invalid email
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                STUB_BASE_URL + "/auth/register",
+                registerRequest,
+                String.class
+        );
+
+        // Then: RFC 9457 error with VO-001
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+
+        String body = response.getBody();
+        assertThat(body).contains("\"error_code\":\"VO-001\"");
+        assertThat(body).contains("\"status\":400");
+        assertThat(body).contains("\"type\":\"https://api.scopeflow.com/errors/invalid-value-object\"");
+        assertThat(body).contains("\"title\":\"Invalid Value Object\"");
+        assertThat(body).matches(".*\"error_id\":\"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\".*");
+        assertThat(body).matches(".*\"timestamp\":\"\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*");
+    }
+
+    @Test
+    void shouldReturn400WithVO001_whenRegisteringWithEmailMissingDomain() {
+        // Given: invalid email (missing domain)
+        var registerRequest = new com.scopeflow.adapter.in.web.auth.dto.RegisterRequest(
+                "user@",
+                "ValidPassword123!",
+                "Test User",
+                null
+        );
+
+        // When: registering with invalid email
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                STUB_BASE_URL + "/auth/register",
+                registerRequest,
+                String.class
+        );
+
+        // Then: RFC 9457 error with VO-001
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+
+        String body = response.getBody();
+        assertThat(body).contains("\"error_code\":\"VO-001\"");
+        assertThat(body).contains("\"status\":400");
+        assertThat(body).contains("\"type\":\"https://api.scopeflow.com/errors/invalid-value-object\"");
+    }
+
+    @Test
+    void shouldReturn400WithVO001_whenRegisteringWithBlankEmail() {
+        // Given: blank email
+        var registerRequest = new com.scopeflow.adapter.in.web.auth.dto.RegisterRequest(
+                "",
+                "ValidPassword123!",
+                "Test User",
+                null
+        );
+
+        // When: registering with blank email
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                STUB_BASE_URL + "/auth/register",
+                registerRequest,
+                String.class
+        );
+
+        // Then: RFC 9457 error with VO-001
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+
+        String body = response.getBody();
+        assertThat(body).contains("\"error_code\":\"VO-001\"");
+        assertThat(body).contains("\"status\":400");
+    }
+
     /**
      * JWT Token Validation Test.
      *
