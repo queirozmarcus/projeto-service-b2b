@@ -81,13 +81,12 @@ class UserControllerIntegrationTest {
         this.mockMvc = MockMvcBuilders
                 .webAppContextSetup(webApplicationContext)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
-                .defaultRequest(MockMvcRequestBuilders.get("/").contextPath("/api/v1"))
                 .build();
         userRepository.deleteAll();
     }
 
     @Nested
-    @DisplayName("GET /api/v1/users/by-email/{email}")
+    @DisplayName("GET /users/by-email/{email}")
     class GetByEmail {
 
         @Test
@@ -120,7 +119,7 @@ class UserControllerIntegrationTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/users/invited")
+    @DisplayName("POST /users/invited")
     class CreateInvited {
 
         @Test

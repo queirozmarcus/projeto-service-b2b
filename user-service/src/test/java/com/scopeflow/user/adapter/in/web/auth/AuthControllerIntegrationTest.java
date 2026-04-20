@@ -64,7 +64,7 @@ class AuthControllerIntegrationTest {
     // MockMvc é reconstruído no @BeforeEach com contextPath explícito.
     // @AutoConfigureMockMvc sozinho não propaga server.servlet.context-path=/api/v1
     // para o Spring Security no MOCK web environment — sem isso, requestMatchers
-    // como permitAll("/auth/login") não correspondem a "/api/v1/auth/login".
+    // como permitAll("/auth/login") não correspondem a "/auth/login".
     private MockMvc mockMvc;
 
     @Autowired
@@ -90,13 +90,12 @@ class AuthControllerIntegrationTest {
         this.mockMvc = MockMvcBuilders
                 .webAppContextSetup(webApplicationContext)
                 .apply(SecurityMockMvcConfigurers.springSecurity())
-                .defaultRequest(MockMvcRequestBuilders.get("/").contextPath("/api/v1"))
                 .build();
         userRepository.deleteAll();
     }
 
     @Nested
-    @DisplayName("POST /api/v1/auth/register")
+    @DisplayName("POST /auth/register")
     class Register {
 
         @Test
@@ -144,7 +143,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Nested
-    @DisplayName("POST /api/v1/auth/login")
+    @DisplayName("POST /auth/login")
     class Login {
 
         @Test
@@ -192,7 +191,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Nested
-    @DisplayName("GET /api/v1/auth/me")
+    @DisplayName("GET /auth/me")
     class GetMe {
 
         @Test

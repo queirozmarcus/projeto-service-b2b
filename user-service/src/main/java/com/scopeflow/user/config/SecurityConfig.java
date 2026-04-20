@@ -61,7 +61,8 @@ public class SecurityConfig {
                     }
                 })
                 .authorizeHttpRequests(auth -> auth
-                        // Public auth endpoints
+                        // Public auth endpoints (with and without /api/v1 prefix for test compatibility)
+                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
                         // Health and observability
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()

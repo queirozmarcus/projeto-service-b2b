@@ -27,7 +27,7 @@ import java.util.UUID;
 /**
  * Auth controller: registration, login, token refresh, profile, logout.
  *
- * Path: /auth (under context-path /api/v1)
+ * Path: /api/v1/auth
  * Public endpoints: register, login, refresh, logout
  * Protected: /me
  *
