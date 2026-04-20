@@ -12,20 +12,22 @@ public record Email(String value) {
 
     public Email {
         Objects.requireNonNull(value, "Email value cannot be null");
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
+        String normalized = value.trim().toLowerCase();
+        if (normalized.isEmpty()) {
             throw new InvalidValueObjectException("Email", "Email cannot be empty");
         }
-        if (!trimmed.matches(EMAIL_REGEX)) {
+        if (!normalized.matches(EMAIL_REGEX)) {
             throw new InvalidValueObjectException("Email", "Invalid email format: " + value);
         }
+        value = normalized;
     }
 
     /**
-     * Returns normalized (lowercased) email for case-insensitive lookups.
+     * Returns the normalized email (already lowercase — same as value).
+     * Kept for backward compatibility with existing callers.
      */
     public String normalized() {
-        return value.toLowerCase();
+        return value;
     }
 
     @Override
