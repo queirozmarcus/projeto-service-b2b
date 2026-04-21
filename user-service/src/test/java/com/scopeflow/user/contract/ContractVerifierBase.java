@@ -159,7 +159,7 @@ public abstract class ContractVerifierBase {
                 .thenReturn(Optional.of(testUser));
 
         // Mock TokenIssuer for register and /me flows
-        when(tokenIssuer.issueAccessToken(any(), any(), any()))
+        when(tokenIssuer.issueAccessToken(any(), any(), any(), any()))
                 .thenReturn(TEST_JWT_TOKEN);
 
         when(tokenIssuer.issueRefreshToken(any()))
@@ -245,7 +245,7 @@ public abstract class ContractVerifierBase {
         PasswordHash passwordHash = new PasswordHash("$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy");
         Instant createdAt = Instant.parse("2025-01-15T10:30:00Z");
 
-        return new UserActive(userId, email, passwordHash, TEST_FULL_NAME, TEST_PHONE, createdAt, createdAt);
+        return new UserActive(userId, email, passwordHash, TEST_FULL_NAME, TEST_PHONE, null, createdAt, createdAt);
     }
 
     private UserInactive createInvitedUser() {
@@ -255,6 +255,6 @@ public abstract class ContractVerifierBase {
         String displayName = "Invited";
         Instant createdAt = Instant.parse("2025-01-15T10:30:00Z");
 
-        return new UserInactive(userId, email, passwordHash, displayName, null, createdAt, createdAt);
+        return new UserInactive(userId, email, passwordHash, displayName, null, null, createdAt, createdAt);
     }
 }

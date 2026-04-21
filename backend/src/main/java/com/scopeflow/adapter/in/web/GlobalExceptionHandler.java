@@ -655,6 +655,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .body(problemDetail);
     }
 
+    // ============ Security Exceptions ============
+
+    /**
+     * Handle missing JWT claims (e.g., workspace_id absent in user-service tokens).
+     * Returns 403 Forbidden with Problem Details.
+     */
+    @ExceptionHandler(SecurityException.class)
+    public ResponseEntity<ProblemDetail> handleSecurityException(
+            SecurityException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "security-violation"));
+        problemDetail.setTitle("Security Violation");
+        problemDetail.setDetail(ex.getMessage());
+        addCustomProperties(problemDetail, "AUTH-001");
+
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(problemDetail);
+    }
+
     /**
      * Handle generic exceptions (catch-all).
      */

@@ -145,7 +145,7 @@ public class AuthController {
 
     private ResponseEntity<LoginResponse> buildLoginResponse(User user, HttpStatus status) {
         String accessToken = tokenIssuer.issueAccessToken(
-                user.getId().value(), user.getEmail().normalized(), "USER");
+                user.getId().value(), user.getEmail().normalized(), user.getWorkspaceId(), "USER");
         String refreshToken = tokenIssuer.issueRefreshToken(user.getId().value());
 
         ResponseCookie cookie = ResponseCookie

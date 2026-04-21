@@ -1,0 +1,34 @@
+-- Script: sincronizar workspace_id dos usuários existentes para o user-service
+--
+-- Contexto: a tabela `users` do user-service (scopeflow_users) não tem workspace_id
+-- para usuários criados antes da adição da coluna (migration V2). Este script deve
+-- ser executado manualmente após o deploy da migration V2.
+--
+-- Como executar:
+--
+--   1. Obtenha os pares (user_id, workspace_id) do banco do monólito (scopeflow):
+--
+--      docker exec scopeflow-postgres psql -U postgres -d scopeflow \
+--        -c "SELECT u.id AS user_id, w.id AS workspace_id \
+--            FROM users u \
+--            JOIN workspaces w ON w.owner_id = u.id;"
+--
+--   2. Para cada par retornado, execute no banco do user-service (scopeflow_users):
+--
+--      docker exec scopeflow-user-db psql -U postgres -d scopeflow_users \
+--        -c "UPDATE users SET workspace_id = '<workspace_id>' WHERE id = '<user_id>';"
+--
+--      Substitua <workspace_id> e <user_id> pelos valores retornados no passo 1.
+--
+-- Nota: as queries acima assumem que workspaces.owner_id referencia users.id.
+-- Ajuste o nome da coluna se necessário consultando o schema do monólito:
+--
+--      docker exec scopeflow-postgres psql -U postgres -d scopeflow \
+--        -c "\d workspaces"
+--
+-- Verificação após a sincronização:
+--
+--      docker exec scopeflow-user-db psql -U postgres -d scopeflow_users \
+--        -c "SELECT id, email, workspace_id FROM users WHERE workspace_id IS NULL;"
+--
+--      O resultado deve estar vazio se todos os usuários ativos possuem workspace.

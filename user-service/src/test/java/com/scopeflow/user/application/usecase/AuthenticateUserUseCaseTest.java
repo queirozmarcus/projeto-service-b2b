@@ -18,6 +18,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,7 +47,7 @@ class AuthenticateUserUseCaseTest {
         UserActive activeUser = User.create(new UserId(userId), email, passwordHash, "John Doe", null);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(activeUser));
         when(passwordHasher.matches("rawpass", "$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy")).thenReturn(true);
-        when(tokenIssuer.issueAccessToken(userId, "user@example.com", "USER")).thenReturn("access.token");
+        when(tokenIssuer.issueAccessToken(userId, "user@example.com", null, "USER")).thenReturn("access.token");
         when(tokenIssuer.issueRefreshToken(userId)).thenReturn("refresh.token");
 
         // When
@@ -56,7 +57,7 @@ class AuthenticateUserUseCaseTest {
         assertThat(result.tokens().accessToken()).isEqualTo("access.token");
         assertThat(result.tokens().refreshToken()).isEqualTo("refresh.token");
         assertThat(result.user()).isEqualTo(activeUser);
-        verify(tokenIssuer).issueAccessToken(userId, "user@example.com", "USER");
+        verify(tokenIssuer).issueAccessToken(userId, "user@example.com", null, "USER");
     }
 
     @Test
@@ -98,7 +99,7 @@ class AuthenticateUserUseCaseTest {
                 .hasMessageContaining("Account is not active");
 
         verify(passwordHasher, never()).matches(any(), any());
-        verify(tokenIssuer, never()).issueAccessToken(any(), any(), any());
+        verify(tokenIssuer, never()).issueAccessToken(any(), any(), any(), any());
     }
 
     @Test
@@ -108,13 +109,13 @@ class AuthenticateUserUseCaseTest {
         UserActive activeUser = User.create(new UserId(userId), email, passwordHash, "John", null);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(activeUser));
         when(passwordHasher.matches(any(), any())).thenReturn(true);
-        when(tokenIssuer.issueAccessToken(any(), any(), any())).thenReturn("token");
+        when(tokenIssuer.issueAccessToken(any(), any(), any(), any())).thenReturn("token");
         when(tokenIssuer.issueRefreshToken(any())).thenReturn("refresh");
 
         // When
         useCase.execute("user@example.com", "pass");
 
         // Then — must pass "USER", not null, not "OWNER"
-        verify(tokenIssuer).issueAccessToken(eq(userId), eq("user@example.com"), eq("USER"));
+        verify(tokenIssuer).issueAccessToken(eq(userId), eq("user@example.com"), isNull(), eq("USER"));
     }
 }

@@ -44,7 +44,7 @@ public class RefreshTokenUseCase {
         }
 
         String newAccessToken = tokenIssuer.issueAccessToken(
-                user.getId().value(), user.getEmail().normalized(), "USER");
+                user.getId().value(), user.getEmail().normalized(), user.getWorkspaceId(), "USER");
 
         return new Result(newAccessToken, tokenIssuer.accessTokenExpirationSeconds());
     }

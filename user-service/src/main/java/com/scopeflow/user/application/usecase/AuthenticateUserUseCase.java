@@ -51,7 +51,7 @@ public class AuthenticateUserUseCase {
         }
 
         String accessToken = tokenIssuer.issueAccessToken(
-                user.getId().value(), user.getEmail().normalized(), "USER");
+                user.getId().value(), user.getEmail().normalized(), user.getWorkspaceId(), "USER");
         String refreshToken = tokenIssuer.issueRefreshToken(user.getId().value());
 
         return new Result(user, new AuthTokens(accessToken, refreshToken));

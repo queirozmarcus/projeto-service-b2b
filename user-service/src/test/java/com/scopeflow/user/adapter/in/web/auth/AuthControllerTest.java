@@ -83,10 +83,10 @@ class AuthControllerTest {
     void register_shouldReturn201_whenValidRequest() throws Exception {
         UserActive mockUser = new UserActive(
                 UserId.generate(), new Email("user@example.com"), new PasswordHash(BCRYPT_HASH),
-                "Test User", "+5511999999999", Instant.now(), Instant.now()
+                "Test User", "+5511999999999", null, Instant.now(), Instant.now()
         );
         given(registerUserUseCase.execute(any(), any(), any(), any())).willReturn(mockUser);
-        given(tokenIssuer.issueAccessToken(any(), any(), any())).willReturn("access-token");
+        given(tokenIssuer.issueAccessToken(any(), any(), any(), any())).willReturn("access-token");
         given(tokenIssuer.issueRefreshToken(any())).willReturn("refresh-token");
         given(tokenIssuer.accessTokenExpirationSeconds()).willReturn(900L);
         given(tokenIssuer.refreshTokenExpirationSeconds()).willReturn(604800L);
@@ -154,12 +154,12 @@ class AuthControllerTest {
     void login_shouldReturn200_whenValidCredentials() throws Exception {
         UserActive mockUser = new UserActive(
                 UserId.generate(), new Email("user@example.com"), new PasswordHash(BCRYPT_HASH),
-                "Test User", null, Instant.now(), Instant.now()
+                "Test User", null, null, Instant.now(), Instant.now()
         );
         var authTokens = new AuthenticateUserUseCase.AuthTokens("access-token", "refresh-token");
         given(authenticateUserUseCase.execute(any(), any()))
                 .willReturn(new AuthenticateUserUseCase.Result(mockUser, authTokens));
-        given(tokenIssuer.issueAccessToken(any(), any(), any())).willReturn("access-token");
+        given(tokenIssuer.issueAccessToken(any(), any(), any(), any())).willReturn("access-token");
         given(tokenIssuer.issueRefreshToken(any())).willReturn("refresh-token");
         given(tokenIssuer.accessTokenExpirationSeconds()).willReturn(900L);
         given(tokenIssuer.refreshTokenExpirationSeconds()).willReturn(604800L);

@@ -17,6 +17,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,7 +46,7 @@ class RefreshTokenUseCaseTest {
         when(tokenIssuer.isValidRefreshToken("valid.refresh")).thenReturn(true);
         when(tokenIssuer.extractUserIdFromRefreshToken("valid.refresh")).thenReturn(userId);
         when(userRepository.findById(new UserId(userId))).thenReturn(Optional.of(activeUser));
-        when(tokenIssuer.issueAccessToken(userId, "user@example.com", "USER")).thenReturn("new.access.token");
+        when(tokenIssuer.issueAccessToken(userId, "user@example.com", null, "USER")).thenReturn("new.access.token");
         when(tokenIssuer.accessTokenExpirationSeconds()).thenReturn(900L);
 
         // When
@@ -54,7 +55,7 @@ class RefreshTokenUseCaseTest {
         // Then
         assertThat(result.accessToken()).isEqualTo("new.access.token");
         assertThat(result.expiresInSeconds()).isEqualTo(900L);
-        verify(tokenIssuer).issueAccessToken(eq(userId), eq("user@example.com"), eq("USER"));
+        verify(tokenIssuer).issueAccessToken(eq(userId), eq("user@example.com"), isNull(), eq("USER"));
     }
 
     @Test
@@ -108,6 +109,6 @@ class RefreshTokenUseCaseTest {
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessageContaining("Account is not active");
 
-        verify(tokenIssuer, never()).issueAccessToken(any(), any(), any());
+        verify(tokenIssuer, never()).issueAccessToken(any(), any(), any(), any());
     }
 }

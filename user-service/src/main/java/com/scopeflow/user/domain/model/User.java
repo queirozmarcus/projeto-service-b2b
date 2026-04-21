@@ -2,6 +2,7 @@ package com.scopeflow.user.domain.model;
 
 import java.time.Instant;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * User aggregate root (sealed class for type safety).
@@ -19,6 +20,7 @@ public abstract sealed class User permits UserActive, UserInactive, UserDeleted 
     private final PasswordHash passwordHash;
     private final String fullName;
     private final String phone;
+    private final UUID workspaceId; // nullable — set after workspace creation
     private final Instant createdAt;
     private final Instant updatedAt;
 
@@ -28,6 +30,7 @@ public abstract sealed class User permits UserActive, UserInactive, UserDeleted 
             PasswordHash passwordHash,
             String fullName,
             String phone,
+            UUID workspaceId,
             Instant createdAt,
             Instant updatedAt
     ) {
@@ -36,6 +39,7 @@ public abstract sealed class User permits UserActive, UserInactive, UserDeleted 
         this.passwordHash = Objects.requireNonNull(passwordHash, "PasswordHash cannot be null");
         this.fullName = Objects.requireNonNull(fullName, "Full name cannot be null");
         this.phone = phone; // optional
+        this.workspaceId = workspaceId; // optional — null until workspace is assigned
         this.createdAt = Objects.requireNonNull(createdAt, "CreatedAt cannot be null");
         this.updatedAt = Objects.requireNonNull(updatedAt, "UpdatedAt cannot be null");
     }
@@ -50,7 +54,21 @@ public abstract sealed class User permits UserActive, UserInactive, UserDeleted 
             String fullName,
             String phone
     ) {
-        return new UserActive(id, email, passwordHash, fullName, phone, Instant.now(), Instant.now());
+        return new UserActive(id, email, passwordHash, fullName, phone, null, Instant.now(), Instant.now());
+    }
+
+    /**
+     * Factory method: create a new active user with workspace assignment.
+     */
+    public static UserActive create(
+            UserId id,
+            Email email,
+            PasswordHash passwordHash,
+            String fullName,
+            String phone,
+            UUID workspaceId
+    ) {
+        return new UserActive(id, email, passwordHash, fullName, phone, workspaceId, Instant.now(), Instant.now());
     }
 
     /**
@@ -62,7 +80,7 @@ public abstract sealed class User permits UserActive, UserInactive, UserDeleted 
             PasswordHash temporaryPasswordHash,
             String fullName
     ) {
-        return new UserInactive(id, email, temporaryPasswordHash, fullName, null, Instant.now(), Instant.now());
+        return new UserInactive(id, email, temporaryPasswordHash, fullName, null, null, Instant.now(), Instant.now());
     }
 
     // ============ Accessors ============
@@ -72,6 +90,7 @@ public abstract sealed class User permits UserActive, UserInactive, UserDeleted 
     public PasswordHash getPasswordHash() { return passwordHash; }
     public String getFullName() { return fullName; }
     public String getPhone() { return phone; }
+    public UUID getWorkspaceId() { return workspaceId; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 

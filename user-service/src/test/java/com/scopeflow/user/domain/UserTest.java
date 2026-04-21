@@ -121,8 +121,8 @@ class UserTest {
             PasswordHash hash = new PasswordHash(VALID_BCRYPT_HASH);
 
             UserActive active = User.create(userId, email, hash, "John", null);
-            UserInactive inactive = new UserInactive(userId, email, hash, "John", null, active.getCreatedAt(), active.getUpdatedAt());
-            UserDeleted deleted = new UserDeleted(userId, email, hash, "John", null, active.getCreatedAt(), active.getUpdatedAt());
+            UserInactive inactive = new UserInactive(userId, email, hash, "John", null, null, active.getCreatedAt(), active.getUpdatedAt());
+            UserDeleted deleted = new UserDeleted(userId, email, hash, "John", null, null, active.getCreatedAt(), active.getUpdatedAt());
 
             assertThat(active.status()).isEqualTo("ACTIVE");
             assertThat(active.canLogin()).isTrue();
