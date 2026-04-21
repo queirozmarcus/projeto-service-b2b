@@ -1,0 +1,834 @@
+openapi: 3.1.0
+info:
+  title: ScopeFlow Proposal API
+  version: 1.0.0
+  description: |
+    AI-powered proposal generation for B2B service providers.
+
+    Transforms completed briefings into detailed, structured proposals with scope, deliverables,
+    pricing, timeline, and acceptance criteria.
+
+    **Key Features:**
+    - AI-generated scope from briefing data
+    - Workspace-scoped (multi-tenant)
+    - Circuit breaker protection for AI service
+    - Immutable scope after approval
+    - Draft → Sent → Approved/Rejected lifecycle
+
+  contact:
+    name: ScopeFlow AI Team
+    email: api@scopeflow.com
+  license:
+    name: Proprietary
+    url: https://scopeflow.com/terms
+
+servers:
+  - url: http://localhost:8080
+    description: Local Development
+  - url: https://api-staging.scopeflow.com
+    description: Staging
+  - url: https://api.scopeflow.com
+    description: Production
+
+tags:
+  - name: Proposals
+    description: Authenticated endpoints for workspace owners/members to manage proposals
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/v1/proposals:
+    post:
+      operationId: createProposal
+      summary: Create a new proposal
+      description: |
+        Creates a new proposal (DRAFT state) linked to a client and optionally a briefing.
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Proposals]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProposalRequest'
+            examples:
+              withBriefing:
+                summary: Proposal with briefing
+                value:
+                  clientId: "550e8400-e29b-41d4-a716-446655440000"
+                  briefingId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                  proposalName: "Social Media Campaign Q2 2026"
+      responses:
+        '201':
+          description: Proposal created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URL to the created proposal resource
+              example: /api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+    get:
+      operationId: listProposals
+      summary: List proposals with pagination and filters
+      description: |
+        Returns paginated list of proposals for the authenticated user's workspace.
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Proposals]
+      parameters:
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            $ref: '#/components/schemas/ProposalStatus'
+        - name: clientId
+          in: query
+          description: Filter by client UUID
+          schema:
+            type: string
+            format: uuid
+        - name: createdAfter
+          in: query
+          description: Filter by creation date (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+          example: "2026-03-01T00:00:00Z"
+        - name: page
+          in: query
+          description: Page number (zero-based)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Page size
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sort
+          in: query
+          description: Sort field and direction
+          schema:
+            type: string
+            enum: [createdAt,asc, createdAt,desc, status,asc, status,desc]
+            default: "createdAt,desc"
+      responses:
+        '200':
+          description: Paginated list of proposals
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageOfProposals'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/v1/proposals/{proposalId}:
+    get:
+      operationId: getProposal
+      summary: Get proposal details
+      description: |
+        Returns full details of a proposal.
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Proposals]
+      parameters:
+        - $ref: '#/components/parameters/ProposalIdPath'
+      responses:
+        '200':
+          description: Proposal details
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+    put:
+      operationId: updateProposal
+      summary: Update proposal (full replacement)
+      description: |
+        Updates an existing proposal (DRAFT only).
+
+        **Invariant:** Only DRAFT proposals can be updated.
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Proposals]
+      parameters:
+        - $ref: '#/components/parameters/ProposalIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProposalRequest'
+      responses:
+        '200':
+          description: Proposal updated successfully
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+    delete:
+      operationId: deleteProposal
+      summary: Delete proposal
+      description: |
+        Deletes a proposal (DRAFT only).
+
+        **Invariant:** Only DRAFT proposals can be deleted.
+
+        **Rate limit:** 100 req/min (authenticated)
+      tags: [Proposals]
+      parameters:
+        - $ref: '#/components/parameters/ProposalIdPath'
+      responses:
+        '204':
+          description: Proposal deleted successfully (no content)
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+  /api/v1/proposals/{proposalId}/generate-scope-ai:
+    post:
+      operationId: generateScopeAI
+      summary: Generate scope via AI
+      description: |
+        Generates a structured scope (deliverables, pricing, timeline) using AI based on the linked briefing data.
+
+        **Invariants:**
+        - Proposal must have an associated briefing
+        - Proposal must be in DRAFT state
+        - Briefing must be COMPLETED (status)
+        - Briefing completeness must be >= 80%
+
+        **Flow:**
+        1. Validates proposal state and briefing association
+        2. Calls AI service with briefing data (OpenAI via circuit breaker)
+        3. Parses AI response into structured scope
+        4. Updates proposal with generated scope
+        5. Returns updated proposal
+
+        **Timing:**
+        - Synchronous endpoint (blocks until AI responds)
+        - Typical response time: 3-10 seconds
+        - Circuit breaker opens after 50% failures in 10-call window
+        - When open, returns 503 with Retry-After: 30s
+
+        **Rate limit:** 100 req/min (authenticated)
+
+        **Example usage:**
+        ```bash
+        curl -X POST https://api.scopeflow.com/api/v1/proposals/{id}/generate-scope-ai \
+          -H "Authorization: Bearer {token}" \
+          -H "Content-Type: application/json"
+        ```
+      tags: [Proposals]
+      parameters:
+        - $ref: '#/components/parameters/ProposalIdPath'
+      responses:
+        '200':
+          description: Scope generated successfully
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '#/components/headers/X-Rate-Limit-Remaining'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposalResponse'
+              examples:
+                generatedScope:
+                  summary: Proposal with AI-generated scope
+                  value:
+                    id: "9f8c7d6e-5b4a-3210-9876-543210fedcba"
+                    workspaceId: "550e8400-e29b-41d4-a716-446655440000"
+                    clientId: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+                    briefingId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+                    proposalName: "Social Media Campaign Q2 2026"
+                    status: "DRAFT"
+                    scope:
+                      deliverables:
+                        - name: "Instagram Content Strategy"
+                          description: "Monthly content calendar with 12 posts, including captions and hashtags"
+                          acceptanceCriteria: "Approved content calendar delivered by Day 5 of each month"
+                        - name: "Facebook Ad Campaigns"
+                          description: "2 ad campaigns per month (awareness + conversion)"
+                          acceptanceCriteria: "Campaign performance report with CTR >= 2%, CPC <= $1.50"
+                        - name: "Community Management"
+                          description: "Daily monitoring and response to comments/DMs (24h response time)"
+                          acceptanceCriteria: "95% response rate within 24h, documented in monthly report"
+                      price:
+                        amount: 5000
+                        currency: "BRL"
+                      timeline:
+                        startDate: "2026-04-21"
+                        endDate: "2026-05-21"
+                      exclusions:
+                        - "Paid advertising budget (client provides)"
+                        - "Professional photography/videography"
+                        - "Influencer outreach and partnerships"
+                      assumptions:
+                        - "Client provides brand assets (logo, colors, fonts) within 3 days"
+                        - "Client responds to approval requests within 48h"
+                        - "All content aligns with Instagram/Facebook community guidelines"
+                    createdAt: "2026-04-21T10:00:00Z"
+                    updatedAt: "2026-04-21T10:05:23Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Proposal or briefing not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              examples:
+                proposalNotFound:
+                  summary: Proposal not found
+                  value:
+                    type: "https://api.scopeflow.com/errors/proposal-not-found"
+                    title: "Proposal Not Found"
+                    status: 404
+                    detail: "Proposal with ID 9f8c7d6e-5b4a-3210-9876-543210fedcba was not found"
+                    instance: "/api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba/generate-scope-ai"
+                    errorCode: "PROPOSAL-001"
+                    errorId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2026-04-21T10:05:00Z"
+                briefingNotFound:
+                  summary: Briefing not found
+                  value:
+                    type: "https://api.scopeflow.com/errors/briefing-not-found"
+                    title: "Briefing Not Found"
+                    status: 404
+                    detail: "Proposal 9f8c7d6e-5b4a-3210-9876-543210fedcba does not have an associated briefing"
+                    instance: "/api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba/generate-scope-ai"
+                    errorCode: "PROPOSAL-010"
+                    errorId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2026-04-21T10:05:00Z"
+        '409':
+          description: Conflict with current state (business rule violation)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              examples:
+                invalidState:
+                  summary: Proposal not in DRAFT state
+                  value:
+                    type: "https://api.scopeflow.com/errors/invalid-proposal-state"
+                    title: "Invalid Proposal State"
+                    status: 409
+                    detail: "Cannot generate scope for proposal in SENT state. Only DRAFT proposals can be modified."
+                    instance: "/api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba/generate-scope-ai"
+                    errorCode: "PROPOSAL-011"
+                    errorId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2026-04-21T10:05:00Z"
+                briefingIncomplete:
+                  summary: Briefing not completed
+                  value:
+                    type: "https://api.scopeflow.com/errors/briefing-incomplete"
+                    title: "Briefing Incomplete"
+                    status: 409
+                    detail: "Associated briefing (7c9e6679-7425-40de-944b-e07fc1f90ae7) is not COMPLETED. Current status: IN_PROGRESS"
+                    instance: "/api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba/generate-scope-ai"
+                    errorCode: "PROPOSAL-012"
+                    errorId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2026-04-21T10:05:00Z"
+                briefingNotReady:
+                  summary: Briefing completeness too low
+                  value:
+                    type: "https://api.scopeflow.com/errors/briefing-not-ready"
+                    title: "Briefing Not Ready"
+                    status: 409
+                    detail: "Briefing completeness (65%) is below required threshold (80%). Please complete more questions."
+                    instance: "/api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba/generate-scope-ai"
+                    errorCode: "PROPOSAL-013"
+                    errorId: "550e8400-e29b-41d4-a716-446655440000"
+                    timestamp: "2026-04-21T10:05:00Z"
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '503':
+          description: AI service unavailable (circuit breaker open)
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds to wait before retrying
+              example: 30
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: "https://api.scopeflow.com/errors/ai-service-unavailable"
+                title: "AI Service Unavailable"
+                status: 503
+                detail: "AI service is temporarily unavailable. Circuit breaker is open due to repeated failures."
+                instance: "/api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba/generate-scope-ai"
+                errorCode: "PROPOSAL-014"
+                errorId: "550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2026-04-21T10:05:00Z"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token issued by /api/v1/auth/login.
+        Include in Authorization header: `Bearer <token>`
+
+  parameters:
+    ProposalIdPath:
+      name: proposalId
+      in: path
+      required: true
+      description: Proposal UUID
+      schema:
+        type: string
+        format: uuid
+      example: "9f8c7d6e-5b4a-3210-9876-543210fedcba"
+
+  headers:
+    X-Rate-Limit-Remaining:
+      schema:
+        type: integer
+      description: Remaining requests in current rate limit window
+      example: 95
+
+  schemas:
+    # ============ Request DTOs ============
+
+    CreateProposalRequest:
+      type: object
+      required:
+        - clientId
+        - proposalName
+      properties:
+        clientId:
+          type: string
+          format: uuid
+          description: Client UUID (from Clients context)
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        briefingId:
+          type: string
+          format: uuid
+          description: Optional briefing UUID (if linked)
+          nullable: true
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        proposalName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Proposal name
+          example: "Social Media Campaign Q2 2026"
+
+    UpdateProposalRequest:
+      type: object
+      properties:
+        proposalName:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: Proposal name
+          example: "Social Media Campaign Q2 2026 (Updated)"
+        scope:
+          $ref: '#/components/schemas/Scope'
+
+    # ============ Response DTOs ============
+
+    ProposalResponse:
+      type: object
+      required:
+        - id
+        - workspaceId
+        - clientId
+        - proposalName
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "9f8c7d6e-5b4a-3210-9876-543210fedcba"
+        workspaceId:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        clientId:
+          type: string
+          format: uuid
+          example: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+        briefingId:
+          type: string
+          format: uuid
+          description: Linked briefing UUID (null if not linked)
+          nullable: true
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        proposalName:
+          type: string
+          example: "Social Media Campaign Q2 2026"
+        status:
+          $ref: '#/components/schemas/ProposalStatus'
+        scope:
+          $ref: '#/components/schemas/Scope'
+          nullable: true
+          description: Structured scope (null until generated)
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-04-21T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-04-21T10:05:00Z"
+
+    Scope:
+      type: object
+      required:
+        - deliverables
+        - price
+        - timeline
+      properties:
+        deliverables:
+          type: array
+          items:
+            $ref: '#/components/schemas/Deliverable'
+          minItems: 1
+          description: List of deliverables
+        price:
+          $ref: '#/components/schemas/Price'
+        timeline:
+          $ref: '#/components/schemas/Timeline'
+        exclusions:
+          type: array
+          items:
+            type: string
+          description: List of explicit exclusions (out of scope)
+          example:
+            - "Paid advertising budget (client provides)"
+            - "Professional photography/videography"
+        assumptions:
+          type: array
+          items:
+            type: string
+          description: List of assumptions/dependencies
+          example:
+            - "Client provides brand assets within 3 days"
+            - "Client responds to approval requests within 48h"
+
+    Deliverable:
+      type: object
+      required:
+        - name
+        - description
+        - acceptanceCriteria
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: "Instagram Content Strategy"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          example: "Monthly content calendar with 12 posts, including captions and hashtags"
+        acceptanceCriteria:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          example: "Approved content calendar delivered by Day 5 of each month"
+
+    Price:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          example: 5000
+        currency:
+          type: string
+          enum: [BRL, USD, EUR]
+          example: "BRL"
+
+    Timeline:
+      type: object
+      required:
+        - startDate
+        - endDate
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: Proposed start date (ISO 8601)
+          example: "2026-04-21"
+        endDate:
+          type: string
+          format: date
+          description: Proposed end date (ISO 8601)
+          example: "2026-05-21"
+
+    PageOfProposals:
+      type: object
+      required:
+        - content
+        - totalElements
+        - totalPages
+        - size
+        - number
+        - first
+        - last
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProposalResponse'
+        totalElements:
+          type: integer
+          description: Total number of proposals matching filters
+          example: 75
+        totalPages:
+          type: integer
+          description: Total pages with current size
+          example: 4
+        size:
+          type: integer
+          description: Page size (items per page)
+          example: 20
+        number:
+          type: integer
+          description: Current page number (zero-based)
+          example: 0
+        first:
+          type: boolean
+          description: True if this is the first page
+          example: true
+        last:
+          type: boolean
+          description: True if this is the last page
+          example: false
+
+    # ============ Enums ============
+
+    ProposalStatus:
+      type: string
+      enum:
+        - DRAFT
+        - SENT
+        - APPROVED
+        - REJECTED
+      example: "DRAFT"
+
+    # ============ Error Schemas (RFC 9457) ============
+
+    ProblemDetail:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI reference identifying the problem type
+          example: "https://api.scopeflow.com/errors/proposal-not-found"
+        title:
+          type: string
+          description: Short, human-readable summary
+          example: "Proposal Not Found"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 404
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence
+          example: "Proposal with ID 9f8c7d6e-5b4a-3210-9876-543210fedcba was not found"
+        instance:
+          type: string
+          format: uri
+          description: URI reference identifying the specific occurrence
+          example: "/api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba"
+        errorCode:
+          type: string
+          description: Stable error code for automation
+          example: "PROPOSAL-001"
+        errorId:
+          type: string
+          format: uuid
+          description: Unique error ID for support tickets
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+          example: "2026-04-21T10:05:00Z"
+
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - type: object
+          properties:
+            violations:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    example: "proposalName"
+                  message:
+                    type: string
+                    example: "must not be blank"
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblem'
+          examples:
+            emptyName:
+              summary: Empty proposal name
+              value:
+                type: "https://api.scopeflow.com/errors/validation"
+                title: "Validation Failed"
+                status: 400
+                detail: "Request contains invalid fields"
+                instance: "/api/v1/proposals"
+                errorCode: "VALIDATION-400"
+                errorId: "550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2026-04-21T10:05:00Z"
+                violations:
+                  - field: "proposalName"
+                    message: "must not be blank"
+
+    Unauthorized:
+      description: Authentication required or token invalid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: "https://api.scopeflow.com/errors/unauthorized"
+            title: "Unauthorized"
+            status: 401
+            detail: "Authentication required. Provide valid JWT token."
+            instance: "/api/v1/proposals"
+            errorCode: "AUTH-401"
+            errorId: "550e8400-e29b-41d4-a716-446655440000"
+            timestamp: "2026-04-21T10:05:00Z"
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: "https://api.scopeflow.com/errors/proposal-not-found"
+            title: "Proposal Not Found"
+            status: 404
+            detail: "Proposal with ID 9f8c7d6e-5b4a-3210-9876-543210fedcba was not found"
+            instance: "/api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba"
+            errorCode: "PROPOSAL-001"
+            errorId: "550e8400-e29b-41d4-a716-446655440000"
+            timestamp: "2026-04-21T10:05:00Z"
+
+    ConflictError:
+      description: Conflict with current state (business rule violation)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          examples:
+            invalidState:
+              summary: Proposal not in DRAFT state
+              value:
+                type: "https://api.scopeflow.com/errors/invalid-proposal-state"
+                title: "Invalid Proposal State"
+                status: 409
+                detail: "Cannot modify proposal in SENT state. Only DRAFT proposals can be modified."
+                instance: "/api/v1/proposals/9f8c7d6e-5b4a-3210-9876-543210fedcba"
+                errorCode: "PROPOSAL-011"
+                errorId: "550e8400-e29b-41d4-a716-446655440000"
+                timestamp: "2026-04-21T10:05:00Z"
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetail'
+          example:
+            type: "https://api.scopeflow.com/errors/rate-limit-exceeded"
+            title: "Rate Limit Exceeded"
+            status: 429
+            detail: "Rate limit of 100 requests/minute exceeded. Try again in 45 seconds."
+            instance: "/api/v1/proposals"
+            errorCode: "RATE-429"
+            errorId: "550e8400-e29b-41d4-a716-446655440000"
+            timestamp: "2026-04-21T10:05:00Z"
