@@ -393,6 +393,176 @@ class UserServiceContractTest {
         // assertThat(monolithResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
+    // ============ Circuit Breaker & Resilience Tests ============
+
+    @Test
+    void shouldReturn503WithRetryAfter_whenCircuitBreakerIsOpen() {
+        // Given: circuit breaker is open (simulated by stub)
+        var loginRequest = new com.scopeflow.adapter.in.web.auth.dto.LoginRequest(
+                "test@example.com",
+                "ValidPassword123!"
+        );
+
+        // When: calling endpoint with circuit breaker open
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                STUB_BASE_URL + "/auth/login",
+                loginRequest,
+                String.class
+        );
+
+        // Then: 503 Service Unavailable with Retry-After header
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+        assertThat(response.getHeaders().getContentType()).isEqualTo(MediaType.APPLICATION_PROBLEM_JSON);
+        assertThat(response.getHeaders().getFirst("Retry-After")).isNotNull();
+        assertThat(response.getHeaders().getFirst("Retry-After")).matches("\\d+");
+
+        String body = response.getBody();
+        assertThat(body).contains("\"error_code\":\"USER-012\"");
+        assertThat(body).contains("\"status\":503");
+        assertThat(body).contains("Circuit breaker");
+    }
+
+    @Test
+    void shouldReturn401_whenRefreshTokenIsExpired() {
+        // Given: expired refresh token in cookie
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Cookie", "refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6MTAwMDAwMDAwMH0.expired");
+
+        // When: attempting refresh
+        ResponseEntity<String> response = restTemplate.exchange(
+                STUB_BASE_URL + "/auth/refresh",
+                HttpMethod.POST,
+                new HttpEntity<>(headers),
+                String.class
+        );
+
+        // Then: 401 Unauthorized
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).contains("\"error_code\":\"AUTH-401\"");
+        assertThat(response.getBody()).contains("expirado");
+    }
+
+    @Test
+    void shouldReturn204_whenLogoutIsCalledMultipleTimes_idempotency() {
+        // Given: logout called once
+        ResponseEntity<Void> firstLogout = restTemplate.postForEntity(
+                STUB_BASE_URL + "/auth/logout",
+                null,
+                Void.class
+        );
+        assertThat(firstLogout.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        // When: logout called again
+        ResponseEntity<Void> secondLogout = restTemplate.postForEntity(
+                STUB_BASE_URL + "/auth/logout",
+                null,
+                Void.class
+        );
+
+        // Then: still 204 (idempotent)
+        assertThat(secondLogout.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    // ============ Block User Tests ============
+
+    @Test
+    void shouldBlockUser_whenAdminRole() {
+        // Given: valid admin JWT
+        String adminToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDEiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.admin";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken.replace("Bearer ", ""));
+
+        // When: blocking user
+        ResponseEntity<Void> response = restTemplate.exchange(
+                STUB_BASE_URL + "/users/550e8400-e29b-41d4-a716-446655440000/block",
+                HttpMethod.POST,
+                new HttpEntity<>(headers),
+                Void.class
+        );
+
+        // Then: 204 No Content
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    void shouldReturn404_whenBlockingNonExistentUser() {
+        // Given: valid admin JWT
+        String adminToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDEiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.admin";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken.replace("Bearer ", ""));
+
+        // When: blocking non-existent user
+        ResponseEntity<String> response = restTemplate.exchange(
+                STUB_BASE_URL + "/users/999e8400-e29b-41d4-a716-446655440999/block",
+                HttpMethod.POST,
+                new HttpEntity<>(headers),
+                String.class
+        );
+
+        // Then: 404 Not Found
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).contains("\"error_code\":\"USER-010\"");
+        assertThat(response.getBody()).contains("\"status\":404");
+    }
+
+    @Test
+    void shouldReturn403_whenBlockingUserWithoutAdminRole() {
+        // Given: JWT with MEMBER role
+        String memberToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDEiLCJyb2xlIjoiTUVNQkVSIiwiaWF0IjoxNjQyNTAwMDAwLCJleHAiOjk5OTk5OTk5OTl9.member";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(memberToken.replace("Bearer ", ""));
+
+        // When: attempting to block user
+        ResponseEntity<String> response = restTemplate.exchange(
+                STUB_BASE_URL + "/users/550e8400-e29b-41d4-a716-446655440000/block",
+                HttpMethod.POST,
+                new HttpEntity<>(headers),
+                String.class
+        );
+
+        // Then: 403 Forbidden
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).contains("\"error_code\":\"AUTH-403\"");
+        assertThat(response.getBody()).contains("\"status\":403");
+        assertThat(response.getBody()).contains("Insufficient permissions");
+    }
+
+    // ============ Workspace Isolation Tests ============
+
+    @Test
+    void shouldReturn403_whenInvitingFromDifferentWorkspace() {
+        // Given: JWT from workspace B
+        String workspaceBToken = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3NzBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDIiLCJ3b3Jrc3BhY2VJZCI6IndvcmtzcGFjZS1CIiwiaWF0IjoxNjQyNTAwMDAwLCJleHAiOjk5OTk5OTk5OTl9.workspace-b";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(workspaceBToken.replace("Bearer ", ""));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // Trying to invite using inviter from workspace A
+        CreateInvitedUserRequest request = new CreateInvitedUserRequest(
+                "newmember@example.com",
+                Role.MEMBER,
+                UUID.fromString("550e8400-e29b-41d4-a716-446655440000") // inviter from workspace A
+        );
+
+        // When: creating invited user cross-workspace
+        ResponseEntity<String> response = restTemplate.exchange(
+                STUB_BASE_URL + "/users/invited",
+                HttpMethod.POST,
+                new HttpEntity<>(request, headers),
+                String.class
+        );
+
+        // Then: 403 Forbidden
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).contains("\"error_code\":\"AUTH-403\"");
+        assertThat(response.getBody()).contains("\"status\":403");
+        assertThat(response.getBody()).contains("different workspace");
+    }
+
     // ============ Helper methods ============
 
     private String loginAndGetToken() {
