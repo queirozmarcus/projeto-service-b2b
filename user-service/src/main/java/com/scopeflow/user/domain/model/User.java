@@ -10,11 +10,12 @@ import java.util.UUID;
  * States:
  * - UserActive: can login, active session
  * - UserInactive: invited but not confirmed email
+ * - UserBlocked: blocked by admin, cannot login
  * - UserDeleted: soft-deleted (GDPR compliance)
  *
  * No framework dependencies. Pure domain logic.
  */
-public abstract sealed class User permits UserActive, UserInactive, UserDeleted {
+public abstract sealed class User permits UserActive, UserInactive, UserBlocked, UserDeleted {
     private final UserId id;
     private final Email email;
     private final PasswordHash passwordHash;

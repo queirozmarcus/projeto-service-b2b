@@ -1,0 +1,7 @@
+description: Logout is idempotent - calling twice returns 204
+name: shouldReturn204OnLogoutWhenAlreadyLoggedOut
+request:
+  method: POST
+  url: /api/v1/auth/logout
+response:
+  status: 204

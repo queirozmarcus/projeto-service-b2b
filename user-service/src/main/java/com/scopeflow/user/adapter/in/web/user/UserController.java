@@ -3,6 +3,7 @@ package com.scopeflow.user.adapter.in.web.user;
 import com.scopeflow.user.adapter.in.web.user.dto.CreateInvitedUserRequest;
 import com.scopeflow.user.adapter.in.web.user.dto.UserProfileResponse;
 import com.scopeflow.user.application.service.UserService;
+import com.scopeflow.user.application.usecase.BlockUserByIdUseCase;
 import com.scopeflow.user.application.usecase.InviteUserUseCase;
 import com.scopeflow.user.domain.exception.InvalidInvitedByUserException;
 import com.scopeflow.user.domain.exception.InvalidRoleException;
@@ -14,7 +15,10 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 /**
  * User management endpoints.
@@ -34,10 +38,16 @@ public class UserController {
 
     private final UserService userService;
     private final InviteUserUseCase inviteUserUseCase;
+    private final BlockUserByIdUseCase blockUserByIdUseCase;
 
-    public UserController(UserService userService, InviteUserUseCase inviteUserUseCase) {
+    public UserController(
+            UserService userService,
+            InviteUserUseCase inviteUserUseCase,
+            BlockUserByIdUseCase blockUserByIdUseCase
+    ) {
         this.userService = userService;
         this.inviteUserUseCase = inviteUserUseCase;
+        this.blockUserByIdUseCase = blockUserByIdUseCase;
     }
 
     @GetMapping("/by-email")
@@ -71,5 +81,16 @@ public class UserController {
                 invitedUser.getId().value(), email.normalized(), request.invitedByUserId(), request.role());
 
         return UserProfileResponse.from(invitedUser);
+    }
+
+    @PostMapping("/{id}/block")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Block user by ID (admin only)")
+    public void blockUser(@PathVariable UUID id) {
+        UserId userId = new UserId(id);
+        blockUserByIdUseCase.execute(userId);
+
+        log.info("User blocked: userId={}", id);
     }
 }

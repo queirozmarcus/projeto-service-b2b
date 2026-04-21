@@ -1,0 +1,10 @@
+description: Block user successfully with valid admin JWT
+name: shouldBlockUserSuccessfully
+request:
+  method: POST
+  url: /api/v1/users/550e8400-e29b-41d4-a716-446655440000/block
+  headers:
+    Content-Type: application/json
+    Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NjBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDEiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6OTk5OTk5OTk5OX0.admin"
+response:
+  status: 204

@@ -1,0 +1,31 @@
+description: Refresh fails when refresh token is expired
+name: shouldReturn401OnExpiredRefreshToken
+request:
+  method: POST
+  url: /api/v1/auth/refresh
+  headers:
+    Cookie: "refreshToken=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJpYXQiOjE2NDI1MDAwMDAsImV4cCI6MTAwMDAwMDAwMH0.expired"
+response:
+  status: 401
+  headers:
+    Content-Type: application/problem+json
+  body:
+    type: "https://api.scopeflow.com/errors/invalid-credentials"
+    title: "Invalid Credentials"
+    status: 401
+    detail: "Refresh token invalido ou expirado. Faca login novamente."
+    error_code: "AUTH-401"
+    error_id: "550e8400-e29b-41d4-a716-446655440000"
+    timestamp: "2025-01-15T10:30:00Z"
+  matchers:
+    body:
+      - path: $.error_code
+        type: by_equality
+      - path: $.status
+        type: by_equality
+      - path: $.error_id
+        type: by_regex
+        value: "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
+      - path: $.timestamp
+        type: by_regex
+        value: "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})"
