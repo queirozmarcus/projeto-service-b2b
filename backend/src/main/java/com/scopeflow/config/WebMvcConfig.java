@@ -23,7 +23,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         if (rateLimitEnabled) {
             registry.addInterceptor(new RateLimitInterceptor())
-                    .addPathPatterns("/auth/**");
+                    .addPathPatterns("/api/v1/auth/**");
         }
     }
 }

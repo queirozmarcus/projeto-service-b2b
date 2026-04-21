@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
  * All auth requests are proxied to user-service via AuthProxyAdapter (circuit breaker + retry).
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 @Tag(name = "Authentication", description = "User registration, login, and token management")
 public class AuthControllerV2 {
 

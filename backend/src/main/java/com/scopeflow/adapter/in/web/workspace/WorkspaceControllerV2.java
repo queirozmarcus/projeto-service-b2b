@@ -36,7 +36,7 @@ import java.util.UUID;
  * ServiceUnavailableException é lançada e o GlobalExceptionHandler retorna 503.
  */
 @RestController
-@RequestMapping("/workspaces")
+@RequestMapping("/api/v1/workspaces")
 @Tag(name = "Workspaces", description = "Workspace and member management")
 public class WorkspaceControllerV2 {
 

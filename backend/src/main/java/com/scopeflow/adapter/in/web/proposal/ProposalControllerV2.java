@@ -23,7 +23,7 @@ import java.util.UUID;
  * Workspace isolation enforced via JWT workspace_id claim.
  */
 @RestController
-@RequestMapping("/proposals")
+@RequestMapping("/api/v1/proposals")
 @Tag(name = "Proposals", description = "Proposal lifecycle management")
 public class ProposalControllerV2 {
 

@@ -22,7 +22,7 @@ import java.util.UUID;
  * Token-based access (proposal ID acts as public identifier).
  */
 @RestController
-@RequestMapping("/proposals")
+@RequestMapping("/api/v1/proposals")
 @Tag(name = "Approvals", description = "Client-facing proposal approval (public)")
 public class ApprovalControllerV2 {
 
