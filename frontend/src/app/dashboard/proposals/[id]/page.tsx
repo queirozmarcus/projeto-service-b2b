@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeftIcon, TrashIcon } from '@heroicons/react/20/solid';
@@ -62,9 +62,9 @@ function DetailCard({ label, children }: DetailCardProps) {
 export default function ProposalDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = params;
+  const { id } = use(params);
   const router = useRouter();
 
   const updateProposal = useDashboardStore((s) => s.updateProposal);
@@ -355,43 +355,54 @@ export default function ProposalDetailPage({
             </p>
           )}
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Publish */}
-            <button
-              onClick={handlePublish}
-              disabled={isPublishing || isDeleting}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary-500 px-5 py-2.5 text-sm font-semibold text-ink-900 shadow-sm transition-colors hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isPublishing ? 'Publicando…' : 'Publicar Proposta'}
-            </button>
-
-            {/* Delete — two-step confirm */}
-            {!confirmDelete ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Publish */}
               <button
-                onClick={() => setConfirmDelete(true)}
-                disabled={isPublishing || isDeleting}
-                className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 shadow-sm transition-all hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={handlePublish}
+                disabled={isPublishing || isDeleting || !proposal.scope}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary-500 px-5 py-2.5 text-sm font-semibold text-ink-900 shadow-sm transition-colors hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <TrashIcon className="h-4 w-4" />
-                Deletar
+                {isPublishing ? 'Publicando…' : 'Publicar Proposta'}
               </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-secondary-600">Confirmar exclusão?</span>
+
+              {/* Delete — two-step confirm */}
+              {!confirmDelete ? (
                 <button
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={isPublishing || isDeleting}
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 shadow-sm transition-all hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {isDeleting ? 'Deletando…' : 'Sim, deletar'}
+                  <TrashIcon className="h-4 w-4" />
+                  Deletar
                 </button>
-                <button
-                  onClick={() => setConfirmDelete(false)}
-                  disabled={isDeleting}
-                  className="rounded-xl border border-secondary-200 px-4 py-2 text-sm font-medium text-secondary-600 transition-all hover:bg-secondary-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-secondary-600">Confirmar exclusão?</span>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isDeleting ? 'Deletando…' : 'Sim, deletar'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={isDeleting}
+                    className="rounded-xl border border-secondary-200 px-4 py-2 text-sm font-medium text-secondary-600 transition-all hover:bg-secondary-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Help text when scope is missing */}
+            {!proposal.scope && (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+                <p className="text-sm text-amber-800">
+                  <span className="font-semibold">Para publicar esta proposta:</span> defina o escopo com entregáveis, preço e prazo através do endpoint <code className="font-mono text-xs bg-amber-100 px-1.5 py-0.5 rounded">POST /proposals/{proposal.id}/update-scope</code>
+                </p>
               </div>
             )}
           </div>
