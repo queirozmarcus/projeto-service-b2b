@@ -61,7 +61,10 @@ public class SecurityConfig {
                     }
                 })
                 .authorizeHttpRequests(auth -> auth
-                        // Public auth endpoints (with and without /api/v1 prefix for test compatibility)
+                        // Public auth endpoints.
+                        // O controller usa @RequestMapping("/api/v1/auth") — sem context-path, o path completo é /api/v1/auth/*.
+                        // A regra sem prefixo (/auth/*) é mantida como fallback para testes @WebMvcTest
+                        // que chamam o path do controller diretamente sem o prefixo /api/v1.
                         .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
                         // Health and observability

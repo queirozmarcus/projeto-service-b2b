@@ -63,9 +63,11 @@ spring:
 server:
   port: ${SERVER_PORT:8081}
   shutdown: ${SERVER_SHUTDOWN:graceful}
-  servlet:
-    # MUST match monolith context-path for Traefik routing parity
-    context-path: /api/v1
+  # Sem context-path: o controller já inclui /api/v1 no @RequestMapping.
+  # O monólito usa context-path=/api/v1 porque seus controllers mapeiam /auth (sem prefixo).
+  # Aqui o controller é @RequestMapping("/api/v1/auth") — adicionar context-path criaria double prefix:
+  #   request: /api/v1/auth/register → strip context → /auth/register → no match ❌
+  # context-path: /api/v1  ← REMOVIDO
   compression:
     enabled: true
     mime-types: application/json,application/xml,text/html,text/xml,text/plain
