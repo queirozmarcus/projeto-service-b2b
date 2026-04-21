@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  * Auth controller: registration, login, token refresh, profile.
  *
- * Path: /api/v1/auth
+ * Path: /auth (context-path /api/v1 is configured in application.yml)
  * Public endpoints: register, login, refresh
  * Protected: /me, /logout
  *
@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
  * All auth requests are proxied to user-service via AuthProxyAdapter (circuit breaker + retry).
  */
 @RestController
-@RequestMapping("/api/v1/auth")
+@RequestMapping("/auth")
 @Tag(name = "Authentication", description = "User registration, login, and token management")
 public class AuthControllerV2 {
 

@@ -19,6 +19,8 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
   ]);
 }
 
+console.log('[DEBUG] axios baseURL:', env.apiUrl);
+
 const api = axios.create({
   baseURL: env.apiUrl,
   withCredentials: true, // Envia httpOnly cookie de refresh

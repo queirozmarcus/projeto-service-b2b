@@ -5,9 +5,11 @@
  */
 
 const getEnv = () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+  console.log('[DEBUG] env.apiUrl:', apiUrl, '| NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
   return {
     // Public API endpoint
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1',
+    apiUrl,
     nodeEnv: process.env.NODE_ENV || 'development',
   };
 };

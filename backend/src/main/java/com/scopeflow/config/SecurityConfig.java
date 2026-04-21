@@ -64,8 +64,9 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(auth -> auth
                         // Public auth endpoints
+                        // Note: context-path /api/v1 is removed by Spring before SecurityConfig sees the path
                         // /auth/logout é público: o cookie identifica o usuário; não requer token de acesso
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout").permitAll()
                         // Health and observability
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/health/**").permitAll()
@@ -73,10 +74,9 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         // Client-facing briefing endpoints (public token access)
                         .requestMatchers("/public/briefings/**").permitAll()
-                        .requestMatchers("/api/v1/public/briefings/**").permitAll()
                         // Client-facing approval endpoints (token-based)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/proposals/*/approve").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/proposals/*/approve").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/proposals/*/approve").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/proposals/*/approve").permitAll()
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
