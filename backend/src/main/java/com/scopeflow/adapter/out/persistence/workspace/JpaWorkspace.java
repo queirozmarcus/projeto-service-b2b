@@ -1,6 +1,8 @@
 package com.scopeflow.adapter.out.persistence.workspace;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -32,6 +34,7 @@ public class JpaWorkspace {
     @Column(name = "niche", nullable = false, length = 100)
     private String niche;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tone_settings", columnDefinition = "jsonb")
     private String toneSettings;
 

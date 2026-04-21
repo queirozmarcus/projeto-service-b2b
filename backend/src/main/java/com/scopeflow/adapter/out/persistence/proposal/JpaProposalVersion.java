@@ -1,6 +1,8 @@
 package com.scopeflow.adapter.out.persistence.proposal;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -29,6 +31,7 @@ public class JpaProposalVersion {
     @Column(name = "proposal_id", nullable = false, updatable = false)
     private UUID proposalId;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "scope_json", nullable = false, columnDefinition = "jsonb", updatable = false)
     private String scopeJson;
 

@@ -1,7 +1,9 @@
 package com.scopeflow.adapter.out.persistence.proposal;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -51,6 +53,7 @@ public class JpaProposal {
     private String status;
 
     // Scope stored as JSONB snapshot in current state
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "scope_json", columnDefinition = "jsonb")
     private String scopeJson;
 

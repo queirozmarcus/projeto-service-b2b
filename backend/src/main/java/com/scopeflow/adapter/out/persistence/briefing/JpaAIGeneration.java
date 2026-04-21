@@ -1,6 +1,8 @@
 package com.scopeflow.adapter.out.persistence.briefing;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
@@ -34,9 +36,11 @@ public class JpaAIGeneration {
     @Column(name = "generation_type", nullable = false, length = 50)
     private String generationType;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "input_json", nullable = false, columnDefinition = "jsonb")
     private String inputJson;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "output_json", nullable = false, columnDefinition = "jsonb")
     private String outputJson;
 

@@ -1,6 +1,8 @@
 package com.scopeflow.adapter.out.persistence.briefing;
 
 import jakarta.persistence.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -49,6 +51,7 @@ public class JpaBriefingSession {
     @Column(name = "completion_score")
     private Integer completionScore;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "ai_analysis", columnDefinition = "jsonb")
     private String aiAnalysis;
 

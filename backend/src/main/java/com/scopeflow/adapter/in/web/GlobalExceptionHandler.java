@@ -3,6 +3,7 @@ package com.scopeflow.adapter.in.web;
 import com.scopeflow.core.domain.briefing.*;
 import com.scopeflow.core.domain.common.InvalidValueObjectException;
 import com.scopeflow.core.domain.proposal.*;
+import com.scopeflow.core.domain.shared.WorkspaceRequiredException;
 import com.scopeflow.core.domain.user.*;
 import com.scopeflow.core.domain.workspace.*;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
@@ -621,6 +622,34 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     // ============ Security Exceptions ============
+
+    /**
+     * Handle workspace required (WORKSPACE-001).
+     *
+     * Thrown when authenticated user attempts multi-tenant operation without workspace_id in JWT.
+     * Occurs when user registered via user-service (JWT with workspace_id=null by design).
+     * User must complete workspace setup wizard before accessing multi-tenant endpoints.
+     *
+     * Maps to HTTP 412 Precondition Failed (RFC 9457).
+     * Distinct from 401 (auth valid) and 403 (authz valid, but forbidden).
+     */
+    @ExceptionHandler(WorkspaceRequiredException.class)
+    public ResponseEntity<ProblemDetail> handleWorkspaceRequired(
+            WorkspaceRequiredException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.PRECONDITION_FAILED);
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "workspace-required"));
+        problemDetail.setTitle("Workspace Required");
+        problemDetail.setDetail(ex.getMessage());
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        problemDetail.setProperty("setupUrl", "/setup/workspace");
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        return ResponseEntity
+                .status(HttpStatus.PRECONDITION_FAILED)
+                .body(problemDetail);
+    }
 
     /**
      * Handle missing JWT claims (e.g., workspace_id absent in user-service tokens).

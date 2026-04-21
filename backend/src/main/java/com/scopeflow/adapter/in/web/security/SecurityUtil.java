@@ -1,6 +1,7 @@
 package com.scopeflow.adapter.in.web.security;
 
 import com.scopeflow.config.ScopeFlowPrincipal;
+import com.scopeflow.core.domain.shared.WorkspaceRequiredException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -39,13 +40,25 @@ public class SecurityUtil {
 
     /**
      * Extract workspaceId from authenticated JWT.
+     *
+     * @throws WorkspaceRequiredException if workspace_id is null (maps to HTTP 412)
      */
     public static UUID getWorkspaceId() {
         UUID workspaceId = currentPrincipal().workspaceId();
         if (workspaceId == null) {
-            throw new SecurityException("No workspace_id in token claims");
+            throw new WorkspaceRequiredException();
         }
         return workspaceId;
+    }
+
+    /**
+     * Validate that current JWT has a workspace_id.
+     * Convenience method for controllers to enforce workspace requirement early.
+     *
+     * @throws WorkspaceRequiredException if workspace_id is null
+     */
+    public static void requireWorkspace() {
+        getWorkspaceId(); // Will throw if null
     }
 
     /**
