@@ -1,22 +1,20 @@
 package com.scopeflow.core.domain.user;
 
+import java.util.UUID;
+
 /**
- * Domain exception: User not found.
- * Error code: USER-010
+ * Exception for user not found scenarios.
+ * Post-migration: handled by GlobalExceptionHandler for legacy compatibility.
  */
 public class UserNotFoundException extends RuntimeException {
-    private static final String ERROR_CODE = "USER-010";
+    private static final String ERROR_CODE = "USER-004";
 
-    public UserNotFoundException(String message) {
-        super(message);
+    public UserNotFoundException(UUID userId) {
+        super(String.format("User not found: %s", userId));
     }
 
-    public UserNotFoundException(UserId userId) {
-        super("User not found: " + userId.value());
-    }
-
-    public UserNotFoundException(Email email) {
-        super("User not found with email: " + email.normalized());
+    public UserNotFoundException(String email) {
+        super(String.format("User not found: %s", email));
     }
 
     public String getErrorCode() {

@@ -1,31 +1,13 @@
 package com.scopeflow.core.domain.user;
 
-import java.time.Instant;
-
 /**
- * Active user state: can login, authenticated, fully registered.
+ * Marker class representing ACTIVE user status.
+ * Used by WorkspaceControllerV2 for status mapping from user-service responses.
  */
-public final class UserActive extends User {
-
-    public UserActive(
-            UserId id,
-            Email email,
-            PasswordHash passwordHash,
-            String fullName,
-            String phone,
-            Instant createdAt,
-            Instant updatedAt
-    ) {
-        super(id, email, passwordHash, fullName, phone, createdAt, updatedAt);
+public final class UserActive {
+    private UserActive() {
+        throw new UnsupportedOperationException("Marker class — do not instantiate");
     }
 
-    @Override
-    public String status() {
-        return "ACTIVE";
-    }
-
-    @Override
-    public boolean canLogin() {
-        return true;
-    }
+    public static final String STATUS = "ACTIVE";
 }

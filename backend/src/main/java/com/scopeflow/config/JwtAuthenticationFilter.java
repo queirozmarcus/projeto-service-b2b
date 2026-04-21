@@ -25,8 +25,8 @@ import java.util.UUID;
  * Sets UsernamePasswordAuthenticationToken with ScopeFlowPrincipal as principal,
  * enabling SecurityUtil to extract userId and workspaceId from any authenticated request.
  *
- * Hexagonal: injects UserRepository port (via UserStatusCacheService), not JPA directly.
- * Performance: user status is cached (TTL 5min) to avoid N+1 DB queries per request.
+ * Post-migration: user-service is the single source of truth for user data.
+ * JWT validation is sufficient — no local DB lookup needed.
  */
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -34,11 +34,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
-    private final UserStatusCacheService userStatusCacheService;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserStatusCacheService userStatusCacheService) {
+    public JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
-        this.userStatusCacheService = userStatusCacheService;
     }
 
     @Override
@@ -72,22 +70,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             UUID workspaceId = workspaceIdStr != null ? UUID.fromString(workspaceIdStr) : null;
 
-            // Verify user still exists and is active.
-            // UserStatusCacheService uses UserRepository (domain port) — not JPA directly.
-            // Cache TTL: 5min (configured in application.properties via Caffeine spec).
-            //
-            // null status means user is not in the local monolith DB — they are managed
-            // exclusively by the user-service (Strangler Fig). Trust the JWT in this case.
-            // Only reject if we explicitly know the status is INACTIVE or DELETED.
-            String status = userStatusCacheService.getUserStatus(userId);
-            if (status != null && !"ACTIVE".equals(status)) {
-                log.debug("Rejecting token for userId={}: status={}", userId, status);
-                filterChain.doFilter(request, response);
-                return;
-            }
-            if (status == null) {
-                log.debug("User userId={} not found in local DB — trusting JWT (user-service managed)", userId);
-            }
+            // Post-migration: user-service is the single source of truth.
+            // Valid JWT = user is active. No local DB lookup needed.
+            log.debug("Authenticated userId={} via JWT (user-service)", userId);
 
             ScopeFlowPrincipal principal = new ScopeFlowPrincipal(userId, email, workspaceId, role);
             List<SimpleGrantedAuthority> authorities = role != null

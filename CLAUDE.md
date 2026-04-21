@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **ScopeFlow AI** — AI-powered SaaS platform for B2B service providers (freelancers, microagencies) to transform client conversations into clear, approved scopes through structured AI-assisted discovery.
 
-**Current Status (2026-04-20):**
+**Current Status (2026-04-21):**
 - Backend monolith: ~85% — todos os domínios implementados, circuit breakers ativos, purge jobs
-- User Service: 100% extraído via Strangler Fig — DB-per-service consolidado e validado ✅
+- User Service: 100% extraído + decommission concluído ✅
 - Frontend: ~70% — dashboard, proposals e briefings integrados com API real
-- Tests: ✅ 126 testes passando (50 backend + 76 user-service), 0 failures
+- Tests: ✅ 247 testes passando no monólito, 76 no user-service, 0 failures
 - QA System: ✅ Scripts de validação automatizada implementados e documentados
 - Docker Stack: ✅ 7/7 serviços operacionais — health check funcional
 - Ambiente: ✅ Pronto para desenvolvimento (DB-per-service isolado, Traefik routing OK)
@@ -28,7 +28,8 @@ backend/src/main/java/com/scopeflow/
 ├── core/domain/              # Pure domain logic (zero Spring dependencies)
 │   ├── briefing/             # Briefing aggregate (sealed classes, question flow)
 │   ├── workspace/            # Workspace aggregate
-│   ├── user/                 # User domain (ServiceUnavailableException USER-012)
+│   ├── shared/               # Shared value objects (UserId, Email, PasswordHash)
+│   ├── user/                 # ServiceUnavailableException USER-012 (decommissioned)
 │   └── client/               # Client aggregate
 ├── application/              # Application services (orchestration)
 │   ├── port/out/             # Output ports (interfaces)
@@ -246,7 +247,7 @@ cd backend && ./mvnw jacoco:report
 | Item | Severidade | Contexto |
 |------|-----------|---------|
 | Circuit breaker OpenAI / S3 | Baixa | `ITextPdfServiceAdapter` tem TODOs completos com config sugerida; aguarda Phase 4 (adapters não existem) |
-| User service cut-over em produção | Alta | Plano em `.claude/plans/backlog/2026-04-12-migration-fase3-cutover-producao.md` |
+| Migration V11 em produção | Média | Decommission concluído, DROP aguardando cut-over — ver `docs/migration/V11-MIGRATION-SUMMARY.md` |
 | Extração Workspace context | Backlog | Próximo bounded context — após user-service estável em prod |
 
 ---

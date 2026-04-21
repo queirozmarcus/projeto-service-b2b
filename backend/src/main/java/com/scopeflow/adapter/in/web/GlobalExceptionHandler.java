@@ -227,41 +227,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
     }
 
-    /**
-     * Handle invalid invited by user (USER-012).
-     */
-    @ExceptionHandler(InvalidInvitedByUserException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidInvitedByUser(
-            InvalidInvitedByUserException ex,
-            WebRequest request
-    ) {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-invited-by-user"));
-        problemDetail.setTitle("Invalid Invited By User");
-        problemDetail.setDetail(ex.getMessage());
-        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
-        addCustomProperties(problemDetail, ex.getErrorCode());
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
-    }
-
-    /**
-     * Handle invalid role (USER-013).
-     */
-    @ExceptionHandler(InvalidRoleException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidRole(
-            InvalidRoleException ex,
-            WebRequest request
-    ) {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
-        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "invalid-role"));
-        problemDetail.setTitle("Invalid Role");
-        problemDetail.setDetail(ex.getMessage());
-        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
-        addCustomProperties(problemDetail, ex.getErrorCode());
-
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
-    }
 
     // ============ Proposal Domain Exceptions ============
 

@@ -1,6 +1,6 @@
 package com.scopeflow.core.domain.workspace;
 
-import com.scopeflow.core.domain.user.UserId;
+import com.scopeflow.core.domain.shared.UserId;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;

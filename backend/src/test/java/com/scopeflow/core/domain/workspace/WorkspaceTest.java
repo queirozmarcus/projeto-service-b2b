@@ -1,6 +1,6 @@
 package com.scopeflow.core.domain.workspace;
 
-import com.scopeflow.core.domain.user.UserId;
+import com.scopeflow.core.domain.shared.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

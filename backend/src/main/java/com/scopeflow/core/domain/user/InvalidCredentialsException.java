@@ -1,11 +1,11 @@
 package com.scopeflow.core.domain.user;
 
 /**
- * Thrown when login credentials are invalid.
+ * Exception for authentication failures.
+ * Post-migration: handled by GlobalExceptionHandler for legacy compatibility.
  */
 public class InvalidCredentialsException extends RuntimeException {
-
-    private static final String ERROR_CODE = "AUTH-401";
+    private static final String ERROR_CODE = "USER-002";
 
     public InvalidCredentialsException(String message) {
         super(message);

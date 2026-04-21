@@ -3,7 +3,7 @@ package com.scopeflow.adapter.out.persistence;
 import com.scopeflow.adapter.out.persistence.workspace.JpaWorkspaceMember;
 import com.scopeflow.adapter.out.persistence.workspace.JpaWorkspaceMemberRepositoryAdapter;
 import com.scopeflow.adapter.out.persistence.workspace.JpaWorkspaceMemberSpringRepository;
-import com.scopeflow.core.domain.user.UserId;
+import com.scopeflow.core.domain.shared.UserId;
 import com.scopeflow.core.domain.workspace.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

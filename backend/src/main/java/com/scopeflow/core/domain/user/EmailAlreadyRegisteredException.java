@@ -1,18 +1,14 @@
 package com.scopeflow.core.domain.user;
 
 /**
- * Domain exception: Email already registered (invariant violation).
- * Indicates user tried to register with email that already exists.
+ * Exception for email uniqueness violations.
+ * Post-migration: handled by GlobalExceptionHandler for legacy compatibility.
  */
 public class EmailAlreadyRegisteredException extends RuntimeException {
     private static final String ERROR_CODE = "USER-001";
 
-    public EmailAlreadyRegisteredException(String message) {
-        super(message);
-    }
-
-    public EmailAlreadyRegisteredException(String message, Throwable cause) {
-        super(message, cause);
+    public EmailAlreadyRegisteredException(String email) {
+        super(String.format("Email '%s' is already registered", email));
     }
 
     public String getErrorCode() {

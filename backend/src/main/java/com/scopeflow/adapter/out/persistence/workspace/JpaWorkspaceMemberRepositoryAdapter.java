@@ -1,6 +1,6 @@
 package com.scopeflow.adapter.out.persistence.workspace;
 
-import com.scopeflow.core.domain.user.UserId;
+import com.scopeflow.core.domain.shared.UserId;
 import com.scopeflow.core.domain.workspace.*;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

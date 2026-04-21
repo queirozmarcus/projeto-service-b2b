@@ -1,4 +1,4 @@
-package com.scopeflow.core.domain.user;
+package com.scopeflow.core.domain.shared;
 
 import com.scopeflow.core.domain.common.InvalidValueObjectException;
 import java.util.Objects;

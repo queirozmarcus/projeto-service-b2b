@@ -1,18 +1,14 @@
 package com.scopeflow.core.domain.user;
 
 /**
- * Domain exception: Email already exists.
- * Error code: USER-011
+ * Exception thrown when attempting to create a user with an email that already exists.
+ * Used by UserServiceRestAdapter when user-service returns 409 Conflict.
  */
 public class DuplicateEmailException extends RuntimeException {
-    private static final String ERROR_CODE = "USER-011";
+    private static final String ERROR_CODE = "USER-003";
 
-    public DuplicateEmailException(String message) {
-        super(message);
-    }
-
-    public DuplicateEmailException(Email email) {
-        super("Email already exists: " + email.normalized());
+    public DuplicateEmailException(String email) {
+        super(String.format("User with email '%s' already exists", email));
     }
 
     public String getErrorCode() {
