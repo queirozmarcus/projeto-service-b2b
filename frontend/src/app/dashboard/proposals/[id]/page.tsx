@@ -81,6 +81,9 @@ export default function ProposalDetailPage({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const [isGeneratingScope, setIsGeneratingScope] = useState(false);
+  const [generateScopeError, setGenerateScopeError] = useState<string | null>(null);
+
   // ---------------------------------------------------------------------------
   // Fetch proposal by ID
   // ---------------------------------------------------------------------------
@@ -145,6 +148,26 @@ export default function ProposalDetailPage({
       setDeleteError(apiErr.message ?? 'Erro ao deletar proposta.');
       setIsDeleting(false);
       setConfirmDelete(false);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Generate Scope AI
+  // ---------------------------------------------------------------------------
+
+  async function handleGenerateScopeAI() {
+    if (!proposal) return;
+    setIsGeneratingScope(true);
+    setGenerateScopeError(null);
+    try {
+      const updated = await proposalApi.generateScopeAI(proposal.id);
+      setProposal(updated);
+      updateProposal(updated.id, { updatedAt: updated.updatedAt });
+    } catch (err) {
+      const apiErr = err as ProposalApiError;
+      setGenerateScopeError(apiErr.message ?? 'Erro ao gerar escopo via IA.');
+    } finally {
+      setIsGeneratingScope(false);
     }
   }
 
@@ -338,7 +361,7 @@ export default function ProposalDetailPage({
         </div>
       )}
 
-      {/* Actions — DRAFT: publish + delete */}
+      {/* Actions — DRAFT: generate scope, publish, delete */}
       {proposal.status === 'DRAFT' && (
         <div className="rounded-2xl border border-secondary-200 bg-surface p-6 shadow-sm space-y-4">
           <h2 className="text-base font-semibold text-ink-900">Ações</h2>
@@ -355,12 +378,44 @@ export default function ProposalDetailPage({
             </p>
           )}
 
+          {generateScopeError && (
+            <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+              {generateScopeError}
+            </p>
+          )}
+
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-3">
+              {/* Generate Scope AI */}
+              {!proposal.scope && (
+                <button
+                  onClick={handleGenerateScopeAI}
+                  disabled={isGeneratingScope || isPublishing || isDeleting}
+                  className="inline-flex items-center gap-2 rounded-xl bg-purple-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isGeneratingScope ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Gerando…
+                    </>
+                  ) : (
+                    <>
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Gerar Escopo com IA
+                    </>
+                  )}
+                </button>
+              )}
+
               {/* Publish */}
               <button
                 onClick={handlePublish}
-                disabled={isPublishing || isDeleting || !proposal.scope}
+                disabled={isPublishing || isDeleting || isGeneratingScope || !proposal.scope}
                 className="inline-flex items-center gap-2 rounded-xl bg-primary-500 px-5 py-2.5 text-sm font-semibold text-ink-900 shadow-sm transition-colors hover:bg-primary-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isPublishing ? 'Publicando…' : 'Publicar Proposta'}
@@ -370,7 +425,7 @@ export default function ProposalDetailPage({
               {!confirmDelete ? (
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  disabled={isPublishing || isDeleting}
+                  disabled={isPublishing || isDeleting || isGeneratingScope}
                   className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-5 py-2.5 text-sm font-medium text-red-600 shadow-sm transition-all hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <TrashIcon className="h-4 w-4" />
@@ -399,9 +454,9 @@ export default function ProposalDetailPage({
 
             {/* Help text when scope is missing */}
             {!proposal.scope && (
-              <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
-                <p className="text-sm text-amber-800">
-                  <span className="font-semibold">Para publicar esta proposta:</span> defina o escopo com entregáveis, preço e prazo através do endpoint <code className="font-mono text-xs bg-amber-100 px-1.5 py-0.5 rounded">POST /proposals/{proposal.id}/update-scope</code>
+              <div className="rounded-xl bg-purple-50 border border-purple-200 px-4 py-3">
+                <p className="text-sm text-purple-800">
+                  <span className="font-semibold">💡 Escopo obrigatório:</span> Clique em "Gerar Escopo com IA" para criar automaticamente entregáveis, preço e prazo baseados no briefing, ou defina manualmente via API.
                 </p>
               </div>
             )}

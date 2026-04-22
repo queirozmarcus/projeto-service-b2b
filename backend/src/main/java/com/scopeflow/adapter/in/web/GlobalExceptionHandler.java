@@ -1,5 +1,6 @@
 package com.scopeflow.adapter.in.web;
 
+import com.scopeflow.application.ScopeGenerationException;
 import com.scopeflow.core.domain.briefing.*;
 import com.scopeflow.core.domain.common.InvalidValueObjectException;
 import com.scopeflow.core.domain.proposal.*;
@@ -10,6 +11,8 @@ import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -48,6 +51,7 @@ import java.util.UUID;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     private static final String PROBLEM_BASE_URL = "https://api.scopeflow.com/errors/";
 
     /**
@@ -265,6 +269,72 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         addCustomProperties(problemDetail, ex.getErrorCode());
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+    }
+
+    /**
+     * PROPOSAL-012: Briefing not completed
+     */
+    @ExceptionHandler(BriefingIncompleteException.class)
+    public ResponseEntity<ProblemDetail> handleBriefingIncomplete(
+            BriefingIncompleteException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "briefing-incomplete"));
+        problemDetail.setTitle("Briefing Incomplete");
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        log.warn("Briefing incomplete: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+    }
+
+    /**
+     * PROPOSAL-013: Briefing completeness < 80%
+     */
+    @ExceptionHandler(BriefingNotReadyException.class)
+    public ResponseEntity<ProblemDetail> handleBriefingNotReady(
+            BriefingNotReadyException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT,
+                ex.getMessage()
+        );
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "briefing-not-ready"));
+        problemDetail.setTitle("Briefing Not Ready");
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        log.warn("Briefing not ready: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+    }
+
+    /**
+     * PROPOSAL-014: AI service unavailable (circuit breaker, timeout)
+     */
+    @ExceptionHandler(ScopeGenerationException.class)
+    public ResponseEntity<ProblemDetail> handleScopeGenerationFailure(
+            ScopeGenerationException ex,
+            WebRequest request
+    ) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                ex.getMessage()
+        );
+        problemDetail.setType(URI.create(PROBLEM_BASE_URL + "ai-service-unavailable"));
+        problemDetail.setTitle("AI Service Unavailable");
+        problemDetail.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        problemDetail.setProperty("retryAfter", "30");
+        addCustomProperties(problemDetail, ex.getErrorCode());
+
+        log.error("AI scope generation failed: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .header("Retry-After", "30")
+                .body(problemDetail);
     }
 
     /**

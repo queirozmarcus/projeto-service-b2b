@@ -2,6 +2,7 @@ package com.scopeflow.adapter.in.web.proposal;
 
 import com.scopeflow.adapter.in.web.proposal.dto.*;
 import com.scopeflow.adapter.in.web.security.SecurityUtil;
+import com.scopeflow.application.GenerateScopeAIUseCase;
 import com.scopeflow.core.domain.proposal.*;
 import com.scopeflow.core.domain.workspace.WorkspaceId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,9 +31,11 @@ public class ProposalControllerV2 {
     private static final Logger log = LoggerFactory.getLogger(ProposalControllerV2.class);
 
     private final ProposalService proposalService;
+    private final GenerateScopeAIUseCase generateScopeAIUseCase;
 
-    public ProposalControllerV2(ProposalService proposalService) {
+    public ProposalControllerV2(ProposalService proposalService, GenerateScopeAIUseCase generateScopeAIUseCase) {
         this.proposalService = proposalService;
+        this.generateScopeAIUseCase = generateScopeAIUseCase;
     }
 
     /**
@@ -239,5 +242,42 @@ public class ProposalControllerV2 {
         log.info("Approval workflow initiated: proposalId={}, approvers={}",
                 id, request.approverEmails().size());
         return ApprovalWorkflowResponse.from(workflow);
+    }
+
+    /**
+     * POST /proposals/{id}/generate-scope-ai
+     * Generate proposal scope using AI based on completed briefing.
+     *
+     * This is a synchronous operation that may take 3-10 seconds.
+     *
+     * Requires:
+     * - Proposal in DRAFT status
+     * - Associated briefing exists
+     * - Briefing is COMPLETED
+     * - Briefing completeness >= 80%
+     *
+     * @throws ProposalNotFoundException if proposal not found (404)
+     * @throws BriefingNotFoundException if briefing not found (404)
+     * @throws InvalidProposalStateException if not DRAFT (409)
+     * @throws BriefingIncompleteException if briefing not completed (409)
+     * @throws BriefingNotReadyException if completeness < 80% (409)
+     * @throws ScopeGenerationException if AI service fails (503)
+     */
+    @PostMapping("/{id}/generate-scope-ai")
+    @Operation(summary = "Generate proposal scope using AI",
+               description = "Synchronous operation (3-10s). Requires DRAFT proposal with completed briefing (≥80% completeness).")
+    public ProposalResponse generateScopeAI(@PathVariable UUID id) {
+        UUID workspaceId = SecurityUtil.getWorkspaceId();
+        UUID userId = SecurityUtil.getUserId();
+
+        ProposalDraft updated = generateScopeAIUseCase.execute(
+                ProposalId.of(id),
+                new WorkspaceId(workspaceId),
+                userId
+        );
+
+        log.info("Scope generated via AI: proposalId={}, workspaceId={}, userId={}",
+                 id, workspaceId, userId);
+        return ProposalResponse.from(updated);
     }
 }

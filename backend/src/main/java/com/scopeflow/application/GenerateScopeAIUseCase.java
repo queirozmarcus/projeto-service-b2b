@@ -1,17 +1,18 @@
 package com.scopeflow.application;
 
-import com.scopeflow.application.port.out.BriefingRepositoryPort;
-import com.scopeflow.application.port.out.ProposalRepositoryPort;
 import com.scopeflow.application.port.out.ScopeGenerationPort;
 import com.scopeflow.core.domain.briefing.BriefingCompleted;
 import com.scopeflow.core.domain.briefing.BriefingIncompleteException;
 import com.scopeflow.core.domain.briefing.BriefingNotReadyException;
 import com.scopeflow.core.domain.briefing.BriefingNotFoundException;
 import com.scopeflow.core.domain.briefing.BriefingSessionId;
+import com.scopeflow.core.domain.briefing.BriefingSessionRepository;
 import com.scopeflow.core.domain.proposal.InvalidProposalStateException;
 import com.scopeflow.core.domain.proposal.ProposalDraft;
 import com.scopeflow.core.domain.proposal.ProposalId;
 import com.scopeflow.core.domain.proposal.ProposalNotFoundException;
+import com.scopeflow.core.domain.proposal.ProposalRepository;
+import com.scopeflow.core.domain.proposal.ProposalService;
 import com.scopeflow.core.domain.workspace.WorkspaceId;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,14 +30,14 @@ public class GenerateScopeAIUseCase {
 
     private static final int MIN_COMPLETENESS_PERCENT = 80;
 
-    private final ProposalRepositoryPort proposalRepository;
-    private final BriefingRepositoryPort briefingRepository;
+    private final ProposalRepository proposalRepository;
+    private final BriefingSessionRepository briefingRepository;
     private final ScopeGenerationPort scopeGenerationPort;
     private final ProposalService proposalService;
 
     public GenerateScopeAIUseCase(
-            ProposalRepositoryPort proposalRepository,
-            BriefingRepositoryPort briefingRepository,
+            ProposalRepository proposalRepository,
+            BriefingSessionRepository briefingRepository,
             ScopeGenerationPort scopeGenerationPort,
             ProposalService proposalService) {
         this.proposalRepository = proposalRepository;
@@ -72,17 +73,21 @@ public class GenerateScopeAIUseCase {
     public ProposalDraft execute(ProposalId proposalId, WorkspaceId workspaceId, UUID userId) {
         // 1. Fetch proposal and validate workspace isolation
         var proposal = proposalRepository.findById(proposalId)
-            .orElseThrow(() -> new ProposalNotFoundException(proposalId));
+            .orElseThrow(() -> new ProposalNotFoundException(
+                "Proposal %s not found".formatted(proposalId.value())
+            ));
 
         if (!proposal.getWorkspaceId().equals(workspaceId)) {
-            throw new ProposalNotFoundException(proposalId);
+            throw new ProposalNotFoundException(
+                "Proposal %s not found".formatted(proposalId.value())
+            );
         }
 
         // 2. Validate proposal is in DRAFT state
         if (!(proposal instanceof ProposalDraft draft)) {
             throw new InvalidProposalStateException(
-                proposalId,
-                "Scope generation is only allowed for proposals in DRAFT state"
+                "Scope generation is only allowed for proposals in DRAFT state (proposal: %s)"
+                    .formatted(proposalId.value())
             );
         }
 
@@ -105,7 +110,7 @@ public class GenerateScopeAIUseCase {
         }
 
         // 5. Validate briefing completeness ≥ 80%
-        int completeness = completedBriefing.getCompletenessPercentage();
+        int completeness = completedBriefing.getCompletionScore().score();
         if (completeness < MIN_COMPLETENESS_PERCENT) {
             throw new BriefingNotReadyException(briefingId, completeness);
         }
@@ -118,6 +123,8 @@ public class GenerateScopeAIUseCase {
 
         // 8. Return updated draft
         return (ProposalDraft) proposalRepository.findById(proposalId)
-            .orElseThrow(() -> new ProposalNotFoundException(proposalId));
+            .orElseThrow(() -> new ProposalNotFoundException(
+                "Proposal %s not found".formatted(proposalId.value())
+            ));
     }
 }

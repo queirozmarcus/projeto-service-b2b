@@ -7,7 +7,8 @@ public enum GenerationType {
     FOLLOW_UP_QUESTION("Follow-up question generated based on gap detection"),
     GAP_ANALYSIS("Analysis identifying gaps in answers"),
     COMPLETION_SUMMARY("Summary and completeness score"),
-    BRIEFING_CONSOLIDATION("Consolidated briefing from all answers");
+    BRIEFING_CONSOLIDATION("Consolidated briefing from all answers"),
+    SCOPE_GENERATION("AI-generated proposal scope from completed briefing");
 
     private final String description;
 

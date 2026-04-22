@@ -268,4 +268,30 @@ export const proposalApi = {
       throw normalizeProposalError(err);
     }
   },
+
+  /**
+   * Gera o scope da proposta via IA baseado no briefing completo.
+   *
+   * POST /proposals/{id}/generate-scope-ai
+   *
+   * Requer que:
+   * - Proposta esteja em status DRAFT
+   * - Briefing vinculado esteja COMPLETED
+   * - Briefing tenha completeness >= 80%
+   *
+   * Retorna a proposta com scope preenchido (deliverables, price, timeline, etc).
+   * Pode levar 3-10s (síncrono).
+   *
+   * @param id - UUID da proposta
+   * @returns Proposal atualizada com scope gerado
+   * @throws ProposalApiError (not_found | conflict | validation | forbidden | server_error | network)
+   */
+  async generateScopeAI(id: string): Promise<Proposal> {
+    try {
+      const response = await api.post<Proposal>(`/proposals/${id}/generate-scope-ai`);
+      return response.data;
+    } catch (err) {
+      throw normalizeProposalError(err);
+    }
+  },
 };
