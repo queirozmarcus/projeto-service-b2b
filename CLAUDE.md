@@ -215,6 +215,29 @@ cd backend && ./mvnw jacoco:report
 
 > **Documentação completa dos scripts:** [scripts/README.md](scripts/README.md)
 
+### Frontend Development (Next.js 15 + React 19 + TypeScript)
+
+```bash
+cd frontend && npm install   # Instalar dependências
+cd frontend && npm run dev   # Dev server → http://localhost:3000
+
+npm run build          # Build de produção
+npm run start          # Rodar build de produção localmente
+npm run lint           # ESLint check
+npm run lint:fix       # Auto-fix de lint
+npm run type-check     # Validação TypeScript (sem emitir arquivos)
+npm run format         # Prettier formatting
+npm run format:check   # Check de formatação (CI)
+npm run test           # Vitest (unit tests)
+npm run test:ui        # Vitest com UI interativa
+npm run test:coverage  # Coverage report
+npm run e2e            # Playwright E2E (headless)
+npm run e2e:ui         # Playwright com UI
+```
+
+**Stack:** Next.js 15, React 19, TypeScript 5.3, Tailwind 4.0, Radix UI, Framer Motion  
+**Testes:** Vitest (unit) + Playwright (E2E) — não Jest/Cypress
+
 ### Database Migrations
 
 **Never modify applied migrations** — Flyway will fail. Always create a new file.
@@ -377,6 +400,10 @@ docker logs scopeflow-user-service -f
 | `.claude/plans/backlog/` | Planos aprovados aguardando execução |
 | `.claude/plans/concluido/` | Histórico de planos executados |
 | `docs/architecture/adr/` | Architecture Decision Records |
+| `frontend/next.config.js` | Next.js configuration |
+| `frontend/vitest.config.ts` | Unit test setup (Vitest) |
+| `frontend/playwright.config.ts` | E2E test configuration (Playwright) |
+| `frontend/tsconfig.json` | TypeScript strict mode config |
 
 ---
 

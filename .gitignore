@@ -21,6 +21,7 @@ dist/
 
 # Java / Maven
 backend/target/
+user-service/target/
 *.class
 *.jar
 *.war

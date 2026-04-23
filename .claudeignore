@@ -21,6 +21,7 @@ target/
 # === Build & Artifacts ===
 dist/
 build/
+.next/
 coverage/
 .nyc_output/
 out/
@@ -52,6 +53,9 @@ yarn-debug.log*
 # === Git ===
 .git/
 .github/
+
+# === Large generated docs ===
+docs/scopeflow_ai_documento_master_completo.md
 
 # === OS ===
 .DS_Store
