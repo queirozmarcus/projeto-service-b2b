@@ -13,13 +13,13 @@
 | 1 | architect | ✅ CONCLUÍDO | 2026-04-21 | Design doc com 6 decisões + migration alert |
 | 2 | api-designer | ✅ CONCLUÍDO | 2026-04-21 | OpenAPI spec completo com 6 error codes |
 | 3 | backend-dev | ✅ CONCLUÍDO | 2026-04-21 | Use case + stub + 3 exceptions + port interface |
-| 4 | backend-dev | ✅ CONCLUÍDO | 2026-04-21 | Controller + 3 exception handlers + migration V10 |
+| 4 | backend-dev | ✅ CONCLUÍDO | 2026-04-21 | Controller + 3 exception handlers + migration V12 |
 | 5 | unit-test-engineer + backend-dev | ✅ CONCLUÍDO | 2026-04-21 | 11 testes unitários (258 backend passando) |
-| 6 | integration-test-engineer | ✅ IMPLEMENTADO | 2026-04-21 | 8 testes integração (aguardando validação) |
-| 7 | Frontend (direto) | ⏳ AGUARDANDO | - | - |
-| 8 | Frontend (direto) | ⏳ AGUARDANDO | - | - |
-| 9 | Frontend (direto) | ⏳ AGUARDANDO | - | - |
-| 10 | e2e-test-engineer + code-reviewer | ⏳ AGUARDANDO | - | - |
+| 6 | integration-test-engineer | ✅ CONCLUÍDO | 2026-04-21 | 8 testes integração implementados |
+| 7 | Frontend (direto) | ✅ CONCLUÍDO | 2026-04-21 | Botão UI + API client + loading states |
+| 8 | Teste Manual (E2E) | 🔄 EM ANDAMENTO | 2026-04-21 | Endpoint validado, aguardando briefing completo |
+| 9 | e2e-test-engineer | ⏳ AGUARDANDO | - | Testes automatizados E2E |
+| 10 | code-reviewer | ⏳ AGUARDANDO | - | Review final do código |
 
 ---
 
@@ -182,7 +182,7 @@ cd backend && ./mvnw test -Dtest=GenerateScopeAIUseCaseTest
 
 **Agent:** integration-test-engineer  
 **Duração:** ~11 min  
-**Status:** ✅ IMPLEMENTADO — Aguardando validação
+**Status:** ✅ CONCLUÍDO
 
 ### Entregas
 1. `GenerateScopeAIIntegrationTest.java` — 8 testes (1 happy path + 7 error paths)
@@ -205,12 +205,89 @@ cd backend && ./mvnw test -Dtest=GenerateScopeAIUseCaseTest
 - JwtTokenUtil inline para geração de tokens
 - Setup: workspace → briefing COMPLETED (85%) → proposta DRAFT
 
-### Comando de Validação
-```bash
-cd backend && ./mvnw test -Dtest=GenerateScopeAIIntegrationTest
-# OU validação completa:
-./scripts/validate-qa-full.sh
+---
+
+## Sprint 7: Frontend — Componente UI ✅
+
+**Implementação:** Direta (sem agent)  
+**Duração:** ~15 min  
+**Status:** ✅ CONCLUÍDO
+
+### Entregas
+
+**1. API Client (`proposalApi.ts`)**
+- ✅ Método `generateScopeAI(id)` adicionado
+- ✅ Documentação JSDoc completa
+- ✅ Tratamento de erros com `ProposalApiError`
+
+**2. Página de Detalhe (`proposals/[id]/page.tsx`)**
+- ✅ Estado de loading (`isGeneratingScope`)
+- ✅ Estado de erro (`generateScopeError`)
+- ✅ Handler `handleGenerateScopeAI()` com atualização de store
+- ✅ Botão "Gerar Escopo com IA" (roxo, ícone ⚡)
+- ✅ Loading spinner animado
+- ✅ Botão só aparece quando `scope === null`
+- ✅ Help text atualizado
+- ✅ Todos os botões desabilitados durante geração
+
+### UX Flow
+```
+Usuário na página de proposta DRAFT sem scope
+  → Vê botão "Gerar Escopo com IA" + help text
+  → Clica → Loading spinner (3-10s)
+  → Success: Scope aparece (deliverables, price, timeline)
+  → Botão desaparece, "Publicar" fica habilitado
 ```
 
-**Próximo passo ao retomar:** Validar Sprint 6, depois seguir para Sprint 7 (Frontend)
+### Arquivos Modificados
+1. `frontend/src/lib/proposalApi.ts`
+2. `frontend/src/app/dashboard/proposals/[id]/page.tsx`
+
+---
+
+## Sprint 8: Validação E2E Manual 🔄
+
+**Status:** EM ANDAMENTO  
+**Data:** 2026-04-21
+
+### Validações Realizadas
+
+#### ✅ Endpoint Funcional
+```
+POST /proposals/30fbfe71-be7a-4eec-9693-6fe247e2ac6b/generate-scope-ai
+→ Auth OK (JWT user-service)
+→ Secured endpoint OK
+→ Validação de negócio OK (briefing incomplete detectado)
+```
+
+#### 🔄 Teste Happy Path
+**Pendente:** Completar briefing `29da9e9a-7e95-4389-9991-ae42a84b89f8`
+- URL: `http://localhost:3000/dashboard/briefings/29da9e9a-...`
+- Ação: Responder todas as perguntas + ≥ 80% completeness + marcar como concluído
+- Após: Voltar à proposta e clicar "Gerar Escopo com IA"
+
+#### Resultado Esperado (Happy Path)
+- HTTP 200
+- Scope gerado com:
+  - 3 deliverables (stub determinístico)
+  - Preço: BRL 5.000,00
+  - Timeline: hoje + 30 dias
+  - 2 exclusões, 2 assumptions
+- Botão "Gerar Escopo com IA" desaparece
+- Botão "Publicar Proposta" fica habilitado
+
+---
+
+## Correções de Bugs (Sessão 2026-04-21)
+
+### Bug 1: Flyway Conflito V10 ✅
+- **Problema:** Duas migrations com versão V10
+- **Solução:** Renomear para V11, depois V12 (V11 já existia)
+- **Arquivo:** `V12__add_scope_generation_type.sql`
+
+### Bug 2: Migration V12 — Enum Type ✅
+- **Problema:** `ALTER TYPE generation_type` falhou (tipo não existe)
+- **Root cause:** Banco usa VARCHAR + CHECK constraint, não ENUM nativo
+- **Solução:** DROP constraint antiga + ADD constraint com `SCOPE_GENERATION`
+- **Validação:** `./mvnw flyway:migrate` → BUILD SUCCESS
 
