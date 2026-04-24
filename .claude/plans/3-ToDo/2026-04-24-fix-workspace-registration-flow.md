@@ -91,7 +91,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 - SecurityConfig.java: liberar o endpoint para chamadas autenticadas
 ```
 
-### Sprint 4 — Segurança: validação de chamadas internas
+### ✅ Sprint 4 — Segurança: validação de chamadas internas
 **Agent:** `security-engineer`  
 **Entregável:** Proteção do endpoint de update workspace
 

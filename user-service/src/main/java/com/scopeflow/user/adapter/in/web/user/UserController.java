@@ -7,6 +7,8 @@ import com.scopeflow.user.application.service.UserService;
 import com.scopeflow.user.application.usecase.BlockUserByIdUseCase;
 import com.scopeflow.user.application.usecase.InviteUserUseCase;
 import com.scopeflow.user.application.usecase.UpdateUserWorkspaceUseCase;
+import com.scopeflow.user.config.InternalTokenProperties;
+import com.scopeflow.user.config.ScopeFlowPrincipal;
 import com.scopeflow.user.domain.exception.InvalidInvitedByUserException;
 import com.scopeflow.user.domain.exception.InvalidRoleException;
 import com.scopeflow.user.domain.exception.UserNotFoundException;
@@ -17,7 +19,9 @@ import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -42,17 +46,20 @@ public class UserController {
     private final InviteUserUseCase inviteUserUseCase;
     private final BlockUserByIdUseCase blockUserByIdUseCase;
     private final UpdateUserWorkspaceUseCase updateUserWorkspaceUseCase;
+    private final InternalTokenProperties internalTokenProperties;
 
     public UserController(
             UserService userService,
             InviteUserUseCase inviteUserUseCase,
             BlockUserByIdUseCase blockUserByIdUseCase,
-            UpdateUserWorkspaceUseCase updateUserWorkspaceUseCase
+            UpdateUserWorkspaceUseCase updateUserWorkspaceUseCase,
+            InternalTokenProperties internalTokenProperties
     ) {
         this.userService = userService;
         this.inviteUserUseCase = inviteUserUseCase;
         this.blockUserByIdUseCase = blockUserByIdUseCase;
         this.updateUserWorkspaceUseCase = updateUserWorkspaceUseCase;
+        this.internalTokenProperties = internalTokenProperties;
     }
 
     @GetMapping("/by-email")
@@ -93,10 +100,23 @@ public class UserController {
     @Operation(summary = "Assign workspace to user")
     public void updateWorkspace(
             @PathVariable UUID userId,
-            @Valid @RequestBody UpdateUserWorkspaceRequest request) {
+            @Valid @RequestBody UpdateUserWorkspaceRequest request,
+            @AuthenticationPrincipal ScopeFlowPrincipal principal,
+            @RequestHeader(value = "X-Internal-Token", required = false) String internalToken) {
+
+        boolean isInternalCall = internalTokenProperties.getInternalToken().equals(internalToken);
+        boolean isOwner = principal != null && userId.equals(principal.userId());
+
+        if (!isInternalCall && !isOwner) {
+            log.warn("Unauthorized workspace assignment attempt: requestedUserId={}, authenticatedUserId={}",
+                    userId, principal != null ? principal.userId() : "none");
+            throw new AccessDeniedException("Access denied: not the owner of this user resource");
+        }
+
         updateUserWorkspaceUseCase.execute(new UserId(userId), request.workspaceId());
 
-        log.info("Workspace assigned: userId={}, workspaceId={}", userId, request.workspaceId());
+        log.info("Workspace assigned: userId={}, workspaceId={}, via={}",
+                userId, request.workspaceId(), isInternalCall ? "internal-token" : "jwt-owner");
     }
 
     @PostMapping("/{id}/block")

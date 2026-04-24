@@ -2,6 +2,7 @@ package com.scopeflow.user.adapter.in.web;
 
 import com.scopeflow.user.domain.shared.InvalidValueObjectException;
 import com.scopeflow.user.domain.exception.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -164,6 +165,18 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         pd.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
         addCustomProperties(pd, ex.getErrorCode());
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(pd);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAccessDenied(
+            AccessDeniedException ex, WebRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.FORBIDDEN);
+        pd.setType(URI.create(PROBLEM_BASE_URL + "forbidden"));
+        pd.setTitle("Forbidden");
+        pd.setDetail("You do not have permission to perform this action");
+        pd.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(pd, "AUTH-403");
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(pd);
     }
 
     @ExceptionHandler(SecurityException.class)
