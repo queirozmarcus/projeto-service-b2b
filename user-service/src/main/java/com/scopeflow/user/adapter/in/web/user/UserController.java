@@ -1,10 +1,12 @@
 package com.scopeflow.user.adapter.in.web.user;
 
 import com.scopeflow.user.adapter.in.web.user.dto.CreateInvitedUserRequest;
+import com.scopeflow.user.adapter.in.web.user.dto.UpdateUserWorkspaceRequest;
 import com.scopeflow.user.adapter.in.web.user.dto.UserProfileResponse;
 import com.scopeflow.user.application.service.UserService;
 import com.scopeflow.user.application.usecase.BlockUserByIdUseCase;
 import com.scopeflow.user.application.usecase.InviteUserUseCase;
+import com.scopeflow.user.application.usecase.UpdateUserWorkspaceUseCase;
 import com.scopeflow.user.domain.exception.InvalidInvitedByUserException;
 import com.scopeflow.user.domain.exception.InvalidRoleException;
 import com.scopeflow.user.domain.exception.UserNotFoundException;
@@ -39,15 +41,18 @@ public class UserController {
     private final UserService userService;
     private final InviteUserUseCase inviteUserUseCase;
     private final BlockUserByIdUseCase blockUserByIdUseCase;
+    private final UpdateUserWorkspaceUseCase updateUserWorkspaceUseCase;
 
     public UserController(
             UserService userService,
             InviteUserUseCase inviteUserUseCase,
-            BlockUserByIdUseCase blockUserByIdUseCase
+            BlockUserByIdUseCase blockUserByIdUseCase,
+            UpdateUserWorkspaceUseCase updateUserWorkspaceUseCase
     ) {
         this.userService = userService;
         this.inviteUserUseCase = inviteUserUseCase;
         this.blockUserByIdUseCase = blockUserByIdUseCase;
+        this.updateUserWorkspaceUseCase = updateUserWorkspaceUseCase;
     }
 
     @GetMapping("/by-email")
@@ -81,6 +86,17 @@ public class UserController {
                 invitedUser.getId().value(), email.normalized(), request.invitedByUserId(), request.role());
 
         return UserProfileResponse.from(invitedUser);
+    }
+
+    @PatchMapping("/{userId}/workspace")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Assign workspace to user")
+    public void updateWorkspace(
+            @PathVariable UUID userId,
+            @Valid @RequestBody UpdateUserWorkspaceRequest request) {
+        updateUserWorkspaceUseCase.execute(new UserId(userId), request.workspaceId());
+
+        log.info("Workspace assigned: userId={}, workspaceId={}", userId, request.workspaceId());
     }
 
     @PostMapping("/{id}/block")

@@ -142,6 +142,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(pd);
     }
 
+    @ExceptionHandler(WorkspaceAlreadyAssignedException.class)
+    public ResponseEntity<ProblemDetail> handleWorkspaceAlreadyAssigned(
+            WorkspaceAlreadyAssignedException ex, WebRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        pd.setType(URI.create(PROBLEM_BASE_URL + "workspace-already-assigned"));
+        pd.setTitle("Workspace Already Assigned");
+        pd.setDetail(ex.getMessage());
+        pd.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(pd, ex.getErrorCode());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(pd);
+    }
+
+    @ExceptionHandler(UserStateException.class)
+    public ResponseEntity<ProblemDetail> handleUserState(
+            UserStateException ex, WebRequest request) {
+        ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.UNPROCESSABLE_ENTITY);
+        pd.setType(URI.create(PROBLEM_BASE_URL + "user-state-invalid"));
+        pd.setTitle("User State Invalid");
+        pd.setDetail(ex.getMessage());
+        pd.setInstance(URI.create(request.getDescription(false).replace("uri=", "")));
+        addCustomProperties(pd, ex.getErrorCode());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(pd);
+    }
+
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<ProblemDetail> handleSecurityException(
             SecurityException ex, WebRequest request) {

@@ -66,7 +66,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 - UserRepository.java: verificar se save() já suporta update
 ```
 
-### Sprint 2 — Persistence: JpaUser workspaceId update
+### ✅ Sprint 2 — Persistence: JpaUser workspaceId update
 **Agent:** `dba` + `backend-dev`  
 **Entregável:** Migration + JPA update para workspaceId
 
@@ -77,7 +77,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 - JpaUserRepository.java: confirmar que save() faz UPDATE (não INSERT)
 ```
 
-### Sprint 3 — Adapter: PATCH /users/{id}/workspace endpoint
+### ✅ Sprint 3 — Adapter: PATCH /users/{id}/workspace endpoint
 **Agent:** `backend-dev`  
 **Entregável:** Endpoint REST + DTO
 
