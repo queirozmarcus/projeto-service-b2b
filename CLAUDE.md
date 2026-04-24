@@ -98,7 +98,7 @@ user-service/src/main/java/com/scopeflow/user/
 User Service foi extraído do monólito via Strangler Fig. Traefik roteia `/api/v1/auth/*` e `/api/v1/users/*` para o user-service (prioridade 100), resto para o monólito (prioridade 50).
 
 - **JWT secret compartilhado**: ambos os serviços usam o mesmo `JWT_SECRET` — tokens são cross-compatible
-- **DB-per-service**: `scopeflow_users` (PostgreSQL dedicado, porta 5433) — ativo em staging
+- **DB-per-service**: `scopeflow_users` (database separado no mesmo servidor PostgreSQL, porta 5432) — ativo em staging
 - **Módulo User no monólito**: decommissioned — `ServiceUnavailableException` protege chamadas residuais
 - **AuthControllerV2 (proxy)**: o monólito mantém `AuthControllerV2` que faz proxy das requisições `/auth/*` para o user-service via `RestTemplate`. Funciona como fallback quando Traefik não está presente (dev local sem docker compose). Em staging/produção, Traefik intercepta antes do monólito (prioridade 100 > 50).
 
@@ -192,13 +192,13 @@ Bash("./mvnw test")
 
 # Validação com stack Docker Compose (debug/staging)
 ./scripts/validate-qa-full.sh --with-stack
-# Sobe postgres, user-db, rabbitmq, redis antes dos testes
+# Sobe postgres, rabbitmq, redis antes dos testes (postgres hospeda scopeflow + scopeflow_users)
 # Aguarda serviços ficarem prontos automaticamente
 # Limpa stack ao final
 
 # Health check rápido da stack (~2s)
 ./scripts/check-stack-health.sh
-# Valida: postgres, user-db, rabbitmq, redis
+# Valida: postgres (scopeflow + scopeflow_users), rabbitmq, redis
 # Exit code: 0 = saudável, 1 = problemas
 
 # Testes individuais (desenvolvimento)
@@ -357,7 +357,7 @@ docker compose build user-service
 docker compose up -d user-service
 
 # Verificar migration aplicada
-docker exec scopeflow-user-db psql -U postgres -d scopeflow_users -c "SELECT * FROM flyway_schema_history;"
+docker exec scopeflow-postgres psql -U postgres -d scopeflow_users -c "SELECT * FROM flyway_schema_history;"
 
 # Logs em tempo real
 docker logs scopeflow-user-service -f

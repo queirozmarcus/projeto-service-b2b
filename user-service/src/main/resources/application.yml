@@ -3,7 +3,7 @@ spring:
     name: user-service
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/scopeflow}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/scopeflow_users}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
     password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver

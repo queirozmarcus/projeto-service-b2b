@@ -57,3 +57,6 @@ backend/.mvn/wrapper/maven-wrapper.jar
 
 # Misnamed directory (created by erroneous `cd ~` inside container)
 backend/~/
+
+# Migration backups
+backups/

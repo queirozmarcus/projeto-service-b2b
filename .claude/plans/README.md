@@ -15,8 +15,17 @@
 ├── 1-Backlog/         # Planos pendentes / próximos ciclos
 ├── 2-Refinando/       # Planos sendo detalhados
 ├── 3-ToDo/            # Planos aprovados, prontos para execução
-├── 4-Testando/        # Planos em validação
-└── Concluído/         # Planos executados e arquivados
+├── 4-Validando/        # Planos em validação
+└── Done/         # Planos executados e arquivados
+
+Novo - 1-Backlog/
+Refinando - 2-Refinando/
+Aprovado - 3-ToDo/
+Em execução - 3-ToDo/ (status atualizado no arquivo)
+Validando - 4-Validando/
+Sprint concluída - Done/
+Plano principal - Done/ (só quando todas as sprints fecharem)
+
 ```
 
 ---

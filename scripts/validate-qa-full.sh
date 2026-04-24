@@ -62,23 +62,17 @@ if [ "$WITH_STACK" = true ]; then
     cd "$PROJECT_ROOT"
 
     # Subir apenas serviços essenciais (bancos + messaging + cache)
-    docker compose up -d postgres user-db rabbitmq redis
+    # postgres hospeda dois databases: scopeflow (monólito) e scopeflow_users (user-service)
+    docker compose up -d postgres rabbitmq redis
 
     echo "⏳ Aguardando serviços ficarem prontos..."
 
-    # Aguardar PostgreSQL (monólito)
+    # Aguardar PostgreSQL (servidor único — scopeflow + scopeflow_users)
     until docker exec scopeflow-postgres pg_isready -U postgres &> /dev/null; do
         echo "   Aguardando postgres..."
         sleep 2
     done
-    echo "   ✅ postgres pronto"
-
-    # Aguardar PostgreSQL (user-service)
-    until docker exec scopeflow-user-db pg_isready -U postgres &> /dev/null; do
-        echo "   Aguardando user-db..."
-        sleep 2
-    done
-    echo "   ✅ user-db pronto"
+    echo "   ✅ postgres pronto (scopeflow + scopeflow_users)"
 
     # Aguardar RabbitMQ
     until docker exec scopeflow-rabbitmq rabbitmq-diagnostics -q ping &> /dev/null; do

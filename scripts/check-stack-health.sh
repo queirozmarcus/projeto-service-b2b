@@ -31,13 +31,8 @@ check_service() {
 
 FAILED=0
 
-# PostgreSQL (monólito)
-if ! check_service "postgres (monólito)" "docker exec scopeflow-postgres pg_isready -U postgres"; then
-    FAILED=$((FAILED + 1))
-fi
-
-# PostgreSQL (user-service)
-if ! check_service "user-db (user-service)" "docker exec scopeflow-user-db pg_isready -U postgres"; then
+# PostgreSQL (servidor único — databases: scopeflow + scopeflow_users)
+if ! check_service "postgres (scopeflow + scopeflow_users)" "docker exec scopeflow-postgres pg_isready -U postgres"; then
     FAILED=$((FAILED + 1))
 fi
 

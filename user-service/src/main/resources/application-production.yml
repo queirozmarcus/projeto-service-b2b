@@ -1,14 +1,14 @@
 # ============================================================
 # Production profile — ScopeFlow user-service
 #
-# ESTADO ATUAL: banco compartilhado com o monólito (pré cut-over).
-# Flyway DESABILITADO para evitar conflito de versão com as migrations do monólito.
+# ESTADO ATUAL: cut-over executado — user-service aponta para banco dedicado
+# scopeflow_users no container postgres principal (porta 5432).
+# Flyway HABILITADO — user-service gerencia seu próprio schema de forma independente.
 #
-# APÓS CUT-OVER DE PRODUÇÃO (ver DB_MIGRATION_GUIDE.md):
-#   1. Executar pg_dump + restore para scopeflow_users (banco dedicado)
-#   2. Atualizar SPRING_DATASOURCE_URL → jdbc:postgresql://{host}/scopeflow_users
-#   3. Alterar flyway.enabled: true abaixo
-#   4. Reiniciar user-service
+# DATASOURCE: sobrescrever via env var SPRING_DATASOURCE_URL em produção
+#   para apontar ao host real do PostgreSQL (ex: RDS endpoint).
+#   O default abaixo é apenas referência; em produção SPRING_DATASOURCE_URL
+#   deve ser obrigatoriamente definido como variável de ambiente.
 #
 # Para ativar: SPRING_PROFILES_ACTIVE=production
 # Porta padrão 8081, sobrescrita via SERVER_PORT env var no K8s se necessário.
@@ -17,11 +17,14 @@
 server:
   port: ${SERVER_PORT:8081}
 
-# TODO (pós cut-over produção): alterar enabled para true e apontar datasource
-#      para o banco dedicado scopeflow_users. Ver DB_MIGRATION_GUIDE.md.
 spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/scopeflow_users}
+
+  # Cut-over executado: Flyway habilitado — user-service é dono do schema scopeflow_users.
+  # baseline-on-migrate e baseline-version herdados do application.yml base.
   flyway:
-    enabled: false
+    enabled: true
 
 # Cookies HTTPS obrigatório em produção
 app:

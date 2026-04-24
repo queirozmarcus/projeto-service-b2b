@@ -1,27 +1,29 @@
 # ============================================================
 # Docker Compose override — Staging
 #
-# Ativa DB-per-service para o user-service:
+# User Service usa banco unificado (postgres:5432):
 #   - SPRING_PROFILES_ACTIVE=staging → carrega application-staging.yml
-#   - Banco: user-db:5432/scopeflow_users (container dedicado)
-#   - Flyway gerencia schema independente do monólito
+#   - Banco: postgres:5432/scopeflow_users (mesmo servidor do monólito)
+#   - user-db removido — S5: unificação PostgreSQL concluída
 #
 # Uso:
 #   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
 #
-# Para subir apenas o user-service com o novo banco:
+# Para subir apenas o user-service:
 #   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d user-service
 #
-# Pré-requisito (cut-over): migrar dados com pg_dump antes de ativar.
-# Ver: user-service/docs/DB_MIGRATION_GUIDE.md
+# Deploy após mudanças de schema:
+#   docker compose down -v
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+#   (Flyway aplica migrations automaticamente no startup)
 # ============================================================
 
 services:
   user-service:
     environment:
       SPRING_PROFILES_ACTIVE: staging
-      # Explicitamente aponta para o banco dedicado (sobrescreve o env var do docker-compose.yml)
-      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/scopeflow_users
+      # Banco unificado — mesma instância postgres do monólito, database separado
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/scopeflow_users
     depends_on:
-      user-db:
+      postgres:
         condition: service_healthy

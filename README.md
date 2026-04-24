@@ -67,8 +67,7 @@ graph TB
     end
 
     subgraph data["Dados"]
-        pgmono["PostgreSQL :5432\nscopeflow"]
-        pguser["PostgreSQL :5433\nscopeflow_users"]
+        pgmono["PostgreSQL :5432\nscopeflow\nscopeflow_users"]
         rabbit["RabbitMQ :5672\nOutbox Events"]
         redis["Redis :6379\nCache / Rate Limit"]
     end
@@ -111,8 +110,7 @@ graph TB
 | **Monólito** | Spring Boot 3.2.0 + Java 21 | `:8080` | Briefing, Proposal, Workspace, IA | ✅ Operacional |
 | **User Service** | Spring Boot 3.4.3 + Java 21 | `:8081` | Auth, registro, perfil de usuário | ✅ Staging ativo |
 | **Traefik** | v3.0 | `:80 / :8888` | API Gateway, roteamento Strangler Fig | ✅ Operacional |
-| **PostgreSQL (monólito)** | v16 | `:5432` | `scopeflow` — todos os domínios do monólito | ✅ Operacional |
-| **PostgreSQL (user-service)** | v16 | `:5433` | `scopeflow_users` — DB-per-service | ✅ Staging ativo |
+| **PostgreSQL** | v16 | `:5432` | `scopeflow` (monólito) + `scopeflow_users` (user-service) — servidor único | ✅ Operacional |
 | **RabbitMQ** | v3.13 | `:5672 / :15672` | Mensageria assíncrona (Outbox Pattern) | ✅ Operacional |
 | **Redis** | v7 | `:6379` | Cache, rate limiting, sessões | ✅ Operacional |
 
@@ -589,7 +587,7 @@ docker compose ps
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
-# User Service → banco dedicado scopeflow_users (:5433)
+# User Service → database scopeflow_users no servidor postgres (:5432)
 # Ver: docs/migration/DB-MIGRATION-USER-SERVICE.md para cut-over em produção
 ```
 
@@ -597,7 +595,7 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
 
 ```bash
 # Infraestrutura apenas
-docker compose up postgres user-db rabbitmq redis -d
+docker compose up postgres rabbitmq redis -d
 
 # Monólito
 cd backend && ./mvnw spring-boot:run      # http://localhost:8080/api/v1

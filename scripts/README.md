@@ -47,8 +47,7 @@ Health check rápido da stack Docker Compose.
 ```
 
 Valida:
-- ✅ PostgreSQL (monólito)
-- ✅ PostgreSQL (user-service)
+- ✅ PostgreSQL (servidor único — databases: scopeflow + scopeflow_users)
 - ✅ RabbitMQ
 - ✅ Redis
 - ⚠️ Traefik (se presente)
@@ -101,7 +100,7 @@ wsl --install
 
 ```bash
 # Verificar portas em uso
-netstat -tuln | grep -E '5432|5433|5672|6379|8080|8081|80'
+netstat -tuln | grep -E '5432|5672|6379|8080|8081|80'
 
 # Limpar containers órfãos
 docker compose down -v

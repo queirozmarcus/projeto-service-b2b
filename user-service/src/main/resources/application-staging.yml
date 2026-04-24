@@ -2,12 +2,13 @@
 # Staging profile — ScopeFlow user-service
 #
 # DB-per-service ATIVO em staging:
-#   - Banco dedicado: scopeflow_users (user-db container, porta 5433)
+#   - Banco dedicado: scopeflow_users no container postgres principal (porta 5432)
+#   - Container user-db (porta 5433) removido — consolidado no postgres principal
 #   - Flyway gerencia o schema independente do monólito
 #   - baseline-on-migrate herdado do application.yml base
 #
 # Diferenças em relação ao application.yml base:
-#   - Datasource aponta para user-db (banco dedicado)
+#   - Datasource aponta para postgres (banco consolidado)
 #   - Flyway explicitamente habilitado (sem depender do base)
 #   - Cookies sem HTTPS (staging pode rodar em HTTP interno)
 #   - Logs reduzidos para INFO
@@ -18,9 +19,10 @@
 
 spring:
   # DB-per-service: banco exclusivo do user-service em staging
+  # Host: postgres (container principal) — user-db foi removido
   # Fallback mantém compatibilidade com ambientes que sobrescrevem via env var
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://user-db:5432/scopeflow_users}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/scopeflow_users}
 
   # Flyway explicitamente habilitado — user-service é dono do schema em staging
   # baseline-on-migrate: true e baseline-version: 0 herdados do application.yml
