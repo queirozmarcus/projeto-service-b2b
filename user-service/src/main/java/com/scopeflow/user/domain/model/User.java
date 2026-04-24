@@ -95,6 +95,17 @@ public abstract sealed class User permits UserActive, UserInactive, UserBlocked,
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 
+    // ============ Domain Behavior ============
+
+    /**
+     * Returns a new instance of the same User subtype with the given workspaceId assigned.
+     * Immutable — does not mutate state.
+     *
+     * @param workspaceId the workspace to assign (must not be null)
+     * @return new User instance with workspaceId set
+     */
+    public abstract User withWorkspace(UUID workspaceId);
+
     // ============ Abstract Methods ============
 
     public abstract String status();
