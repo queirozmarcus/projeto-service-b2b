@@ -1,7 +1,7 @@
 # Plano: Fix — Workspace Registration Flow + Proposals Error
 
 **Data:** 2026-04-24  
-**Status:** BACKLOG  
+**Status:** EM EXECUÇÃO  
 **Prioridade:** Alta — bloqueia uso do dashboard para usuários novos
 
 ---
@@ -53,7 +53,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 
 ## Camada 1 — user-service (5 sprints)
 
-### Sprint 1 — Domain: UpdateUserWorkspace
+### ✅ Sprint 1 — Domain: UpdateUserWorkspace
 **Agent:** `backend-dev`  
 **Entregável:** Use case `UpdateUserWorkspaceUseCase` + método `updateWorkspace()` no domain `User`
 

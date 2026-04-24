@@ -16,6 +16,11 @@ public final class UserDeleted extends User {
     }
 
     @Override
+    public User withWorkspace(UUID workspaceId) {
+        throw new com.scopeflow.user.domain.exception.UserStateException(getId(), status(), "withWorkspace");
+    }
+
+    @Override
     public String status() { return "DELETED"; }
 
     @Override

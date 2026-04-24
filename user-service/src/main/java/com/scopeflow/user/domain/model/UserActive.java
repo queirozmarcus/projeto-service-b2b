@@ -16,6 +16,13 @@ public final class UserActive extends User {
     }
 
     @Override
+    public User withWorkspace(UUID workspaceId) {
+        java.util.Objects.requireNonNull(workspaceId, "workspaceId cannot be null");
+        return new UserActive(getId(), getEmail(), getPasswordHash(), getFullName(), getPhone(),
+                workspaceId, getCreatedAt(), java.time.Instant.now());
+    }
+
+    @Override
     public String status() { return "ACTIVE"; }
 
     @Override

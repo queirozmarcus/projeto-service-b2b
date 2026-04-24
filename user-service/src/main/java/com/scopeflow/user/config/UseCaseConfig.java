@@ -6,6 +6,7 @@ import com.scopeflow.user.application.usecase.AuthenticateUserUseCase;
 import com.scopeflow.user.application.usecase.InviteUserUseCase;
 import com.scopeflow.user.application.usecase.RefreshTokenUseCase;
 import com.scopeflow.user.application.usecase.RegisterUserUseCase;
+import com.scopeflow.user.application.usecase.UpdateUserWorkspaceUseCase;
 import com.scopeflow.user.domain.port.out.PasswordHasher;
 import com.scopeflow.user.domain.port.out.TokenIssuer;
 import com.scopeflow.user.domain.port.out.UserRepository;
@@ -55,5 +56,10 @@ public class UseCaseConfig {
     public InviteUserUseCase inviteUserUseCase(UserRepository userRepository,
                                                PasswordHasher passwordHasher) {
         return new InviteUserUseCase(userRepository, passwordHasher);
+    }
+
+    @Bean
+    public UpdateUserWorkspaceUseCase updateUserWorkspaceUseCase(UserRepository userRepository) {
+        return new UpdateUserWorkspaceUseCase(userRepository);
     }
 }
