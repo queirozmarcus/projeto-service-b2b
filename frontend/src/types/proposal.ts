@@ -154,3 +154,12 @@ export type ProposalApiError =
   | { kind: 'forbidden'; message: string }
   | { kind: 'server_error'; message: string }
   | { kind: 'network'; message: string };
+
+export function isProposalApiError(err: unknown): err is ProposalApiError {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'kind' in err &&
+    'message' in err
+  );
+}

@@ -25,7 +25,8 @@ function mapLoginResponseToUser(data: LoginResponse): User {
 }
 
 export function useAuth() {
-  const { setSession, clearSession, setLoading, setError } = useSessionStore();
+  const { setSession, clearSession, setLoading, setError, setNeedsWorkspace } =
+    useSessionStore();
 
   const login = async (credentials: LoginRequest): Promise<User> => {
     setLoading(true);
@@ -54,12 +55,33 @@ export function useAuth() {
     setError(null);
     try {
       // Backend não recebe workspaceName nem confirmPassword — omite antes de enviar
-      const { workspaceName: _ws, confirmPassword: _cp, ...payload } = data;
-      void _ws;
+      const { workspaceName, confirmPassword: _cp, ...payload } = data;
       void _cp;
       const response = await api.post<LoginResponse>('/auth/register', payload);
-      const user = mapLoginResponseToUser(response.data);
-      setSession(response.data.accessToken, user);
+      let { accessToken } = response.data;
+      let user = mapLoginResponseToUser(response.data);
+
+      // Passo 1: criar workspace com o token recém-emitido
+      try {
+        await api.post(
+          '/workspaces',
+          { name: workspaceName ?? 'Meu Workspace', niche: '', toneSettings: '{}' },
+          { headers: { Authorization: `Bearer ${accessToken}` } },
+        );
+
+        // Passo 2: refresh para obter JWT com workspace_id preenchido
+        const refreshResponse = await api.post<{ accessToken: string; expiresIn: number }>(
+          '/auth/refresh',
+        );
+        accessToken = refreshResponse.data.accessToken;
+        // Reconstrói user mantendo campos originais — workspaceId virá no novo JWT via claims
+        user = { ...user };
+      } catch {
+        // Workspace creation ou refresh falhou — login prossegue, mas sinaliza pendência
+        setNeedsWorkspace(true);
+      }
+
+      setSession(accessToken, user);
       return user;
     } catch (err: unknown) {
       const message =

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { proposalApi } from '@/lib/proposalApi';
 import type { Proposal, ProposalStatus, ListProposalsParams } from '@/types/proposal';
+import { isProposalApiError } from '@/types/proposal';
 
 export interface DashboardState {
   proposals: Proposal[];
@@ -83,7 +84,17 @@ const useDashboardStore = create<DashboardState>((set, get) => ({
       setProposals(page.content);
       setFetchError(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Erro ao carregar propostas.';
+      let message: string;
+      if (isProposalApiError(err)) {
+        message =
+          err.kind === 'forbidden'
+            ? 'Workspace não configurado. Configure seu workspace para ver propostas.'
+            : err.message;
+      } else if (err instanceof Error) {
+        message = err.message;
+      } else {
+        message = 'Erro ao carregar propostas.';
+      }
       setFetchError(message);
     } finally {
       setLoading(false);

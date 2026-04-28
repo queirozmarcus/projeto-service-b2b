@@ -1,7 +1,7 @@
 # Plano: Fix — Workspace Registration Flow + Proposals Error
 
 **Data:** 2026-04-24  
-**Status:** EM EXECUÇÃO  
+**Status:** CONCLUÍDO ✅ (2026-04-26)  
 **Prioridade:** Alta — bloqueia uso do dashboard para usuários novos
 
 ---
@@ -102,7 +102,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 - Testes: tentativa de update por outro usuário deve retornar 403
 ```
 
-### Sprint 5 — Testes: UpdateUserWorkspace
+### ✅ Sprint 5 — Testes: UpdateUserWorkspace
 **Agent:** `unit-test-engineer` + `integration-test-engineer`  
 **Entregável:** Cobertura completa do fluxo
 
@@ -117,7 +117,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 
 ## Camada 2 — Monólito (5 sprints)
 
-### Sprint 1 — Port: UserServiceClient.updateUserWorkspace()
+### ✅ Sprint 1 — Port: UserServiceClient.updateUserWorkspace()
 **Agent:** `backend-dev`  
 **Entregável:** Novo método no port de saída
 
@@ -128,7 +128,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 - ServiceUnavailableException propagada se user-service indisponível
 ```
 
-### Sprint 2 — Adapter: UserServiceRestAdapter implementação
+### ✅ Sprint 2 — Adapter: UserServiceRestAdapter implementação
 **Agent:** `backend-dev`  
 **Entregável:** Implementação REST do novo método
 
@@ -140,7 +140,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
   - 404 → UserNotFoundException; 503 → ServiceUnavailableException
 ```
 
-### Sprint 3 — Controller: WorkspaceControllerV2 notifica user-service
+### ✅ Sprint 3 — Controller: WorkspaceControllerV2 notifica user-service
 **Agent:** `backend-dev`  
 **Entregável:** WorkspaceControllerV2.create() completo
 
@@ -156,7 +156,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 - Extrair token do header Authorization via método privado
 ```
 
-### Sprint 4 — Resilience: tratamento de falha no notifyUserService
+### ✅ Sprint 4 — Resilience: tratamento de falha no notifyUserService
 **Agent:** `backend-dev` + `architect`  
 **Entregável:** Estratégia de compensação para falha parcial
 
@@ -167,7 +167,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 - Fallback: resposta 201 com header X-Workspace-Pending: true se outbox ativado
 ```
 
-### Sprint 5 — Testes: integração completa monólito
+### ✅ Sprint 5 — Testes: integração completa monólito
 **Agent:** `integration-test-engineer`  
 **Entregável:** Testes de integração do fluxo workspace + user-service
 
@@ -184,7 +184,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 
 ## Camada 3 — Frontend (5 sprints)
 
-### Sprint 1 — useAuth: register flow com workspace
+### ✅ Sprint 1 — useAuth: register flow com workspace
 **Agent:** `backend-dev` (frontend)  
 **Entregável:** `useAuth.register()` cria workspace após registro
 
@@ -198,7 +198,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
   mas marcar estado needsWorkspace = true
 ```
 
-### Sprint 2 — useSession: estado needsWorkspace
+### ✅ Sprint 2 — useSession: estado needsWorkspace
 **Agent:** `backend-dev` (frontend)  
 **Entregável:** Store com estado de onboarding
 
@@ -209,7 +209,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 - Persistir via sessionStorage (não localStorage — segurança)
 ```
 
-### Sprint 3 — Dashboard: banner de onboarding quando sem workspace
+### ✅ Sprint 3 — Dashboard: banner de onboarding quando sem workspace
 **Agent:** `backend-dev` (frontend)  
 **Entregável:** UX para usuário sem workspace
 
@@ -222,7 +222,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
 - Substituir mensagem genérica 'Erro ao carregar propostas.' por orientação útil
 ```
 
-### Sprint 4 — Store: corrigir ProposalApiError catch
+### ✅ Sprint 4 — Store: corrigir ProposalApiError catch
 **Agent:** `backend-dev` (frontend)  
 **Entregável:** Mensagens de erro corretas no dashboard
 
@@ -243,7 +243,7 @@ store catch: err instanceof Error = false → fallback: 'Erro ao carregar propos
   (412 cai em server_error → message: 'Erro no servidor (412)...' → mostrar corretamente)
 ```
 
-### Sprint 5 — Testes: frontend registration flow
+### ✅ Sprint 5 — Testes: frontend registration flow
 **Agent:** `unit-test-engineer` + `integration-test-engineer`  
 **Entregável:** Cobertura do novo fluxo
 

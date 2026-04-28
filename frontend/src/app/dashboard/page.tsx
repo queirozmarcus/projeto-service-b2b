@@ -9,10 +9,11 @@ import {
   QuickActions,
   RecentActivity,
 } from '@/components/dashboard';
+import { WorkspaceSetupBanner } from '@/components/workspace/WorkspaceSetupBanner';
 import { DocumentPlusIcon } from '@heroicons/react/24/outline';
 
 export default function DashboardPage() {
-  const { user } = useSessionStore();
+  const { user, needsWorkspace } = useSessionStore();
   const { isLoading, fetchError, fetchProposals, getFilteredProposals, computeStats, computeRecentActivity } = useDashboardStore();
 
   useEffect(() => {
@@ -55,10 +56,15 @@ export default function DashboardPage() {
           </a>
         </div>
 
+        {/* ── Workspace setup banner ─────────────────────────────── */}
+        {needsWorkspace && <WorkspaceSetupBanner />}
+
         {/* ── Fetch error banner ─────────────────────────────────── */}
-        {fetchError && (
+        {fetchError && !needsWorkspace && (
           <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-            {fetchError}
+            {fetchError.includes('workspace') || fetchError.includes('403')
+              ? 'Configure seu workspace acima para começar a usar o ScopeFlow.'
+              : fetchError}
           </div>
         )}
 

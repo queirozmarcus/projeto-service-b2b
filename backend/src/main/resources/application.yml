@@ -114,6 +114,7 @@ app:
   cookie:
     secure: ${APP_COOKIE_SECURE:true}
   requires-https: ${APP_REQUIRES_HTTPS:true}
+  internal-token: ${INTERNAL_TOKEN:dev-internal-token-change-in-prod}
   purge:
     enabled: ${PURGE_ENABLED:true}
     outbox-retention-days: ${PURGE_OUTBOX_RETENTION_DAYS:7}

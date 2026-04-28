@@ -4,6 +4,7 @@ import com.scopeflow.adapter.in.web.security.SecurityUtil;
 import com.scopeflow.adapter.in.web.user.dto.CreateInvitedUserRequest;
 import com.scopeflow.adapter.in.web.user.dto.UserResponse;
 import com.scopeflow.adapter.in.web.workspace.dto.*;
+import com.scopeflow.application.outbox.OutboxService;
 import com.scopeflow.application.port.out.UserServiceClient;
 import com.scopeflow.core.domain.shared.Email;
 import com.scopeflow.core.domain.shared.PasswordHash;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -42,15 +44,21 @@ public class WorkspaceControllerV2 {
 
     private static final Logger log = LoggerFactory.getLogger(WorkspaceControllerV2.class);
 
+    private static final String OUTBOX_AGGREGATE_TYPE = "workspace";
+    private static final String OUTBOX_EVENT_TYPE = "WORKSPACE_OWNER_ASSIGNED";
+
     private final WorkspaceService workspaceService;
     private final UserServiceClient userServiceClient;
+    private final OutboxService outboxService;
 
     public WorkspaceControllerV2(
             WorkspaceService workspaceService,
-            UserServiceClient userServiceClient
+            UserServiceClient userServiceClient,
+            OutboxService outboxService
     ) {
         this.workspaceService = workspaceService;
         this.userServiceClient = userServiceClient;
+        this.outboxService = outboxService;
     }
 
     /**
@@ -58,9 +66,11 @@ public class WorkspaceControllerV2 {
      * Create a new workspace. Authenticated user becomes OWNER.
      */
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create new workspace")
-    public WorkspaceResponse create(@Valid @RequestBody CreateWorkspaceRequest request) {
+    public ResponseEntity<WorkspaceResponse> create(
+            @Valid @RequestBody CreateWorkspaceRequest request,
+            HttpServletRequest httpRequest
+    ) {
         UserId ownerId = new UserId(SecurityUtil.getUserId());
 
         WorkspaceActive workspace = workspaceService.createWorkspace(
@@ -73,7 +83,45 @@ public class WorkspaceControllerV2 {
         List<WorkspaceMember> members = workspaceService.getWorkspaceMembers(workspace.getId());
         log.info("Workspace created: workspaceId={}, ownerId={}", workspace.getId().value(), ownerId.value());
 
-        return WorkspaceResponse.from(workspace, members.stream().map(MemberResponse::from).toList());
+        WorkspaceResponse body = WorkspaceResponse.from(workspace, members.stream().map(MemberResponse::from).toList());
+
+        // Notifica o user-service para associar workspaceId ao owner.
+        // Se indisponível, salva evento no Outbox para entrega eventual (Circuit Breaker + Outbox fallback).
+        String bearerToken = httpRequest.getHeader(HttpHeaders.AUTHORIZATION);
+        try {
+            userServiceClient.updateUserWorkspace(
+                    ownerId.value(),
+                    workspace.getId().value(),
+                    bearerToken
+            );
+            log.info("user-service notified: userId={} assigned to workspaceId={}",
+                    ownerId.value(), workspace.getId().value());
+            return ResponseEntity.status(HttpStatus.CREATED).body(body);
+        } catch (com.scopeflow.core.domain.user.ServiceUnavailableException e) {
+            log.warn("user-service unavailable — saving outbox event for eventual delivery: workspaceId={}, userId={}",
+                    workspace.getId().value(), ownerId.value());
+            outboxService.persist(
+                    OUTBOX_EVENT_TYPE,
+                    workspace.getId().value(),
+                    OUTBOX_AGGREGATE_TYPE,
+                    buildWorkspaceOwnerAssignedPayload(workspace.getId().value(), ownerId.value())
+            );
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .header("X-Workspace-Pending", "true")
+                    .body(body);
+        }
+    }
+
+    /**
+     * Builds the payload for WORKSPACE_OWNER_ASSIGNED outbox event.
+     * Bearer token is intentionally excluded — tokens expire and must not be persisted.
+     * Reprocessing will use X-Internal-Token issued by the system.
+     */
+    private Map<String, String> buildWorkspaceOwnerAssignedPayload(UUID workspaceId, UUID userId) {
+        return Map.of(
+                "workspaceId", workspaceId.toString(),
+                "userId", userId.toString()
+        );
     }
 
     /**

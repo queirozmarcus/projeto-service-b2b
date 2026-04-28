@@ -12,10 +12,12 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  needsWorkspace: boolean;
   setSession: (token: string, user: User) => void;
   clearSession: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setNeedsWorkspace: (value: boolean) => void;
 }
 
 export interface LoginRequest {

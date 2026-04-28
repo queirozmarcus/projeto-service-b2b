@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **ScopeFlow AI** — AI-powered SaaS platform for B2B service providers (freelancers, microagencies) to transform client conversations into clear, approved scopes through structured AI-assisted discovery.
 
-**Current Status (2026-04-21):**
+**Current Status (2026-04-24):**
 - Backend monolith: ~85% — todos os domínios implementados, circuit breakers ativos, purge jobs
-- User Service: 100% extraído + decommission concluído ✅
+- User Service: 100% extraído + decommission concluído ✅ | workspace assignment flow em progresso (S4/5)
 - Frontend: ~70% — dashboard, proposals e briefings integrados com API real
 - Tests: ✅ 247 testes passando no monólito, 76 no user-service, 0 failures
 - QA System: ✅ Scripts de validação automatizada implementados e documentados
@@ -59,12 +59,18 @@ backend/src/main/java/com/scopeflow/
 
 ```
 user-service/src/main/java/com/scopeflow/user/
-├── domain/          # User aggregate (Email, PasswordHash, UserId records)
-├── application/     # RegisterUser, AuthenticateUser, GetProfile, etc.
+├── domain/
+│   ├── model/       # User sealed class (UserActive, UserInactive, UserBlocked, UserDeleted)
+│   │                # User.withWorkspace(UUID) — atualiza workspaceId imutavelmente
+│   ├── exception/   # WorkspaceAlreadyAssignedException (USER-020), UserStateException (USER-021)
+│   └── port/out/    # UserRepository, TokenIssuer, PasswordHasher
+├── application/     # RegisterUser, AuthenticateUser, GetProfile, RefreshToken
+│   └── usecase/     # UpdateUserWorkspaceUseCase — atualiza workspace_id do usuário
 ├── adapter/
 │   ├── in/web/      # AuthController, UserController
+│   │                # PATCH /users/{userId}/workspace → 204 (owner JWT ou X-Internal-Token)
 │   └── out/         # JpaUserRepository
-└── config/          # SecurityConfig, JwtService, CORS
+└── config/          # SecurityConfig, JwtService, CORS, InternalTokenProperties
 ```
 
 ### Domain Model Design Patterns
@@ -108,7 +114,7 @@ Dois circuit breakers protegem chamadas a serviços externos:
 
 | Instância | Adapter protegido | Retry? |
 |-----------|------------------|--------|
-| `user-service` | `UserServiceRestAdapter` | Sim (2x, 200ms) |
+| `user-service` | `UserServiceRestAdapter` (`findByEmail`, `createInvitedUser`, `updateUserWorkspace`) | Sim (2x, 200ms) |
 | `ses` | `AwsSesEmailServiceAdapter` | Não (falhas de quota/auth não são transientes) |
 
 `CallNotPermittedException` → HTTP 503 com `Retry-After: 30`. Handler usa `ex.getCausingCircuitBreakerName()` (genérico — cobre futuros CBs automaticamente).
@@ -153,6 +159,13 @@ List<Proposal> findByWorkspaceId(UUID workspaceId);
 ```
 
 **Implementation:** `GlobalExceptionHandler` — cobre domain exceptions, circuit breaker, rate limit, JWT, ServiceUnavailable.
+
+**user-service error codes:**
+| Code | Exception | HTTP |
+|------|-----------|------|
+| `USER-020` | `WorkspaceAlreadyAssignedException` | 409 |
+| `USER-021` | `UserStateException` | 422 |
+| `AUTH-403` | `AccessDeniedException` | 403 |
 
 ### 7. Purge Jobs
 
@@ -272,6 +285,8 @@ npm run e2e:ui         # Playwright com UI
 | Circuit breaker OpenAI / S3 | Baixa | `ITextPdfServiceAdapter` tem TODOs completos com config sugerida; aguarda Phase 4 (adapters não existem) |
 | Migration V11 em produção | Média | Decommission concluído, DROP aguardando cut-over — ver `docs/migration/V11-MIGRATION-SUMMARY.md` |
 | Extração Workspace context | Backlog | Próximo bounded context — após user-service estável em prod |
+| Workspace registration flow | Em progresso | JWT emitido com `workspace_id=null` após registro — fix em `.claude/plans/3-ToDo/2026-04-24-fix-workspace-registration-flow.md` (S4/15 concluídas) |
+| `useDashboardStore` error handling | Baixa | `ProposalApiError` é plain object — `instanceof Error = false` perde mensagem real → coberto na S4 da Camada 3 |
 
 ---
 
